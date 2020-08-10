@@ -1,12 +1,18 @@
 # 简单的Ajax封装
 
+是一个基于Promise开发的原生请求
+
+备注：以面向过程的方式封装，便于理解，有需要可面向对象
+
+## 封装
+
 ```javascript
-ajax(opts = {}){
+Ajax(opts = {}){
     return new Promise((resolve,reject) => {
         let initOpt = {
             method:"get",
             responseType:"json",
-            timeout:10,
+            timeout:50000,
         };
         let request = new XMLHttpRequest();
         // 请求完成，还有开始请求loadstart，结束请求loadend，这里就不列举，大同小异
@@ -74,4 +80,49 @@ ajax(opts = {}){
     })
 
 }
+```
+
+## 接口
+
+```typescript
+interface AjaxOptions {
+    url:string | 'get';
+    method?:string;
+    headers?:object;
+    params?:object;
+    data?:any;
+    responseType?:string | 'json';
+    timeout?:string | 50000;
+}
+
+interface Ajax {
+  (opts:AjaxOptions):Promise<any>;
+}
+```
+
+## 使用
+
+```javascript
+Ajax({
+    url:"/url",
+    method:"post",
+    headers:{
+
+    },
+    params:{
+        a:1,
+        b:2,
+        c:true,
+        d:"asdas",
+        f:null
+    },
+    data:{
+        a:1,
+        b:2  
+    }
+}).then(res=>{
+    console.log(res)
+}).catch(err=>{
+    console.error(err)
+});
 ```
