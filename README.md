@@ -11,3 +11,9 @@ web端
 ## Serve
 
 服务端
+
+## 其他
+
+other
+
+[发布release.cmd](./other/发布release.cmd)
