@@ -29,7 +29,7 @@ export interface myPromise <T> extends PromiseConstructor<T>{
     resolve(...args:Array<T>): PromiseConstructor<T>;
 }
 
-export class myPromise <T> implements myPromise<T>{
+export class myPromise <T> implements myPromise<T>,PromiseConstructor<T>{
     onfulfilled = [];
     onrejected = [];
 
