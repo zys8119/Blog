@@ -19,8 +19,17 @@ export interface PromiseConstructor<T> {
     resultResolve(onfulfilled:Array<(value: any) => T>,arg:Array<any>,index?:number):void;
 }
 
+export interface myPromise <T> extends PromiseConstructor<T>{
+    reject<T = never>(reason?: any): PromiseConstructor<T>;
 
-class myPromise <T> implements PromiseConstructor<T>{
+    resolve<T>(value: T): PromiseConstructor<T>;
+
+    resolve(): PromiseConstructor<T>;
+
+    resolve(...args:Array<T>): PromiseConstructor<T>;
+}
+
+export class myPromise <T> implements myPromise<T>{
     onfulfilled = [];
     onrejected = [];
 
@@ -76,8 +85,9 @@ class myPromise <T> implements PromiseConstructor<T>{
         });
     }
 }
-myPromise.resolve = myPromise.prototype.resolve;
-myPromise.reject = myPromise.prototype.reject;
+
+(<any>myPromise).resolve = myPromise.prototype.resolve;
+(<any>myPromise).reject = myPromise.prototype.reject;
 
 new myPromise(resolve => {}).then()
 new myPromise((resolve, reject) => {
@@ -88,12 +98,12 @@ new myPromise((resolve, reject) => {
     return 667;
 }).then(res=>{
     console.log(res, 22)
-    return myPromise.resolve(23)
+    return (<any>myPromise).resolve(23)
 }).then(res=>{
     console.log(res, 33)
 }).catch(err=>{
     console.log(err,111.111)
-    return myPromise.reject(9999);
+    return (<any>myPromise).reject(9999);
 }).catch(err=>{
     console.log(err,111)
     return 454
