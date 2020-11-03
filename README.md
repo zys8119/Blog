@@ -8,6 +8,8 @@ web端
 
 [简单的Ajax封装](./web/Ajax/index.md)
 
+[简单的Promise封装](web/Promise/PromiseClass.ts)
+
 ## Serve
 
 服务端
