@@ -104,15 +104,27 @@ export class PromiseClass<T = any> implements PromiseClass<T> {
         if(Object.prototype.toString.call(value) !== "[object Array]"){
             throw ("不是一个有效的数组");
         }
-        let resUlt_resolve = [];
-        value.forEach((it:any)=>{
+
+        return new PromiseClass((resolve1, reject1) => {
+            let resUlt_resolve = [];
+            let lng = value.length;
+            let it:any = value.shift();
             if (it && it.constructor && it.constructor.name === "PromiseClass") {
                 it.then(res=>{
-                    resUlt_resolve.push(res)
+                    resUlt_resolve.push(res);
+                    if(resUlt_resolve.length === lng){
+                        resolve1(resUlt_resolve);
+                    }else {
+                        // this.all(value).then(res=>{
+                        //     console.log(res)
+                        // })
+                    }
+                }).catch(res=>{
                 })
+            }else {
+
             }
-        })
-        return PromiseClass.resolve(resUlt_resolve)
+        });
     }
 
 }
