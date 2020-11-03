@@ -51,31 +51,35 @@ export class PromiseClass<T = any> implements PromiseClass<T> {
         return this;
     }
 
-    resultResolve(onfulfilled, onrejected, arg, index = 0, bool = true) {
+    resultResolve(onfulfilled, onrejected, arg, bool = true) {
         if (onfulfilled) {
-            if(typeof onfulfilled[index] === "function"){
-                let value = onfulfilled[index].apply(null, arg);
+            if(typeof onfulfilled[0] === "function"){
+                let value = onfulfilled.shift().apply(null, arg);
                 if (value && value.constructor && value.constructor.name === "PromiseClass") {
                     value
                         .then(res => {
-                            this.resultResolve(onfulfilled, onrejected, [res], index + 1, bool);
+                            if(bool){
+                                this.resultResolve(onfulfilled, onrejected, [res], bool);
+                            }else {
+                                this.resultResolve(onrejected,onfulfilled, [res] , false);
+                            }
                         })
-                        .catch(err=>{
-                            this.resultResolve(onrejected,onrejected, [err], bool ? 0 : index+1, false);
+                        .catch(res=>{
+                            this.resultResolve(onrejected,onfulfilled, [res] , false);
                         })
                 } else {
-                    this.resultResolve(onfulfilled, onrejected, [value], index + 1, bool);
+                    this.resultResolve(onfulfilled, onrejected, [value], bool);
                 }
             }
         }
     }
 
     resolve(...args: Array<any>): PromiseConstructor<any> | any {
-        this.resultResolve(this.onfulfilled,this.onrejected, args, 0, true);
+        this.resultResolve(this.onfulfilled,this.onrejected, args, true);
     }
 
     reject(...arg): PromiseConstructor<any> | any {
-        this.resultResolve(this.onrejected,this.onfulfilled, arg, 0, false);
+        this.resultResolve(this.onrejected,this.onfulfilled, arg, false);
     }
 
     static resolve(...args): PromiseConstructor<any> {
