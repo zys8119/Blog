@@ -18,6 +18,8 @@ export interface PromiseConstructor<T> {
 
     resolve(...args:Array<T>): PromiseConstructor<T>;
 
+    all<T>(values: Array<PromiseConstructor<T>>): PromiseConstructor<T>;
+
 }
 
 export interface PromiseClass extends PromiseConstructor<any>{}
@@ -49,46 +51,66 @@ export class PromiseClass<T = any> implements PromiseClass<T> {
         return this;
     }
 
-    resultResolve(onfulfilled, arg, index = 0) {
-        if (typeof onfulfilled[index] === "function") {
-            var value = onfulfilled[index].apply(null, arg);
-            if (value && value.constructor && value.constructor.name === "PromiseClass") {
-                value.then(res => {
-                    this.resultResolve(onfulfilled, [res], index + 1);
-                })
-            } else {
-                this.resultResolve(onfulfilled, [value], index + 1);
+    resultResolve(onfulfilled, onrejected, arg, index = 0, bool = true) {
+        if (onfulfilled) {
+            if(typeof onfulfilled[index] === "function"){
+                let value = onfulfilled[index].apply(null, arg);
+                if (value && value.constructor && value.constructor.name === "PromiseClass") {
+                    value
+                        .then(res => {
+                            this.resultResolve(onfulfilled, onrejected, [res], index + 1, bool);
+                        })
+                        .catch(err=>{
+                            this.resultResolve(onrejected,onrejected, [err], bool ? 0 : index+1, false);
+                        })
+                } else {
+                    this.resultResolve(onfulfilled, onrejected, [value], index + 1, bool);
+                }
             }
         }
     }
 
     resolve(...args: Array<any>): PromiseConstructor<any> | any {
-        const onfulfilled = (this.onfulfilled || (this.onfulfilled = []));
-        this.resultResolve(onfulfilled, args);
+        this.resultResolve(this.onfulfilled,this.onrejected, args, 0, true);
+    }
+
+    reject(...arg): PromiseConstructor<any> | any {
+        this.resultResolve(this.onrejected,this.onfulfilled, arg, 0, false);
+    }
+
+    static resolve(...args): PromiseConstructor<any> {
+        this.prototype.resolve.apply(this, args)
         return new PromiseClass((resolve) => {
             resolve.apply(null, args);
         });
     }
 
-    reject(...arg): PromiseConstructor<any> | any {
-        const onrejected = (this.onrejected || (this.onrejected = []));
-        this.resultResolve(onrejected, arg);
-        return new PromiseClass((resolve) => {
-            resolve.apply(null, arg);
-        });
-    }
-
-    static resolve(...args): PromiseConstructor<any> {
-        return this.prototype.reject.apply(this, args)
-    }
-
     static reject(...args): PromiseConstructor<any> {
-        return this.prototype.reject.apply(this, args)
+        this.prototype.reject.apply(this, args)
+        return new PromiseClass((resolve, reject) => {
+            reject.apply(null, args);
+        });
     }
 
     static resultResolve(...args): PromiseConstructor<any> {
         return this.prototype.resultResolve.apply(this, args)
     }
+
+    static all(value: Array<PromiseConstructor<any>>):PromiseConstructor<any>{
+        if(Object.prototype.toString.call(value) !== "[object Array]"){
+            throw ("不是一个有效的数组");
+        }
+        let resUlt_resolve = [];
+        value.forEach((it:any)=>{
+            if (it && it.constructor && it.constructor.name === "PromiseClass") {
+                it.then(res=>{
+                    resUlt_resolve.push(res)
+                })
+            }
+        })
+        return PromiseClass.resolve(resUlt_resolve)
+    }
+
 }
 
 export default PromiseClass;
