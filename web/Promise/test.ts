@@ -61,6 +61,10 @@ PromiseClass.allSettled([
     console.log(res,1,"=============")
 }).catch(res=>{
     console.log(res,2,"=============")
+}).finally(()=>{
+    console.log(666666)
+}).finally(()=>{
+    console.log(666666)
 })
 
 // @ts-ignore
@@ -76,4 +80,8 @@ Promise.allSettled([
     console.log(res,11,"=============")
 }).catch(res=>{
     console.log(res,22,"=============")
+}).finally(()=>{
+    console.log(666666)
+}).finally(()=>{
+    console.log(666666)
 })

@@ -1,6 +1,7 @@
 export interface PromiseConstructor<T> {
     onfulfilled: Array<(value: any) => T>;
     onrejected: Array<(value: any) => T>;
+    onFinally: Array<(value: any) => T>;
 
     new<T>(executor: (resolve?: (value?: T) => void, reject?: (reason?: any) => void) => void): PromiseConstructor<T[]>;
 
@@ -15,6 +16,8 @@ export interface PromiseConstructor<T> {
     resolve(): PromiseConstructor<T>;
 
     resolve(...args:Array<T>): PromiseConstructor<T>;
+
+    finally(onFinally:()=>void): PromiseConstructor<T>;
 
     all<T>(values: Array<PromiseConstructor<T>>): PromiseConstructor<T>;
 
@@ -96,7 +99,8 @@ export const allPublic = function (value: Array<PromiseConstructor<any>>, type:s
  * @param arg 参数
  * @param bool 是否失败
  */
-export const resultResolve = function (onfulfilled:Array<(value: any) => any>, onrejected:Array<(value: any) => any>, arg:Array<any>, bool:boolean = true) {
+export const resultResolve = function (onfulfilled:Array<(value: any) => any>, onrejected:Array<(value: any) => any>,onFinally:Array<(value: any) => any>, arg:Array<any>, bool:boolean = true) {
+    console.log(onfulfilled, onrejected,onFinally, 1111)
     if (onfulfilled) {
         if(typeof onfulfilled[0] === "function"){
             let value = onfulfilled.shift().apply(null, arg);
@@ -104,16 +108,16 @@ export const resultResolve = function (onfulfilled:Array<(value: any) => any>, o
                 value
                     .then(res => {
                         if(bool){
-                            resultResolve(onfulfilled, onrejected, [res], bool);
+                            resultResolve(onfulfilled, onrejected,onFinally, [res], bool);
                         }else {
-                            resultResolve(onrejected,onfulfilled, [res] , false);
+                            resultResolve(onrejected,onfulfilled,onFinally, [res] , false);
                         }
                     })
                     .catch(res=>{
-                        resultResolve(onrejected,onfulfilled, [res] , false);
+                        resultResolve(onrejected,onfulfilled,onFinally, [res] , false);
                     })
             } else {
-                resultResolve(onfulfilled, onrejected, [value], bool);
+                resultResolve(onfulfilled, onrejected,onFinally, [value], bool);
             }
         }
     }
@@ -122,6 +126,7 @@ export const resultResolve = function (onfulfilled:Array<(value: any) => any>, o
 export class PromiseClass<T = any> implements PromiseClass<T> {
     onfulfilled = [];
     onrejected = [];
+    onFinally = [];
 
     constructor(executor: (resolve?: (value?: T) => void, reject?: (reason?: any) => void) => void) {
         setTimeout(() => {
@@ -147,13 +152,19 @@ export class PromiseClass<T = any> implements PromiseClass<T> {
     }
 
 
+    finally(onFinally:()=>void): PromiseClass<T> {
+        if (onFinally) {
+            this.onFinally.push(onFinally)
+        }
+        return this;
+    }
 
     resolve(...args: Array<any>): PromiseConstructor<any> | any {
-        resultResolve(this.onfulfilled,this.onrejected, args, true);
+        resultResolve(this.onfulfilled,this.onrejected,this.onFinally, args, true);
     }
 
     reject(...arg): PromiseConstructor<any> | any {
-        resultResolve(this.onrejected,this.onfulfilled, arg, false);
+        resultResolve(this.onrejected,this.onfulfilled,this.onFinally, arg, false);
     }
 
     static resolve(...args): PromiseConstructor<any> {
