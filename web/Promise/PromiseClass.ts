@@ -100,10 +100,10 @@ export const allPublic = function (value: Array<PromiseConstructor<any>>, type:s
  * @param bool 是否失败
  */
 export const resultResolve = function (onfulfilled:Array<(value: any) => any>, onrejected:Array<(value: any) => any>,onFinally:Array<(value: any) => any>, arg:Array<any>, bool:boolean = true) {
-    console.log(onfulfilled, onrejected,onFinally, 1111)
     if (onfulfilled) {
         if(typeof onfulfilled[0] === "function"){
             let value = onfulfilled.shift().apply(null, arg);
+            console.log(onfulfilled, onrejected,onFinally, 1111)
             if (value && value.constructor && value.constructor.name === "PromiseClass") {
                 value
                     .then(res => {
