@@ -49,19 +49,11 @@ import PromiseClass from "./PromiseClass";
 //     console.log(res)
 // })
 
-PromiseClass.all([
-    new PromiseClass(resolve => {
-        setTimeout(()=>{
-            resolve(66)
-        },6000)
-    }),
+PromiseClass.allSettled([
+    PromiseClass.resolve(66),
     PromiseClass.resolve(1),
     PromiseClass.resolve(2),
-    // new PromiseClass((resolve, reject) => {
-    //     setTimeout(()=>{
-    //         reject(3)
-    //     },6000)
-    // }),
+    PromiseClass.reject(3),
     PromiseClass.resolve(5),
     PromiseClass.resolve(6),
     "asdasda"
@@ -72,20 +64,11 @@ PromiseClass.all([
 })
 
 // @ts-ignore
-Promise.all([
-    new Promise(resolve => {
-        setTimeout(()=>{
-            resolve(66)
-        },6000)
-    }),
+Promise.allSettled([
+    Promise.resolve(66),
     Promise.resolve(1),
     Promise.resolve(2),
-    PromiseClass.resolve(2),
-    new PromiseClass((resolve, reject) => {
-        setTimeout(()=>{
-            reject(3)
-        },6000)
-    }),
+    Promise.reject(3),
     Promise.resolve(5),
     Promise.resolve(6),
     "asdasda"
