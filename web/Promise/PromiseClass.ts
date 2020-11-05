@@ -104,26 +104,48 @@ export class PromiseClass<T = any> implements PromiseClass<T> {
         if(Object.prototype.toString.call(value) !== "[object Array]"){
             throw ("不是一个有效的数组");
         }
-
-        return new PromiseClass((resolve1, reject1) => {
-            let resUlt_resolve = [];
-            let lng = value.length;
-            let it:any = value.shift();
+        let lng = value.length;
+        // 创建长度与value长度一致的数据，并默认填充[object Empty]类型，用于等待查询判断
+        let resUlt_resolve = (<any>"_").repeat(lng).split("").map(e=>"[object Empty]");
+        let resUlt_reject = null;
+        let resUlt_reject_bool = false;
+        value.forEach((it:any,k)=>{
             if (it && it.constructor && it.constructor.name === "PromiseClass") {
                 it.then(res=>{
-                    resUlt_resolve.push(res);
-                    if(resUlt_resolve.length === lng){
-                        resolve1(resUlt_resolve);
-                    }else {
-                        // this.all(value).then(res=>{
-                        //     console.log(res)
-                        // })
-                    }
+                    resUlt_resolve[k] = res;
                 }).catch(res=>{
+                    if(!resUlt_reject_bool){
+                        resUlt_reject = res;
+                        resUlt_reject_bool = true;
+                    }
                 })
             }else {
-
+                resUlt_resolve[k] = it;
             }
+        });
+
+        return new PromiseClass((resolve1, reject1) => {
+            const InquireFun = ()=>{
+                new PromiseClass((resolve2, reject2) => {
+                    if(resUlt_resolve.filter(e=>e !== "[object Empty]").length === lng){
+                        // 全部成功
+                        resolve2(resUlt_resolve);
+                    }else {
+                        if(resUlt_reject_bool){
+                            // 任何一个失败
+                            reject2(resUlt_reject);
+                        }else {
+                            // 即没失败也没成功，则继续等待询问
+                            InquireFun()
+                        }
+                    }
+                }).then((res)=>{
+                    resolve1(res)
+                }).catch((err)=>{
+                    reject1(err)
+                })
+            }
+            InquireFun();
         });
     }
 

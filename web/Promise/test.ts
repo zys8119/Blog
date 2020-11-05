@@ -53,12 +53,15 @@ PromiseClass.all([
     new PromiseClass(resolve => {
         setTimeout(()=>{
             resolve(66)
-        })
+        },6000)
     }),
     PromiseClass.resolve(1),
     PromiseClass.resolve(2),
-    PromiseClass.reject(3),
-    PromiseClass.reject(4),
+    // new PromiseClass((resolve, reject) => {
+    //     setTimeout(()=>{
+    //         reject(3)
+    //     },6000)
+    // }),
     PromiseClass.resolve(5),
     PromiseClass.resolve(6),
     "asdasda"
@@ -73,12 +76,16 @@ Promise.all([
     new Promise(resolve => {
         setTimeout(()=>{
             resolve(66)
-        })
+        },6000)
     }),
     Promise.resolve(1),
     Promise.resolve(2),
-    Promise.reject(3),
-    Promise.reject(4),
+    PromiseClass.resolve(2),
+    new PromiseClass((resolve, reject) => {
+        setTimeout(()=>{
+            reject(3)
+        },6000)
+    }),
     Promise.resolve(5),
     Promise.resolve(6),
     "asdasda"
