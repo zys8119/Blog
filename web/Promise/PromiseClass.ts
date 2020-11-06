@@ -5,7 +5,7 @@ export interface PromiseConstructor<T> {
 
     new<T>(executor: (resolve?: (value?: T) => void, reject?: (reason?: any) => void) => void): PromiseConstructor<T[]>;
 
-    then<TResult1 = T, TResult2 = never>(onfulfilled: (value: T) => TResult1, onrejected: (value: any) => TResult2): PromiseConstructor<T>
+    then<TResult1 = T, TResult2 = never>(onfulfilled: (value: T) => TResult1, onrejected?: (value: any) => TResult2): PromiseConstructor<T>
 
     catch<TResult2 = never>(onrejected: (value: any) => TResult2): PromiseConstructor<T>
 
@@ -32,7 +32,7 @@ export interface PromiseClass extends PromiseConstructor<any>{}
  * @param value 待批处理的 PromiseClass 数组
  * @param type 执行类型：all | allSettled
  */
-export const allPublic = function (value: Array<PromiseConstructor<any>>, type:string = "all"):PromiseConstructor<any>{
+export const allPublic = function (value: Array<any>, type:string = "all"):PromiseConstructor<any>{
     if(Object.prototype.toString.call(value) !== "[object Array]"){
         throw ("不是一个有效的数组");
     }
@@ -103,7 +103,7 @@ export const resultResolve = function (onfulfilled:Array<(value: any) => any>, o
     if (onfulfilled) {
         if(typeof onfulfilled[0] === "function"){
             let value = onfulfilled.shift().apply(null, arg);
-            console.log(onfulfilled, onrejected,onFinally, 1111)
+            console.log(11)
             if (value && value.constructor && value.constructor.name === "PromiseClass") {
                 value
                     .then(res => {
@@ -181,11 +181,11 @@ export class PromiseClass<T = any> implements PromiseClass<T> {
         });
     }
 
-    static all(value: Array<PromiseConstructor<any>>):PromiseConstructor<any>{
+    static all(value: Array<any>):PromiseConstructor<any>{
         return allPublic(value, "all");
     }
 
-    static allSettled(value: Array<PromiseConstructor<any>>):PromiseConstructor<any>{
+    static allSettled(value: Array<any>):PromiseConstructor<any>{
         return allPublic(value, "allSettled");
     }
 
