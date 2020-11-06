@@ -194,14 +194,6 @@ export class PromiseClass<T = any> implements PromiseClass<T> {
             resolve.apply(null, args);
         });
         return resolveResUlt
-            // .then(res=>{
-            //     onFinallyPublic(resolveResUlt);
-            //     return res;
-            // })
-            // .catch(res=>{
-            //     onFinallyPublic(resolveResUlt);
-            //     return res;
-            // })
     }
 
     static reject(...args): PromiseConstructor<any> {
