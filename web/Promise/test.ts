@@ -72,50 +72,57 @@ import PromiseClass from "./PromiseClass";
 //     console.log(666666)
 // })
 
-new PromiseClass(resolve => {
-    resolve("Asdada")
-}).then(res=>{
-    console.log(res,88888888)
-    return PromiseClass.resolve(6666).finally(()=>{
-        console.log(555555)
-    });
-}).finally(()=>{
-    console.log(7777777777)
-}).finally(()=>{
-    console.log(7777777777+1)
-}).then(res=>{
-    console.log(res)
-})
+// new PromiseClass(resolve => {
+//     resolve("Asdada")
+// }).then(res=>{
+//     console.log(res,88888888)
+//     return PromiseClass.resolve(6666).finally(()=>{
+//         console.log(555555)
+//     });
+// }).finally(()=>{
+//     console.log(7777777777)
+// }).finally(()=>{
+//     console.log(7777777777+1)
+// }).then(res=>{
+//     console.log(res)
+// })
 
 // @ts-ignore
-new Promise(resolve => {
-    resolve("Asdada",11111)
-}).then(res=>{
-    console.log(res,88888888,1111)
-    // @ts-ignore
-    return Promise.resolve(6666).finally(()=>{
-        console.log(555555,1111)
-    });
-}).finally(()=>{
-    console.log(7777777777,1111)
-}).finally(()=>{
-    console.log(7777777777+1,11111)
-}).then(res=>{
-    console.log(res,1111)
-})
+// new Promise(resolve => {
+//     resolve("Asdada",11111)
+// }).then(res=>{
+//     console.log(res,88888888,1111)
+//     // @ts-ignore
+//     return Promise.resolve(6666).finally(()=>{
+//         console.log(555555,1111)
+//     });
+// }).finally(()=>{
+//     console.log(7777777777,1111)
+// }).finally(()=>{
+//     console.log(7777777777+1,11111)
+// }).then(res=>{
+//     console.log(res,1111)
+// })
 
 // @ts-ignore
 // Promise.allSettled([
+//     // @ts-ignore
 //     new Promise(resolve => {
 //         resolve(888)
 //     }).finally(()=>{
 //         console.log(9999,1111)
 //     }),
+//     // @ts-ignore
 //     Promise.resolve(66),
+//     // @ts-ignore
 //     Promise.resolve(1),
+//     // @ts-ignore
 //     Promise.resolve(2),
+//     // @ts-ignore
 //     Promise.reject(3),
+//     // @ts-ignore
 //     Promise.resolve(5),
+//     // @ts-ignore
 //     Promise.resolve(6),
 //     "asdasda"
 // ]).then(res=>{
@@ -127,3 +134,27 @@ new Promise(resolve => {
 // }).finally(()=>{
 //     console.log(666666,1111)
 // })
+
+PromiseClass.any([
+    PromiseClass.reject(9),
+    PromiseClass.reject(2),
+    PromiseClass.reject(12),
+    PromiseClass.reject(3),
+    PromiseClass.resolve(4),
+]).then(res=>{
+    console.log(res,11111)
+}).catch(err=>{
+    console.log(err,222222)
+})
+
+PromiseClass.race([
+    PromiseClass.resolve(12),
+    PromiseClass.reject(3),
+    PromiseClass.resolve(9),
+    PromiseClass.reject(2),
+    PromiseClass.resolve(4),
+]).then(res=>{
+    console.log(res,3333333)
+}).catch(err=>{
+    console.log(err,44444444)
+})

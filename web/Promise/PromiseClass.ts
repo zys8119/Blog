@@ -23,6 +23,10 @@ export interface PromiseConstructor<T> {
 
     allSettled<T>(values: Array<PromiseConstructor<T>>): PromiseConstructor<T>;
 
+    any<T>(values: Array<PromiseConstructor<T>>): PromiseConstructor<T>;
+
+    race<T>(values: Array<PromiseConstructor<T>>): PromiseConstructor<T>;
+
 }
 
 export interface PromiseClass extends PromiseConstructor<any>{}
@@ -57,6 +61,8 @@ export const allPublic = function (value: Array<any>, type:string = "all"):Promi
     let resUlt_reject_bool = false;
     const getRes = (res:any, resType:number)=>({
         "all":res,
+        "any":res,
+        "race":res,
         "allSettled":{
             status:[1,3].some(t=>t === resType) ? "fulfilled" : "rejected",
             value:res,
@@ -96,8 +102,42 @@ export const allPublic = function (value: Array<any>, type:string = "all"):Promi
                     }
                 }
             }).then((res)=>{
+                let rarr = resUlt_resolve.filter(e=>e !== "[object Empty]");
+                if(type === "any"){
+                    if (rarr.length > 0){
+                        resolve1(rarr[0])
+                    }else {
+                        reject1("全部执行完成，但没有成功的")
+                    }
+                    return;
+                }
+                if(type === "race"){
+                    if(resUlt_reject_bool){
+                        resolve1(resUlt_reject);
+                    }else {
+                        reject1("全部执行完成，但没有失败的")
+                    }
+                    return;
+                }
                 resolve1(res)
             }).catch((err)=>{
+                let rarr = resUlt_resolve.filter(e=>e !== "[object Empty]");
+                if(type === "any"){
+                    if (rarr.length > 0){
+                        resolve1(rarr[0])
+                    }else {
+                        reject1("全部执行完成，但没有成功的")
+                    }
+                    return;
+                }
+                if(type === "race"){
+                    if(resUlt_reject_bool){
+                        resolve1(resUlt_reject);
+                    }else {
+                        reject1("全部执行完成，但没有失败的")
+                    }
+                    return;
+                }
                 reject1(err)
             })
         }
@@ -190,26 +230,16 @@ export class PromiseClass<T = any> implements PromiseClass<T> {
 
     static resolve(...args): PromiseConstructor<any> {
         this.prototype.resolve.apply(this, args)
-        const resolveResUlt = new PromiseClass((resolve) => {
+        return new PromiseClass((resolve) => {
             resolve.apply(null, args);
-        });
-        return resolveResUlt
+        });;
     }
 
     static reject(...args): PromiseConstructor<any> {
         this.prototype.reject.apply(this, args)
-        const rejectResUlt = new PromiseClass((resolve, reject) => {
+        return new PromiseClass((resolve, reject) => {
             reject.apply(null, args);
         });
-        return rejectResUlt
-            .then(res=>{
-                onFinallyPublic(rejectResUlt);
-                return res;
-            })
-            .catch(res=>{
-                onFinallyPublic(rejectResUlt);
-                return res;
-            })
     }
 
     static all(value: Array<any>):PromiseConstructor<any>{
@@ -218,6 +248,14 @@ export class PromiseClass<T = any> implements PromiseClass<T> {
 
     static allSettled(value: Array<any>):PromiseConstructor<any>{
         return allPublic(value, "allSettled");
+    }
+
+    static any(value: Array<any>):PromiseConstructor<any>{
+        return allPublic(value, "any");
+    }
+
+    static race(value: Array<any>):PromiseConstructor<any>{
+        return allPublic(value, "race");
     }
 
 }
