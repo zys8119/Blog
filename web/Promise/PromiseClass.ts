@@ -1,7 +1,7 @@
 export interface PromiseConstructor<T> {
     onfulfilled: Array<(value: any) => T>;
     onrejected: Array<(value: any) => T>;
-    onFinally: Array<(value: any) => T>;
+    onFinally: Array<() => T>;
 
     new<T>(executor: (resolve?: (value?: T) => void, reject?: (reason?: any) => void) => void): PromiseConstructor<T[]>;
 
@@ -28,6 +28,20 @@ export interface PromiseConstructor<T> {
 export interface PromiseClass extends PromiseConstructor<any>{}
 
 /**
+ * Finally 函数处理
+ * @param allPublicResUlt 当前实例
+ */
+export const onFinallyPublic = (allPublicResUlt)=>{
+    setTimeout(()=>{
+        if(Object.prototype.toString.call(allPublicResUlt.onFinally) === "[object Array]"){
+            while (allPublicResUlt.onFinally.length > 0){
+                allPublicResUlt.onFinally.shift()();
+            }
+        }
+    })
+}
+
+/**
  * 全部批处理公共函数
  * @param value 待批处理的 PromiseClass 数组
  * @param type 执行类型：all | allSettled
@@ -38,7 +52,7 @@ export const allPublic = function (value: Array<any>, type:string = "all"):Promi
     }
     let lng = value.length;
     // 创建长度与value长度一致的数据，并默认填充[object Empty]类型，用于等待查询判断
-    let resUlt_resolve = (<any>"_").repeat(lng).split("").map(e=>"[object Empty]");
+    let resUlt_resolve = (<any>"_").repeat(lng).split("").map(()=>"[object Empty]");
     let resUlt_reject = null;
     let resUlt_reject_bool = false;
     const getRes = (res:any, resType:number)=>({
@@ -66,8 +80,7 @@ export const allPublic = function (value: Array<any>, type:string = "all"):Promi
             resUlt_resolve[k] = getRes(it,3);
         }
     });
-
-    return new PromiseClass((resolve1, reject1) => {
+    const allPublicResUlt = new PromiseClass((resolve1, reject1) => {
         const InquireFun = ()=>{
             new PromiseClass((resolve2, reject2) => {
                 if(resUlt_resolve.filter(e=>e !== "[object Empty]").length === lng){
@@ -89,7 +102,14 @@ export const allPublic = function (value: Array<any>, type:string = "all"):Promi
             })
         }
         InquireFun();
-    });
+    }).then(res=>{
+        onFinallyPublic(allPublicResUlt);
+        return res;
+    }).catch(res=>{
+        onFinallyPublic(allPublicResUlt);
+        return res;
+    })
+    return allPublicResUlt;
 }
 
 /**
@@ -99,25 +119,24 @@ export const allPublic = function (value: Array<any>, type:string = "all"):Promi
  * @param arg 参数
  * @param bool 是否失败
  */
-export const resultResolve = function (onfulfilled:Array<(value: any) => any>, onrejected:Array<(value: any) => any>,onFinally:Array<(value: any) => any>, arg:Array<any>, bool:boolean = true) {
+export const resultResolve = function (onfulfilled:Array<(value: any) => any>, onrejected:Array<(value: any) => any>, arg:Array<any>, bool:boolean = true) {
     if (onfulfilled) {
         if(typeof onfulfilled[0] === "function"){
             let value = onfulfilled.shift().apply(null, arg);
-            console.log(11)
             if (value && value.constructor && value.constructor.name === "PromiseClass") {
                 value
                     .then(res => {
                         if(bool){
-                            resultResolve(onfulfilled, onrejected,onFinally, [res], bool);
+                            resultResolve.call(this,onfulfilled, onrejected, [res], bool);
                         }else {
-                            resultResolve(onrejected,onfulfilled,onFinally, [res] , false);
+                            resultResolve.call(this,onrejected,onfulfilled, [res] , false);
                         }
                     })
                     .catch(res=>{
-                        resultResolve(onrejected,onfulfilled,onFinally, [res] , false);
+                        resultResolve.call(this,onrejected,onfulfilled, [res] , false);
                     })
             } else {
-                resultResolve(onfulfilled, onrejected,onFinally, [value], bool);
+                resultResolve.call(this,onfulfilled, onrejected, [value], bool);
             }
         }
     }
@@ -160,25 +179,45 @@ export class PromiseClass<T = any> implements PromiseClass<T> {
     }
 
     resolve(...args: Array<any>): PromiseConstructor<any> | any {
-        resultResolve(this.onfulfilled,this.onrejected,this.onFinally, args, true);
+        resultResolve.call(this,this.onfulfilled,this.onrejected, args, true);
+        onFinallyPublic(this);
     }
 
     reject(...arg): PromiseConstructor<any> | any {
-        resultResolve(this.onrejected,this.onfulfilled,this.onFinally, arg, false);
+        resultResolve.call(this,this.onrejected,this.onfulfilled, arg, false);
+        onFinallyPublic(this);
     }
 
     static resolve(...args): PromiseConstructor<any> {
         this.prototype.resolve.apply(this, args)
-        return new PromiseClass((resolve) => {
+        const resolveResUlt = new PromiseClass((resolve) => {
             resolve.apply(null, args);
         });
+        return resolveResUlt
+            // .then(res=>{
+            //     onFinallyPublic(resolveResUlt);
+            //     return res;
+            // })
+            // .catch(res=>{
+            //     onFinallyPublic(resolveResUlt);
+            //     return res;
+            // })
     }
 
     static reject(...args): PromiseConstructor<any> {
         this.prototype.reject.apply(this, args)
-        return new PromiseClass((resolve, reject) => {
+        const rejectResUlt = new PromiseClass((resolve, reject) => {
             reject.apply(null, args);
         });
+        return rejectResUlt
+            .then(res=>{
+                onFinallyPublic(rejectResUlt);
+                return res;
+            })
+            .catch(res=>{
+                onFinallyPublic(rejectResUlt);
+                return res;
+            })
     }
 
     static all(value: Array<any>):PromiseConstructor<any>{

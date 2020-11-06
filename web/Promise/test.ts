@@ -49,39 +49,81 @@ import PromiseClass from "./PromiseClass";
 //     console.log(res)
 // })
 
-PromiseClass.allSettled([
-    PromiseClass.resolve(66),
-    PromiseClass.resolve(1),
-    PromiseClass.resolve(2),
-    PromiseClass.reject(3),
-    PromiseClass.resolve(5),
-    PromiseClass.resolve(6),
-    "asdasda"
-]).then(res=>{
-    console.log(res,1,"=============")
-}).catch(res=>{
-    console.log(res,2,"=============")
+// PromiseClass.allSettled([
+//     new PromiseClass(resolve => {
+//         resolve(888)
+//     }).finally(()=>{
+//         console.log(9999)
+//     }),
+//     PromiseClass.resolve(66),
+//     PromiseClass.resolve(1),
+//     PromiseClass.resolve(2),
+//     PromiseClass.reject(3),
+//     PromiseClass.resolve(5),
+//     PromiseClass.resolve(6),
+//     "asdasda"
+// ]).then(res=>{
+//     console.log(res,1,"=============")
+// }).catch(res=>{
+//     console.log(res,2,"=============")
+// }).finally(()=>{
+//     console.log(666666)
+// }).finally(()=>{
+//     console.log(666666)
+// })
+
+new PromiseClass(resolve => {
+    resolve("Asdada")
+}).then(res=>{
+    console.log(res,88888888)
+    return PromiseClass.resolve(6666).finally(()=>{
+        console.log(555555)
+    });
 }).finally(()=>{
-    console.log(666666)
+    console.log(7777777777)
 }).finally(()=>{
-    console.log(666666)
+    console.log(7777777777+1)
+}).then(res=>{
+    console.log(res)
 })
 
 // @ts-ignore
-Promise.allSettled([
-    Promise.resolve(66),
-    Promise.resolve(1),
-    Promise.resolve(2),
-    Promise.reject(3),
-    Promise.resolve(5),
-    Promise.resolve(6),
-    "asdasda"
-]).then(res=>{
-    console.log(res,11,"=============")
-}).catch(res=>{
-    console.log(res,22,"=============")
+new Promise(resolve => {
+    resolve("Asdada",11111)
+}).then(res=>{
+    console.log(res,88888888,1111)
+    // @ts-ignore
+    return Promise.resolve(6666).finally(()=>{
+        console.log(555555,1111)
+    });
 }).finally(()=>{
-    console.log(666666)
+    console.log(7777777777,1111)
 }).finally(()=>{
-    console.log(666666)
+    console.log(7777777777+1,11111)
+}).then(res=>{
+    console.log(res,1111)
 })
+
+// @ts-ignore
+// Promise.allSettled([
+//     new Promise(resolve => {
+//         resolve(888)
+//     }).finally(()=>{
+//         console.log(9999,1111)
+//     }),
+//     Promise.resolve(66),
+//     Promise.resolve(1),
+//     Promise.resolve(2),
+//     Promise.reject(3),
+//     Promise.resolve(5),
+//     Promise.resolve(6),
+//     "asdasda"
+// ]).then(res=>{
+//     console.log(res,11,"=============")
+// }).catch(res=>{
+//     console.log(res,22,"=============")
+// }).finally(()=>{
+//     console.log(666666,111)
+// }).finally(()=>{
+//     console.log(666666,1111)
+// })
