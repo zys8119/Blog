@@ -10,6 +10,8 @@ web端
 
 [简单的Promise封装](web/Promise/PromiseClass.ts)
 
+[简单的大文件切片上传封装](web/Upload/Upload.vue)
+
 ## Serve
 
 服务端
