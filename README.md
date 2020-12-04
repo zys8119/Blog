@@ -12,6 +12,8 @@ web端
 
 [简单的大文件切片上传封装](web/Upload/Upload.vue)
 
+[vue3.0模板初探](https://github.com/zys8119/vuit/tree/master/v3Template)
+
 ## Serve
 
 服务端
