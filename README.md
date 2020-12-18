@@ -14,9 +14,13 @@ web端
 
 [vue3.0模板初探](https://github.com/zys8119/vuit/tree/master/v3Template)
 
+
+
 ## Serve
 
 服务端
+
+[node控制台输入交互](serve/node/input.md)
 
 ## 其他
 
