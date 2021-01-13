@@ -16,6 +16,8 @@ web端
 
 [前端屏幕共享](web/screenSharing/index.vue)
 
+[window视窗](web/window/index.vue)
+
 
 
 ## Serve
