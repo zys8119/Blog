@@ -1,7 +1,7 @@
 <template>
     <div class="window">
         <div class="windowBox" v-if="list.length > 0">
-            <div class="contentBox" ref="win" :style="{transform:`rotateY(${rotate}deg)`}" :class="{autoRotate:autoRotate}">
+            <div class="contentBox" ref="win" :style="{transform:`rotateY(${rotate}deg) rotateX(${rotateX}deg)`}" :class="{autoRotate:autoRotate}">
                 <div class="item" v-for="(item, key) in list" :key="key">
                     <span>
                         <img :src="item.img">
@@ -26,7 +26,9 @@ export default {
     data(){
         return {
             list:[],
-            rotate:40,
+            rotate:45,
+            rotateX:0,
+            // autoRotate:true,
         }
     },
     mounted() {
@@ -49,13 +51,13 @@ export default {
             this.list = listOrigin;
         })
         if(!this.autoRotate){
+            let  maxIndex = this.rotate;
             window.onmousemove = (e)=>{
                 if(this.$refs.win){
-                    let index = e.x/window.innerWidth*40;
-                    if(index < 20){
-                        index = 10 + index;
-                    }
-                    this.rotate = index;
+                    let y = e.x - window.innerWidth / 2;
+                    this.rotate = y/window.innerWidth * maxIndex + (maxIndex*0.8);
+                    let x = window.innerHeight / 2 - e.y ;
+                    this.rotateX = x/window.innerHeight * maxIndex*0.3;
                 }
             }
         }
@@ -65,7 +67,7 @@ export default {
 
 <style scoped lang="less">
 
-.window{
+#app .window{
     @s:600px;
     @gap:15px;
     @rotate:40deg;
