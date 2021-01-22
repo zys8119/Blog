@@ -33,3 +33,5 @@ web端
 other
 
 [发布release.cmd](./other/发布release.cmd)
+
+[git 提交规范校验](./other/HooksCommitMsg.js)
