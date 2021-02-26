@@ -18,6 +18,8 @@ web端
 
 [window视窗](web/window/index.vue)
 
+[web打印代码](web/print/index.md)
+
 
 
 ## Serve
