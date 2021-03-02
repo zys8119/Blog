@@ -20,6 +20,8 @@ web端
 
 [web打印代码](web/print/index.md)
 
+[vue3 动效](web/3D/index.md)
+
 
 
 ## Serve
