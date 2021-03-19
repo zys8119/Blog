@@ -1,3 +1,4 @@
 /.idea/
 /web/Promise/*.js
 /**/*.map
+/web/Console/ConsolePulg.js
