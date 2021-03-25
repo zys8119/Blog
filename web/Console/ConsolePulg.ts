@@ -15,7 +15,7 @@ export interface ConsolePulgConfig <K extends keyof WindowEventMap>{
     // 是否捕捉console映射, 默认监听只error
     consoleMap?:Array<string | 'error' | 'assert' | 'clear' | 'count' | 'countReset' | 'debug' | 'dir' | 'dirxml' | 'exception' | 'group' | 'groupCollapsed' | 'groupEnd' | 'info' | 'log' | 'table' | 'time' | 'timeEnd' | 'timeLog' | 'timeStamp' | 'trace' | 'warn'>;
     eventMap?:Array<K>;// 是否捕捉addEventListener事件映射, 默认监听只error
-    rules?:Array<(this:PluginObjectClass,data:MessageData)=>boolean>;// 返回true即上报，反之不上报
+    rules?:Array<(this:PluginObjectClass,data:MessageData)=>boolean>;// 返回false即上报，反之不上报
 }
 
 export interface MessageData {
@@ -223,7 +223,7 @@ class PluginObjectClass{
             if(!this.config.AxiosConfig ||
                 !this.config.AxiosConfig.url ||
                 !this.config.AxiosConfig.method){
-                return;
+                return Promise.resolve();
             }
             // @ts-ignore
             if(["XHL_Success", "XHL","XHL_Error","XHL_Success_Error"].includes(type)){
@@ -231,7 +231,7 @@ class PluginObjectClass{
                     this.config.AxiosConfig.method.toLocaleLowerCase() === errorData.openArgs[0].toLocaleLowerCase() &&
                     errorData.openArgs[1].toLocaleLowerCase().indexOf(this.config.AxiosConfig.url.toLocaleLowerCase()) > -1
                 ){
-                    return ;
+                    return Promise.resolve();
                 }
             }
             let data:MessageData = {
