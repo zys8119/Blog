@@ -28,6 +28,8 @@ web端
 
 [Vue 前端日志监控插件简单封装](web/Console/index.md)
 
+[content-type整理](web/ContentType.md)
+
 
 
 ## Serve
