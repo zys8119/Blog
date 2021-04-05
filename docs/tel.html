@@ -75,6 +75,9 @@
             justify-content: center;
             align-items: center;
         }
+        .button.btn_car{
+            margin-top: 100px;
+        }
         span.iconfont{
             margin-right: 15px;
         }
@@ -86,7 +89,7 @@
 </head>
 <body>
 <h1 class="title" id="title"></h1>
-<div class="button" onclick="clickTel()">
+<div class="button" id="button" onclick="clickTel()">
     <span class="iconfont">&#xe60a;</span>
     <span>点击联系车主</span>
 </div>
@@ -112,6 +115,14 @@
     }
     if(getQueryVariable("auto") === 'true'){
         clickTel();
+    }
+    if(getQueryVariable("car") === 'true'){
+        let car = document.createElement("iframe");
+        car.src = "./bb.html";
+        car.className = "iframe";
+        car.id = "car";
+        document.body.appendChild(car);
+        document.getElementById("button").className = "button btn_car";
     }
 </script>
 </body>
