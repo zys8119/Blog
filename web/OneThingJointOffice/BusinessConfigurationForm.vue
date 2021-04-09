@@ -43,7 +43,7 @@ export default {
     data(){
         return {
             activeName:"FormPage",
-            title:"测试表单",
+            title:null,
         }
     },
     methods:{

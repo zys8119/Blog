@@ -170,6 +170,11 @@ export default {
                     &:after{
                         background-color: @themeColor;
                     }
+                    &.leng1{
+                        &:after{
+                            background-color: transparent;
+                        }
+                    }
                 }
                 &+.processContentItem{
                     border-top: 1px solid #d8d8d8;

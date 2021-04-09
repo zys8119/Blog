@@ -16,6 +16,7 @@
                     <vuedraggable
                         @update="vuedraggableUpdate"
                         :animation="500"
+                        :move="()=>!preview"
                         v-model="formList"
                     >
                         <!--子视口-->
