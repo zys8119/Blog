@@ -30,6 +30,8 @@ web端
 
 [content-type整理](web/ContentType.md)
 
+[vue 可视化表单配置](web/OneThingJointOffice/index.md)
+
 
 
 ## Serve
