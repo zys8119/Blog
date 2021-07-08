@@ -1,0 +1,18 @@
+{
+  "manifest_version": 2,
+
+  "name": "书签同步",
+  "description": "chrome浏览器书签同步",
+  "version": "1.0",
+  "browser_action": {
+    "default_popup": "index.html"
+  },
+
+  "background": {
+    "scripts": ["index.js"],
+    "persistent": false
+  },
+  "permissions": [
+    "bookmarks"
+  ]
+}
