@@ -32,6 +32,8 @@ web端
 
 [vue 可视化表单配置](web/OneThingJointOffice/index.md)
 
+[vue 悬浮拖拽](web/suspension/suspension.js)
+
 
 
 ## Serve
