@@ -5,7 +5,7 @@
 1、
 
 ```js
-import number from "./directive/number"
+import number from "./number"
 vue.directive("number", number)
 ```
 
