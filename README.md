@@ -38,6 +38,8 @@ web端
 
 [vue 数字滚动指令](web/VueNumber/README.md)
 
+[vue 高德地图线路规划](web/amap/README.md)
+
 
 
 ## Serve
