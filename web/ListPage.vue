@@ -6,7 +6,7 @@
             :immediate-check="false"
             v-model="loading"
             :finished="finished"
-            finished-text="没有更多了"
+            :finished-text="finishedText"
         >
             <slot :list="list"></slot>
         </van-list>
@@ -19,6 +19,7 @@ export default {
     props:{
         apiPath:{type:Function,default:Function},
         params:{type:Object,default:()=>({})},
+        finishedText:{type:String,default:"没有更多了"},
     },
     data() {
         return {
@@ -33,18 +34,19 @@ export default {
     },
     methods:{
         load(){
-            this.apiPath({
+            const formData = {
                 pageNo:this.pageNo,
                 pageSize:this.pageSize,
                 no_page:this.no_page,
                 ...this.params,
-            }).then(res=>{
-                if(this.no_page){
+            }
+            this.apiPath(formData).then(res=>{
+                if(formData.no_page){
                     this.list = res.data;
                     this.loading = false;
                     this.finished = true;
                 }else {
-                    if(this.pageNo === 1){
+                    if(formData.pageNo === 1){
                         this.list = res.data.list
                     }else {
                         this.list = this.list.concat(res.data.list);
@@ -52,7 +54,7 @@ export default {
                     if(this.list.length >= res.data.total){
                         this.finished = true;
                     }
-                    this.pageNo += 1;
+                    formData.pageNo += 1;
                     this.loading = false;
                 }
             }).catch(()=>{
@@ -70,9 +72,9 @@ export default {
             this.show = false;
             this.$nextTick(()=>{
                 this.show = true;
-                this.$nextTick(()=>{
+                setTimeout(()=>{
                     this.$refs.list.check()
-                })
+                },500)
             })
         }
     }
