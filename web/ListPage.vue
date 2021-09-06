@@ -54,12 +54,14 @@ export default {
                     if(this.list.length >= res.data.total){
                         this.finished = true;
                     }
-                    formData.pageNo += 1;
+                    this.pageNo += 1;
                     this.loading = false;
                 }
-            }).catch(()=>{
+                this.$emit("dataChange",res, formData);
+            }).catch((err)=>{
                 this.loading = false;
                 this.finished = true;
+                this.$emit("dataChangeError",err, formData);
             })
         },
         init(){
