@@ -42,6 +42,8 @@ web端
 
 [vue TbaleH5 表格封装](web/TbaleH5.md)
 
+[vue Loading](web/Loading.md)
+
 
 
 ## Serve
