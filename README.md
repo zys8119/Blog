@@ -44,6 +44,8 @@ web端
 
 [vue Loading](web/Loading.md)
 
+[vue 分栏布局](web/LayoutSplit.vue)
+
 
 
 ## Serve
