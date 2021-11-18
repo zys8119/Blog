@@ -8,7 +8,9 @@ main.ts
 import {createApp} from "vue"
 import remPlug from "./index"
 createApp(<any>App)
-    .use(remPlug)
+    .use(remPlug,{
+        base:1440
+    })
     .mount("#app")
 ```
 
@@ -19,9 +21,7 @@ import remPlug from './remPlug.ts'
 
 export default <UserConfig>{
     plugins: [
-        remPlug({
-            base:1440
-        }),
+        remPlug(),
     ],
 }
 
