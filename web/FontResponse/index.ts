@@ -11,7 +11,7 @@ export default <Plugin>{
             data(){
                 return {
                     css__rem:rem,
-                    css__rem_base__:base,
+                    css__rem__base:base,
                 }
             }
         })
