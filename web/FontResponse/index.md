@@ -17,11 +17,15 @@ createApp(<any>App)
 vite.config.ts
 
 ```typescript
+import {UserConfig} from 'vite'
 import remPlug from './remPlug.ts'
+import {resolve} from "path"
 
 export default <UserConfig>{
     plugins: [
-        remPlug(),
+        remPlug({
+            resolve(__dirname, "./src/assets/less/public.less"),
+        }),
     ],
 }
 
