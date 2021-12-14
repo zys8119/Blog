@@ -50,6 +50,8 @@ web端
 
 [svg paths 转 canvas 贝塞曲线](web/svgToBezierCurve/index.md)
 
+[canvas 动画函数](web/canvas/animation.ts)
+
 
 
 ## Serve
