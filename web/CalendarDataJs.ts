@@ -1,6 +1,64 @@
 class CalendarDataJs {
-    constructor() {
+    /**
+     @公元前的算法：
+     年干=8-N(N﹤8)或8-N+10(N≧8)，N=年号除以10的余数=年号个位数。
+     年支=10-N(N<10)或10-N+12(N≧10)，N=年号除以12的余数。
 
+     @公元后的算法：
+     年干=N-3(N>3)或N-3+10(N≤3)，N=年号除以10的余数=年号个位数。
+     年支=N-3(N>3)或N-3+12(N≤3)，N=年号除以12的余数。
+     */
+    config = {
+        // 天干
+        tg:[
+            {name: "甲", code: "（jiǎ）",},
+            {name: "乙", code: "（yǐ）",},
+            {name: "丙", code: "（bǐng）",},
+            {name: "丁", code: "（dīng）",},
+            {name: "戊", code: "（wù）",},
+            {name: "己", code: "（jǐ）",},
+            {name: "庚", code: "（gēng）",},
+            {name: "辛", code: "（xīn）",},
+            {name: "壬", code: "（rén）",},
+            {name: "癸", code: "（guǐ）",},
+        ],
+        // 地支
+        dz:[
+            {name: "子", sx: "鼠", code: "（zǐ）",},
+            {name: "丑", sx: "牛", code: "（chǒu）",},
+            {name: "寅", sx: "虎", code: "（yín）",},
+            {name: "卯", sx: "兔", code: "（mǎo）",},
+            {name: "辰", sx: "龙", code: "（chén）",},
+            {name: "巳", sx: "蛇", code: "（sì）",},
+            {name: "午", sx: "马", code: "（wǔ）",},
+            {name: "未", sx: "羊", code: "（wèi）",},
+            {name: "申", sx: "猴", code: "（shēn）",},
+            {name: "酉", sx: "鸡", code: "（yǒu）",},
+            {name: "戌", sx: "狗", code: "（xū）",},
+            {name: "亥", sx: "猪", code: "（hài）",},
+        ],
+        // 月干
+        month:{
+            "甲、己": ["丙寅", "丁卯", "戊辰", "己巳", "庚午", "辛未", "壬申", "癸酉", "甲戌", "乙亥", "丙子", "丁丑",],
+            "乙、庚": ["戊寅", "己卯", "庚辰", "辛巳", "壬午", "癸未", "甲申", "乙酉", "丙戌", "丁亥", "戊子", "己丑",],
+            "丙、辛": ["庚寅", "辛卯", "壬辰", "癸巳", "甲午", "乙未", "丙申", "丁酉", "戊戌", "己亥", "庚子", "辛丑",],
+            "丁、壬": ["壬寅", "癸卯", "甲辰", "乙巳", "丙午", "丁未", "戊申", "己酉", "庚戌", "辛亥", "壬子", "癸丑",],
+            "戊、癸": ["甲寅", "乙卯", "丙辰", "丁巳", "戊午", "己未", "庚申", "辛酉", "壬戌", "癸亥", "甲子", "乙丑",],
+        },
+        // 日干支推算表
+        // 月数表，日柱公式： 日干支序数=年数+月数+日期 （和大于60，则减60。1月、2月用上一年的年数）
+        monthNb:[6,37,0,31,1,32,2,33,4,34,5,25],
+        dayNb:{"10":"癸酉","11":"甲戌","12":"乙亥","13":"丙子","14":"丁丑","15":"戊寅","16":"己卯","17":"庚辰","18":"辛巳","19":"壬午","20":"癸未","21":"甲申","22":"乙酉","23":"丙戌","24":"丁亥","25":"戊子","26":"己丑","27":"庚寅","28":"辛卯","29":"壬辰","30":"癸巳","31":"甲午","32":"乙未","33":"丙申","34":"丁酉","35":"戊戌","36":"己亥","37":"庚子","38":"辛丑","39":"壬寅","40":"癸卯","41":"甲辰","42":"乙巳","43":"丙午","44":"丁未","45":"戊申","46":"己酉","47":"庚戌","48":"辛亥","49":"壬子","50":"癸丑","51":"甲寅","52":"乙卯","53":"丙辰","54":"丁巳","55":"戊午","56":"己未","57":"庚申","58":"辛酉","59":"壬戌","60":"癸亥","01":"甲子","02":"乙丑","03":"丙寅","04":"丁卯","05":"戊辰","06":"己巳","07":"庚午","08":"辛未","09":"壬申"},
+
+        NumString: "一二三四五六七八九十",
+        MonString: "正二三四五六七八九十冬腊",
+        yearNumArr: {},
+        max:0,
+    }
+
+    constructor() {
+        this.config.max = Object.keys(this.config.dayNb).length;
+        this.config.yearNumArr = this.getYearNum(2022, this.config.dz.length);
     }
 
     /**
@@ -19,95 +77,6 @@ class CalendarDataJs {
     is_Month(Month,dateYear){
         dateYear = dateYear || new Date().getFullYear();
         var dateindex = 31;if(Month % 2 == 0){dateindex = 30;if(Month == 2){(this.is_leap(dateYear))?dateindex = 29:dateindex = 28;};};if(Month >= 8){(Month % 2 == 0)?dateindex = 31:dateindex = 30;};return dateindex;
-    }
-
-    /**
-     * 获取天干地支
-     * @param dateA 年份
-     * @param dateB 月分
-     * @param dateC 日期
-     */
-    returnLunarDateToB(dateA,dateB,dateC){
-        var initData = new Date();
-        dateA = dateA || initData.getFullYear();
-        dateB = dateB || initData.getMonth()+1;
-        dateC = dateC || initData.getDate();
-        var LunarDate = {
-            madd: new Array(0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334),
-            HsString: '甲乙丙丁戊己庚辛壬癸',
-            EbString: '子丑寅卯辰巳午未申酉戌亥',
-            NumString: "一二三四五六七八九十",
-            MonString: "正二三四五六七八九十冬腊",
-            CalendarData: new Array(0xA4B, 0x5164B, 0x6A5, 0x6D4, 0x415B5, 0x2B6, 0x957, 0x2092F, 0x497, 0x60C96, 0xD4A, 0xEA5, 0x50DA9, 0x5AD, 0x2B6, 0x3126E, 0x92E, 0x7192D, 0xC95, 0xD4A, 0x61B4A, 0xB55, 0x56A, 0x4155B, 0x25D, 0x92D, 0x2192B, 0xA95, 0x71695, 0x6CA, 0xB55, 0x50AB5, 0x4DA, 0xA5B, 0x30A57, 0x52B, 0x8152A, 0xE95, 0x6AA, 0x615AA, 0xAB5, 0x4B6, 0x414AE, 0xA57, 0x526, 0x31D26, 0xD95, 0x70B55, 0x56A, 0x96D, 0x5095D, 0x4AD, 0xA4D, 0x41A4D, 0xD25, 0x81AA5, 0xB54, 0xB6A, 0x612DA, 0x95B, 0x49B, 0x41497, 0xA4B, 0xA164B, 0x6A5, 0x6D4, 0x615B4, 0xAB6, 0x957, 0x5092F, 0x497, 0x64B, 0x30D4A, 0xEA5, 0x80D65, 0x5AC, 0xAB6, 0x5126D, 0x92E, 0xC96, 0x41A95, 0xD4A, 0xDA5, 0x20B55, 0x56A, 0x7155B, 0x25D, 0x92D, 0x5192B, 0xA95, 0xB4A, 0x416AA, 0xAD5, 0x90AB5, 0x4BA, 0xA5B, 0x60A57, 0x52B, 0xA93, 0x40E95),
-            Year: null,
-            Month: null,
-            Day: null,
-            TheDate: null,
-            GetBit: function(m, n){
-                return (m >> n) & 1;
-            },
-            e2c: function(){
-                this.TheDate = (arguments.length != 3) ? new Date(): new Date(arguments[0], arguments[1], arguments[2]);
-                var total, m, n, k;
-                var isEnd = false;
-                var tmp = this.TheDate.getFullYear();
-                total = (tmp - 1921) * 365 + Math.floor((tmp - 1921) / 4) + this.madd[this.TheDate.getMonth()] + this.TheDate.getDate() - 38;
-                if (this.TheDate.getYear() % 4 == 0 && this.TheDate.getMonth() > 1) {
-                    total++;
-                }
-                for (m = 0; ; m++) {
-                    k = (this.CalendarData[m] < 0xfff) ? 11: 12;
-                    for (n = k; n >= 0; n--) {
-                        if (total <= 29 + this.GetBit(this.CalendarData[m], n)) {
-                            isEnd = true;
-                            break;
-                        }
-                        total = total - 29 - this.GetBit(this.CalendarData[m], n);
-                    }
-                    if (isEnd)
-                        break;
-                }
-                this.Year = 1921 + m;
-                this.Month = k - n + 1;
-                this.Day = total;
-                if (k == 12) {
-                    if (this.Month == Math.floor(this.CalendarData[m] / 0x10000) + 1) {
-                        this.Month = 1 - this.Month;
-                    }
-                    if (this.Month > Math.floor(this.CalendarData[m] / 0x10000) + 1) {
-                        this.Month--;
-                    }
-                }
-            },
-            GetcDateString: function(){
-                var tmp = "";
-                tmp += this.HsString.charAt((this.Year - 4) % 10);
-                tmp += this.EbString.charAt((this.Year - 4) % 12);
-                tmp += "年 ";
-                if (this.Month < 1) {
-                    tmp += "(闰)";
-                    tmp += this.MonString.charAt(-this.Month - 1);
-                } else {
-                    tmp += this.MonString.charAt(this.Month - 1);
-                }
-                tmp += "月";
-                tmp += (this.Day < 11) ? "初": ((this.Day < 20) ? "十": ((this.Day < 30) ? "廿": "三十"));
-                if (this.Day % 10 != 0 || this.Day == 10) {
-                    tmp += this.NumString.charAt((this.Day - 1) % 10);
-                }
-                return tmp;
-            },
-            GetLunarDay: function(solarYear, solarMonth, solarDay) {
-                if (solarYear < 1921 || solarYear > 2020) {
-                    return "";
-                } else {
-                    solarMonth = (parseInt(solarMonth) > 0) ? (solarMonth - 1): 11;
-                    this.e2c(solarYear, solarMonth, solarDay);
-                    return this.GetcDateString();
-                }
-            }
-        };
-        return LunarDate.GetLunarDay(dateA,dateB,dateC);
     }
 
     /**
@@ -172,8 +141,7 @@ class CalendarDataJs {
                 DayData[i].day = i-dateindex-dateDay+1;
                 returnLunarDateToB_index = 1;
             };
-            DayData[i].LunarCalendar = this.returnLunarDateToB(dateYear,dateMonth+returnLunarDateToB_index,DayData[i].day);
-            DayData[i].getDayAll = (function(){
+            DayData[i].dateYear = (function(){
                 var dateMonth2 = dateMonth+returnLunarDateToB_index;
                 if(dateMonth2 > 12){
                     return dateYear+1;
@@ -181,7 +149,8 @@ class CalendarDataJs {
                     return dateYear-1;
                 }
                 return dateYear;
-            })()+"-"+(function(){
+            })();
+            DayData[i].dateMonth = (function(){
                 var dateMonth2 = dateMonth+returnLunarDateToB_index;
                 if(dateMonth2 > 12){
                     return 1;
@@ -189,67 +158,86 @@ class CalendarDataJs {
                     return 12;
                 }
                 return dateMonth2;
-            })()+"-"+DayData[i].day;
+            })();
+            DayData[i].LunarCalendar = this.getLunarCalendar(DayData[i].dateYear,DayData[i].dateMonth,DayData[i].day);
+            DayData[i].getDayAll = DayData[i].dateYear+"-"+DayData[i].dateMonth+"-"+DayData[i].day;
         };
         return DayData;
     }
 
     /**
-     * 百度【天干地支纪年法】
-     * @param dateA
-     * @param dateB
-     * @param dateC
+     * 百度【天干地支纪年法】,获取农历
+     * @param dateA 年
+     * @param dateB 月
+     * @param dateC 日
      */
     getLunarCalendar(dateA, dateB, dateC){
         const initData = new Date();
         dateA = dateA || initData.getFullYear();
         dateB = dateB || initData.getMonth()+1;
         dateC = dateC || initData.getDate();
-        /**
-         @公元前的算法：
-         年干=8-N(N﹤8)或8-N+10(N≧8)，N=年号除以10的余数=年号个位数。
-         年支=10-N(N<10)或10-N+12(N≧10)，N=年号除以12的余数。
 
-         @公元后的算法：
-         年干=N-3(N>3)或N-3+10(N≤3)，N=年号除以10的余数=年号个位数。
-         年支=N-3(N>3)或N-3+12(N≤3)，N=年号除以12的余数。
-         */
-        const config = {
-            tg:[
-                {name: "甲", code: "（jiǎ）",},
-                {name: "乙", code: "（yǐ）",},
-                {name: "丙", code: "（bǐng）",},
-                {name: "丁", code: "（dīng）",},
-                {name: "戊", code: "（wù）",},
-                {name: "己", code: "（jǐ）",},
-                {name: "庚", code: "（gēng）",},
-                {name: "辛", code: "（xīn）",},
-                {name: "壬", code: "（rén）",},
-                {name: "癸", code: "（guǐ）",},
-            ],
-            dz:[
-                {name: "子", sx: "鼠", code: "（zǐ）",},
-                {name: "丑", sx: "牛", code: "（chǒu）",},
-                {name: "寅", sx: "虎", code: "（yín）",},
-                {name: "卯", sx: "兔", code: "（mǎo）",},
-                {name: "辰", sx: "龙", code: "（chén）",},
-                {name: "巳", sx: "蛇", code: "（sì）",},
-                {name: "午", sx: "马", code: "（wǔ）",},
-                {name: "未", sx: "羊", code: "（wèi）",},
-                {name: "申", sx: "猴", code: "（shēn）",},
-                {name: "酉", sx: "鸡", code: "（yǒu）",},
-                {name: "戌", sx: "狗", code: "（xū）",},
-                {name: "亥", sx: "猪", code: "（hài）",},
-            ],
+        const year_tg = this.config.tg[this.getN(dateA, this.config.tg.length) - 1];
+        const year_dz = this.config.dz[this.getN(dateA, this.config.dz.length) - 1];
+        const monthObj = this.config.month[Object.keys(this.config.month).find(e=>e.indexOf(year_tg.name) > -1)];
+        const month = monthObj[dateB-1];
+        let yearNb = this.config.yearNumArr[[1,2].includes(dateB) ? dateA - 1 : dateA];
+        let daySum = yearNb+this.config.monthNb[dateB - 1] + dateC;
+        if(daySum > this.config.max){
+            daySum -= this.config.max;
         }
-        console.log(dateA, dateB, dateC)
-        console.log(dateA % 10, dateB, dateC)
+        const day = this.config.dayNb[daySum];
+        return {
+            args:[dateA,dateB,dateC],
+            year_tg,
+            year_dz,
+            month,
+            day,
+        }
+    }
+    // 获取年数
+    getYearNum(targetYear, max){
+        const res = {};
+        let base = {
+            year:1000,
+            num:31
+        };
+        if(targetYear > base.year){
+            for(let k = base.year+1; k <= targetYear; k++){
+                if(this.is_leap(k)){
+                    base.num += 6;
+                }else {
+                    base.num += 5;
+                }
+                res[k] = base.num % 60;
+            }
+        }else {
+            for(let k = base.year-1; k >= targetYear; k--){
+                if(this.is_leap(k + 1)){
+                    base.num -= 6;
+                }else {
+                    base.num -= 5;
+                }
+                res[k] = base.num > 0 ? base.num : 60 - Math.abs(base.num % 60);
+            }
+        }
+        return res;
+    }
+    // 获取年干或年支
+    getN(year, num){
+        let N = year % num;
+        if(N > 3){
+            N = N -3
+        }else {
+            N = N -3 + 10
+        }
+        return N;
     }
 }
 
 
 const d = new CalendarDataJs();
-// const  res = d.returnDate(2022,1)
-// const  res2 = d.is_Month(1,2022)
-// const  res3 = d.is_leap(2022)
-d.getLunarCalendar(2022,1,1)
+const  res = d.returnDate(2022,1)
+debugger;
+console.log(res);
+console.log(d.getLunarCalendar(2020,1,1))
