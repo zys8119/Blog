@@ -22,7 +22,7 @@ class CalendarDataJs {
     }
 
     /**
-     *
+     * 获取天干地支
      * @param dateA 年份
      * @param dateB 月分
      * @param dateC 日期
@@ -205,23 +205,42 @@ class CalendarDataJs {
         dateA = dateA || initData.getFullYear();
         dateB = dateB || initData.getMonth()+1;
         dateC = dateC || initData.getDate();
+        /**
+         @公元前的算法：
+         年干=8-N(N﹤8)或8-N+10(N≧8)，N=年号除以10的余数=年号个位数。
+         年支=10-N(N<10)或10-N+12(N≧10)，N=年号除以12的余数。
+
+         @公元后的算法：
+         年干=N-3(N>3)或N-3+10(N≤3)，N=年号除以10的余数=年号个位数。
+         年支=N-3(N>3)或N-3+12(N≤3)，N=年号除以12的余数。
+         */
         const config = {
-            tg_10:['甲（jiǎ）', '乙（yǐ）', '丙（bǐng）', '丁（dīng）', '戊（wù）', '己（jǐ）', '庚（gēng）', '辛（xīn）', '壬（rén）', '癸（guǐ）'],
-            dz_12:["子（zǐ）","丑（chǒu）","寅（yín）","卯（mǎo）","辰（chén）","巳（sì）","午（wǔ）","未（wèi）","申（shēn）","酉（yǒu）","戌（xū）","亥（hài）"],
-            dz_sx:{
-                "子": "鼠",
-                "丑": "牛",
-                "寅": "虎",
-                "卯": "兔",
-                "辰": "龙",
-                "巳": "蛇",
-                "午": "马",
-                "未": "羊",
-                "申": "猴",
-                "酉": "鸡",
-                "戌": "狗",
-                "亥": "猪"
-            }
+            tg:[
+                {name: "甲", code: "（jiǎ）",},
+                {name: "乙", code: "（yǐ）",},
+                {name: "丙", code: "（bǐng）",},
+                {name: "丁", code: "（dīng）",},
+                {name: "戊", code: "（wù）",},
+                {name: "己", code: "（jǐ）",},
+                {name: "庚", code: "（gēng）",},
+                {name: "辛", code: "（xīn）",},
+                {name: "壬", code: "（rén）",},
+                {name: "癸", code: "（guǐ）",},
+            ],
+            dz:[
+                {name: "子", sx: "鼠", code: "（zǐ）",},
+                {name: "丑", sx: "牛", code: "（chǒu）",},
+                {name: "寅", sx: "虎", code: "（yín）",},
+                {name: "卯", sx: "兔", code: "（mǎo）",},
+                {name: "辰", sx: "龙", code: "（chén）",},
+                {name: "巳", sx: "蛇", code: "（sì）",},
+                {name: "午", sx: "马", code: "（wǔ）",},
+                {name: "未", sx: "羊", code: "（wèi）",},
+                {name: "申", sx: "猴", code: "（shēn）",},
+                {name: "酉", sx: "鸡", code: "（yǒu）",},
+                {name: "戌", sx: "狗", code: "（xū）",},
+                {name: "亥", sx: "猪", code: "（hài）",},
+            ],
         }
         console.log(dateA, dateB, dateC)
         console.log(dateA % 10, dateB, dateC)
