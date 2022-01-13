@@ -178,6 +178,7 @@ class CalendarDataJs {
 
         const year_tg = this.config.tg[this.getN(dateA, this.config.tg.length) - 1];
         const year_dz = this.config.dz[this.getN(dateA, this.config.dz.length) - 1];
+        // @ts-ignore
         const monthObj = this.config.month[Object.keys(this.config.month).find(e=>e.indexOf(year_tg.name) > -1)];
         const month = monthObj[dateB-1];
         // @ts-ignore
@@ -197,6 +198,7 @@ class CalendarDataJs {
             year_dz,
             month,
             day,
+            month_str:this.config.MonString[monthObj.indexOf(month)]
         }
     }
     // 获取年数
@@ -241,5 +243,5 @@ class CalendarDataJs {
 
 //http://www.5igb.com/wnl.htm?TZ=%2B0800+%B1%B1%BE%A9%A1%A2%D6%D8%C7%EC%A1%A2%BA%DA%C1%FA%BD%AD&SY=2022&SM=2
 const d = new CalendarDataJs();
-const  res = d.returnDate(2018,1)
+const  res = d.returnDate(2022,1)
 console.log(res.map(e=>e.LunarCalendar))
