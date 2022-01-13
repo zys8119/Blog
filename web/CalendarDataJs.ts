@@ -193,6 +193,39 @@ class CalendarDataJs {
         };
         return DayData;
     }
+
+    /**
+     * 百度【天干地支纪年法】
+     * @param dateA
+     * @param dateB
+     * @param dateC
+     */
+    getLunarCalendar(dateA, dateB, dateC){
+        const initData = new Date();
+        dateA = dateA || initData.getFullYear();
+        dateB = dateB || initData.getMonth()+1;
+        dateC = dateC || initData.getDate();
+        const config = {
+            tg_10:['甲（jiǎ）', '乙（yǐ）', '丙（bǐng）', '丁（dīng）', '戊（wù）', '己（jǐ）', '庚（gēng）', '辛（xīn）', '壬（rén）', '癸（guǐ）'],
+            dz_12:["子（zǐ）","丑（chǒu）","寅（yín）","卯（mǎo）","辰（chén）","巳（sì）","午（wǔ）","未（wèi）","申（shēn）","酉（yǒu）","戌（xū）","亥（hài）"],
+            dz_sx:{
+                "子": "鼠",
+                "丑": "牛",
+                "寅": "虎",
+                "卯": "兔",
+                "辰": "龙",
+                "巳": "蛇",
+                "午": "马",
+                "未": "羊",
+                "申": "猴",
+                "酉": "鸡",
+                "戌": "狗",
+                "亥": "猪"
+            }
+        }
+        console.log(dateA, dateB, dateC)
+        console.log(dateA % 10, dateB, dateC)
+    }
 }
 
 
@@ -200,5 +233,4 @@ const d = new CalendarDataJs();
 // const  res = d.returnDate(2022,1)
 // const  res2 = d.is_Month(1,2022)
 // const  res3 = d.is_leap(2022)
-const  res4 = d.returnLunarDateToB(2022,1,1)
-console.log(res4)
+d.getLunarCalendar(2022,1,1)
