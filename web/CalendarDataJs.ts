@@ -180,7 +180,8 @@ class CalendarDataJs {
         const year_dz = this.config.dz[this.getN(dateA, this.config.dz.length) - 1];
         const monthObj = this.config.month[Object.keys(this.config.month).find(e=>e.indexOf(year_tg.name) > -1)];
         const month = monthObj[dateB-1];
-        let yearNb = this.config.yearNumArr[[1,2].includes(dateB) ? dateA - 1 : dateA];
+        // @ts-ignore
+        let yearNb = this.config.yearNumArr[([1,2].includes(dateB) ? (dateA - 1) : dateA)];
         let monthNb = this.config.monthNb[dateB - 1];
         let daySum = yearNb+monthNb + dateC;
         if(daySum > this.config.max){
@@ -232,7 +233,7 @@ class CalendarDataJs {
         if(N > 3){
             N = N -3
         }else {
-            N = N -3 + 10
+            N = N -3 + num
         }
         return N;
     }
@@ -240,5 +241,5 @@ class CalendarDataJs {
 
 //http://www.5igb.com/wnl.htm?TZ=%2B0800+%B1%B1%BE%A9%A1%A2%D6%D8%C7%EC%A1%A2%BA%DA%C1%FA%BD%AD&SY=2022&SM=2
 const d = new CalendarDataJs();
-const  res = d.returnDate(2022,1)
+const  res = d.returnDate(2018,1)
 console.log(res.map(e=>e.LunarCalendar))
