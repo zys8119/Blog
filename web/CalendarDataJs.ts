@@ -1,4 +1,29 @@
-class CalendarDataJs {
+interface config {
+    tg:tg[];
+    dz:tg[];
+    month:month;
+    monthNb:number[];
+    dayNb:dayNb;
+    NumString:string;
+    MonString:string;
+    yearNumArr:yearNumArr;
+    max:number;
+}
+type yearNumArr = {
+    [key:number]:number
+}
+type dayNb = {
+    [key:number]:string
+}
+type month = {
+    [key:string]:string[]
+}
+type tg = {
+    name:string;
+    code:string;
+    sx?:string;
+}
+export default class CalendarData {
     /**
      @公元前的算法：
      年干=8-N(N﹤8)或8-N+10(N≧8)，N=年号除以10的余数=年号个位数。
@@ -8,7 +33,7 @@ class CalendarDataJs {
      年干=N-3(N>3)或N-3+10(N≤3)，N=年号除以10的余数=年号个位数。
      年支=N-3(N>3)或N-3+12(N≤3)，N=年号除以12的余数。
      */
-    config = {
+    config:config = {
         // 天干
         tg:[
             {name: "甲", code: "（jiǎ）",},
@@ -64,7 +89,7 @@ class CalendarDataJs {
      * 判断是否为闰年
      * @param year 年份
      */
-    is_leap(year) {
+    is_leap(year:number) {
         return (year%100==0?(year%400==0?1:0):(year%4==0?1:0));
     }
 
@@ -73,7 +98,7 @@ class CalendarDataJs {
      * @param Month 月份
      * @param dateYear 年份
      */
-    is_Month(Month,dateYear){
+    is_Month(Month:number,dateYear:number){
         dateYear = dateYear || new Date().getFullYear();
         var dateindex = 31;if(Month % 2 == 0){dateindex = 30;if(Month == 2){(this.is_leap(dateYear))?dateindex = 29:dateindex = 28;};};if(Month >= 8){(Month % 2 == 0)?dateindex = 31:dateindex = 30;};return dateindex;
     }
@@ -83,7 +108,7 @@ class CalendarDataJs {
      * @param dateYear 年份
      * @param dateMonth 月份
      */
-    returnDate(dateYear,dateMonth){
+    returnDate(dateYear?:number,dateMonth?:number){
         var initData = new Date();
         dateYear = dateYear || initData.getFullYear();
         dateMonth = dateMonth || initData.getMonth()+1;
@@ -118,8 +143,11 @@ class CalendarDataJs {
             };
             var returnLunarDateToB_index = 0;
             if(i >= dateDay && i < dateindex+dateDay){
+                DayData[i].type = "current";
+                DayData[i].isCurrent = true;
                 DayData[i].day = i-dateDay+1;
             }else if(i < dateDay){
+                DayData[i].type = "prev";
                 DayData[i].day = this.is_Month(dateMonth-1,dateYear)-dateDay+i+1;
                 switch (dateindex){
                     case 30:
@@ -137,6 +165,7 @@ class CalendarDataJs {
                 };
                 returnLunarDateToB_index = -1;
             }else{
+                DayData[i].type = "next";
                 DayData[i].day = i-dateindex-dateDay+1;
                 returnLunarDateToB_index = 1;
             };
@@ -170,7 +199,7 @@ class CalendarDataJs {
      * @param dateB 月
      * @param dateC 日
      */
-    getLunarCalendar(dateA, dateB, dateC){
+    getLunarCalendar(dateA:number, dateB:number, dateC:number){
         const initData = new Date();
         dateA = dateA || initData.getFullYear();
         dateB = dateB || initData.getMonth()+1;
@@ -203,8 +232,8 @@ class CalendarDataJs {
         }
     }
     // 获取年数
-    getYearNum(targetYear, max){
-        const res = {};
+    getYearNum(targetYear:number, max:number){
+        const res:any = {};
         let base = {
             year:1000,
             num:31
@@ -231,7 +260,7 @@ class CalendarDataJs {
         return res;
     }
     // 获取年干或年支
-    getN(year, num){
+    getN(year:number, num:number){
         let N = year % num;
         if(N > 3){
             N = N -3
@@ -241,11 +270,3 @@ class CalendarDataJs {
         return N;
     }
 }
-
-//http://www.5igb.com/wnl.htm?TZ=%2B0800+%B1%B1%BE%A9%A1%A2%D6%D8%C7%EC%A1%A2%BA%DA%C1%FA%BD%AD&SY=2022&SM=2
-const d = new CalendarDataJs();
-// const  res = d.returnDate(2020,2)
-// console.log(res.map(e=>e.LunarCalendar))
-console.log(d.getLunarCalendar(2022,2,3))
-console.log(d.config.yearNumArr[1900])
-console.log(d.getLunarCalendar(1900,1,31))
