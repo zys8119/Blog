@@ -1,0 +1,26 @@
+{
+  "name": "blog",
+  "version": "1.0.0",
+  "description": "个人爱好，知识积累，点滴成石",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "CalendarDataJs": "ts-node web/CalendarDataJs.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zys8119/Blog.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/zys8119/Blog/issues"
+  },
+  "homepage": "https://github.com/zys8119/Blog#readme",
+  "dependencies": {
+    "ts-node": "^10.4.0",
+    "typescript": "^4.5.4"
+  }
+}

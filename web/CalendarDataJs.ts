@@ -270,3 +270,6 @@ export default class CalendarData {
         return N;
     }
 }
+
+const d = new CalendarData()
+console.log(d.getLunarCalendar(2022,1,1))
