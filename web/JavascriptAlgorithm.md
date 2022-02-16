@@ -36,3 +36,14 @@ const lists = [[1,4,5],[1,3,4],[2,6]]
 console.log(lists.reduce((a,b)=>a.concat(b),[]).sort((a,b)=>a-b))
 ```
 
+##  K 个一组翻转链表
+
+以k分割数组，最后一个升序，其余降序
+
+```typescript
+const head = [1,2,3,4,3,5,8,6,9,2], k = 3
+console.log(head.join("").split(k).map((e,kk,a)=>{
+    return (kk < a.length -1 ? (e+k).split("").sort((a,b)=>b-a):e.split("").sort((a,b)=>a-b));
+}))
+```
+
