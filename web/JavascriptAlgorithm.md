@@ -44,6 +44,6 @@ console.log(lists.reduce((a,b)=>a.concat(b),[]).sort((a,b)=>a-b))
 const head = [1,2,3,4,3,5,8,6,9,2], k = 3
 console.log(head.join("").split(k).map((e,kk,a)=>{
     return (kk < a.length -1 ? (e+k).split("").sort((a,b)=>b-a):e.split("").sort((a,b)=>a-b));
-}))
+}).reduce((a,b)=>a.concat(b),[]))
 ```
 
