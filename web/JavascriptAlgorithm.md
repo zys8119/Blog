@@ -27,3 +27,12 @@ const res = a => (a === [...a].reverse().join(""))
 console.log(res(a))
 ```
 
+## 合并K个升序链表
+
+平铺数组后排序
+
+```typescript
+const lists = [[1,4,5],[1,3,4],[2,6]]
+console.log(lists.reduce((a,b)=>a.concat(b),[]).sort((a,b)=>a-b))
+```
+
