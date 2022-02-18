@@ -56,6 +56,8 @@ web端
 
 [javascript 算法题及题解](web/JavascriptAlgorithm.md)
 
+[vue3.0 基础表格算法](web/vue3table.md)
+
 
 
 ## Serve
