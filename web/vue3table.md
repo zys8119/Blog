@@ -192,6 +192,7 @@ export default defineComponent({
 ```tsx
 import { buildProps } from "@wisdom-plus/utils/props"
 import {defineComponent, ExtractPropTypes, PropType, computed, ref, watch} from "vue"
+//  虚拟滚动条
 import  simpleScroll from "./simpleScroll.js"
 export const tableProps = buildProps({
     columns: {
@@ -397,8 +398,9 @@ export default defineComponent({
         let tableWidth:any = ref(null);// 表格宽度
         // 重置表渲染
         const resetTbale = (newdata, bool)=>{
+            tableDatas.value = newdata;
             theadColumns.value = getColumnsMergedCell(props.columns)
-            tbodyCells.value = getTbodyMergedCells(newdata, bool);
+            tbodyCells.value = getTbodyMergedCells(tableDatas.value, bool);
             colgroupArr = computed(()=>{
                 return theadColumns.value.columns_col.filter((e)=>props.height || !!e.width);
             })
@@ -412,8 +414,7 @@ export default defineComponent({
             computed(()=>props.columns),
             computed(()=>props.data)
         ],()=>{
-            tableDatas.value = props.data;
-            resetTbale(tableDatas.value, false);
+            resetTbale(props.data, false);
         },{ immediate:true})
 
         let isDragstart = false;// 是否拖拽
@@ -465,6 +466,7 @@ export default defineComponent({
                                         dataIt[props.treeChildrenFieldName] = dataIt[props.treeChildrenFieldName] || [];
                                         dataIt[props.treeChildrenFieldName].push(child_start)
                                     }
+                                    dataIt.$$treeShow =  flattenDeep([child_start],props.treeChildrenFieldName).filter(fit=>fit.$$treeShow).length > 0;
                                     result.push(dataIt);
                                 });
                             }else {
@@ -483,8 +485,7 @@ export default defineComponent({
                     }
                     return data
                 }
-                const newdata = addStart(deleteStart(tableDatas.value));
-                resetTbale(newdata, true);
+                resetTbale(addStart(deleteStart(tableDatas.value)), true);
             }
             isDragstart = false;
             draggableObjData.value = null;
@@ -533,6 +534,7 @@ export default defineComponent({
             colgroupArr,
             tableWidth,
             flattenDeep,
+            tableDatas,
         }
     },
     mounted() {
