@@ -52,11 +52,14 @@ web端
 
 [canvas 动画函数](web/canvas/animation.ts)
 
+[canvas 文字自动换行](web/canvas/WrapText.ts)
+
 [获取日历数据](web/CalendarDataJs.ts)
 
 [javascript 算法题及题解](web/JavascriptAlgorithm.md)
 
 [vue3.0 基础表格算法](web/vue3table.md)
+
 
 
 
