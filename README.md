@@ -60,6 +60,8 @@ web端
 
 [vue3.0 基础表格算法](web/vue3table.md)
 
+[大数据场景不数据快速占位](web/BigDataRapidPlaceholder.vue)
+
 
 
 
