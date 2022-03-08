@@ -1,5 +1,5 @@
 <template>
-    <div class="BigDataRapidPlaceholder" :class="{isDev:isDev}">
+    <div class="CockpitLayout" :class="{isDev:isDev}">
         <img class="CockpitLayoutBj" ref="img" :src="src">
         <slot :getStyle="getStyle"></slot>
     </div>
@@ -7,9 +7,11 @@
 
 <script>
 export default {
-    name: "BigDataRapidPlaceholder",
+    name: "CockpitLayout",
     props:{
         src:{type:String, default:null},
+        width:{type:Number, default:null},
+        height:{type:Number, default:null},
     },
     data(){
         return {
@@ -30,12 +32,18 @@ export default {
     },
     methods:{
         init(){
-            const img = new Image();
-            img.src = this.src;
-            img.onload = ()=>{
-                this.ratio_w = window.innerWidth / img.width;
-                this.ratio_h = window.innerHeight / img.height;
+            if(this.width && this.height){
+                this.ratio_w = window.innerWidth / this.width;
+                this.ratio_h = window.innerHeight / this.height;
+            }else {
+                const img = new Image();
+                img.src = this.src;
+                img.onload = ()=>{
+                    this.ratio_w = window.innerWidth / img.width;
+                    this.ratio_h = window.innerHeight / img.height;
+                }
             }
+
         },
         getStyle({left,top, width, height}){
             const unit = "px";
@@ -51,7 +59,7 @@ export default {
 </script>
 
 <style scoped lang="less">
-.BigDataRapidPlaceholder {
+.CockpitLayout {
     position: fixed;
     left: 0;
     top: 0;
@@ -71,7 +79,7 @@ export default {
     }
     &.isDev{
         &>div{
-            border:1px solid yellow;
+            border:1px dashed rgba(253, 255, 53, 0.1);
         }
     }
 }
