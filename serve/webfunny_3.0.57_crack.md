@@ -7,22 +7,21 @@
 ```js
 // 密钥
 const keys = {
-    '1':'Y',
-    '2':'Q',
-    '3':'I',
-    '4':'T',
-    '5':'V',
-    '6':'R',
-    '7':'H',
-    '8':'C',
-    '9':'P',
-    '0':'U',
+    '1': 'P',
+    '2': 'Z',
+    '3': 'D',
+    '4': 'W',
+    '5': 'U',
+    '6': 'B',
+    '7': 'S',
+    '8': 'M',
+    '9': 'G',
+    '0': 'K',
 }
-
 const purchaseCode = str=>{
     const arr = (str.match(/\d/img) || []).map(e=>keys[e]);
     return Object.values({
-        "19": arr[0],// y1
+        "19": arr[0],// y1, 并且 19 位值必须为 Z， 故年份的开始位必须位 2yyy-mm-dd 形式
         "12": arr[1],// y2
         "7": arr[2],// y3
         "17": arr[3],// y4
@@ -30,13 +29,16 @@ const purchaseCode = str=>{
         "8": arr[5],// m2
         "15": arr[6],// d1
         "1": arr[7],// d2
+
+        // purchaseCodeType 计算,结果必须满足后面等式， 不然就是个人版本限制项目个数， purchaseCode[9].charCodeAt() - purchaseCode[4].charCodeAt() > 3, 默认取最大范围
+        "4": "A",// purchaseCodeType 开始 charCodeAt
+        "9": "Z",// purchaseCodeType 结束 charCodeAt
+
         "0": "B",
         "2": "C",
         "3": "D",
-        "4": "Q",
         "5": "E",
         "6": "F",
-        "9": "Q",
         "11": "G",
         "13": "H",
         "14": "I",
@@ -44,7 +46,6 @@ const purchaseCode = str=>{
         "18": "K",
     }).join("")
 }
-
 module.exports = {
     purchaseCode:purchaseCode("2092-04-06"),
     secretCode: ''
