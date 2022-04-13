@@ -74,7 +74,6 @@ web端
 
 [前端资源自动化部署](serve/node/buildServe.js)
 
-[webfunny3.0.57破解](serve/webfunny_3.0.57_crack.md)
 
 ## 其他
 
