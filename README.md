@@ -62,7 +62,7 @@ web端
 
 [大数据场景背景图布局快速占位](web/BigDataRapidPlaceholder.vue)
 
-[Vite + monaco-editor 配置worker文件及typescript类型声明扩展](web/MonacoEnvironment.md)
+[Vite + Vue + monaco-editor](web/MonacoEnvironment.md)
 
 
 
