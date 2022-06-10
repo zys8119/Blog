@@ -64,6 +64,8 @@ web端
 
 [Vite + Vue + monaco-editor](web/MonacoEnvironment.md)
 
+[wisdom-plus + 高德自定义地图 DemoMap.vue](web/DemoMap.vue)
+
 
 
 
