@@ -66,6 +66,8 @@ web端
 
 [wisdom-plus + 高德自定义地图 DemoMap.vue](web/DemoMap.vue)
 
+[wisdom-plus + alert.tsx](web/alert.tsx)
+
 
 
 
