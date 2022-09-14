@@ -68,6 +68,8 @@ web端
 
 [wisdom-plus + alert.tsx](web/alert.tsx)
 
+[进度图表 CommonProgressChart.vue](web/CommonProgressChart.vue)
+
 
 
 
