@@ -33,8 +33,8 @@
 import {get} from 'lodash'
 const props = defineProps({
     /**
-        数据格式如下：
-         {
+     数据格式如下：
+     {
             legend: ['执业助理医师数', '注册护士数'],
             color: ['#fdef4c', '#24ffeb'],// 不必填
             unit:['元'],// 不必填
@@ -64,8 +64,10 @@ const currData = computed(() => data.value.map((e:any) => {
         width:e.value.map((e:number) => e / sum.value * 100)
     }
 }).sort((a:any, b:any) => b.sum - a.sum))
+const timeout:any = ref(0)
 const getWidth = (v:number, bool:boolean) => {
-    setTimeout(() => {
+    clearTimeout(timeout.value)
+    timeout.value = setTimeout(() => {
         animation.value = false
     }, 300)
     return animation.value ? 0 : v
