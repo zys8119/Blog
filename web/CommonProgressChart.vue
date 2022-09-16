@@ -52,16 +52,17 @@ const color = computed(() => get(props.option, 'color', ['#fdef4c', '#24ffeb', '
 const data = computed(() => get(props.option, 'data', []))
 const unit = computed(() => get(props.option, 'unit', []))
 const max = computed(() => data.value.reduce((a:any, b:any) => {
-    return a.map((e:number, k:number) => e > b.value[k] ? e : b.value[k])
+    return a.map((e:number, k:number) => e > (b.value[k] || 0) ? e : (b.value[k] || 0))
 }, new Array(legend.value.length).fill(0)))
 const sum = computed(() => max.value.reduce((a:number, b:number) => a + b, 0))
 const animation = ref(false)
 const currData = computed(() => data.value.map((e:any) => {
-    animation.value = true
+    const value = new Array(legend.value.length).fill(0).map((_:any, k:any) => e.value[k] || 0)
     return {
         ...e,
-        sum:e.value.reduce((a:number, b:number) => a + b, 0),
-        width:e.value.map((e:number) => e / sum.value * 100)
+        value,
+        sum:value.reduce((a:number, b:number) => a + b, 0),
+        width:value.map((e:number) => e / sum.value * 100)
     }
 }).sort((a:any, b:any) => b.sum - a.sum))
 const timeout:any = ref(0)
