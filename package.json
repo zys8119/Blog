@@ -7,7 +7,8 @@
     "doc": "docs"
   },
   "scripts": {
-    "CalendarDataJs": "ts-node web/CalendarDataJs.ts"
+    "CalendarDataJs": "ts-node web/CalendarDataJs.ts",
+    "date": "ts-node web/date.ts"
   },
   "repository": {
     "type": "git",
