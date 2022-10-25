@@ -19,7 +19,7 @@ files.forEach(file=>{
     const obfuscationResult = JavaScriptObfuscator.obfuscate(
         readFileSync(file).toString('utf-8'),
         {
-            compact: false,
+            compact: true,
             controlFlowFlattening: true,
             controlFlowFlatteningThreshold: 1,
             numbersToExpressions: true,
