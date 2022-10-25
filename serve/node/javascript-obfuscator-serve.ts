@@ -17,7 +17,7 @@ var bar = new ProgressBar(`当前进度:percent :bar 已处理(${Chalk.green(':c
 files.forEach(file=>{
     const target = resolve(__dirname, file)
     var obfuscationResult = JavaScriptObfuscator.obfuscate(
-        readFileSync(resolve(__dirname, file)).toString('utf-8'),
+        readFileSync(target).toString('utf-8'),
         {
             compact: false,
             controlFlowFlattening: true,
