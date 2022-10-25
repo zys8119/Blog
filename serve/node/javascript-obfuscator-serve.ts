@@ -5,19 +5,19 @@ var {resolve} = require('path');
 var Chalk = require('chalk');
 var ProgressBar = require('progress');
 const log = console.log;
-const dirArr = ["disttest/**/*.js"]
+const dir = resolve(process.cwd(), 'dist')
+const dirArr = [`${dir}/**/*.js`]
 const files = sync(dirArr)
-log(Chalk.blue('正在启动【javascript-obfuscator】代码混淆'));
+log(Chalk.blue('正在启动【javascript-obfuscator】代码混淆加密'));
 log(Chalk.yellow(`
-混淆对象：${dirArr}
+混淆加密对象：${dirArr}
 已扫描文件：${files.length} 个
 `));
-var bar = new ProgressBar(`当前进度:percent :bar 已处理(${Chalk.green(':current/:total')})文件`, { total: files.length, width:50 });
+const bar = new ProgressBar(`当前进度:percent :bar 已处理(${Chalk.green(':current/:total')})文件`, { total: files.length, width:50 });
 
 files.forEach(file=>{
-    const target = resolve(__dirname, file)
-    var obfuscationResult = JavaScriptObfuscator.obfuscate(
-        readFileSync(target).toString('utf-8'),
+    const obfuscationResult = JavaScriptObfuscator.obfuscate(
+        readFileSync(file).toString('utf-8'),
         {
             compact: false,
             controlFlowFlattening: true,
@@ -29,9 +29,9 @@ files.forEach(file=>{
             stringArrayThreshold: 1
         }
     );
-    writeFileSync(target, obfuscationResult.getObfuscatedCode(), 'utf-8')
+    writeFileSync(file, obfuscationResult.getObfuscatedCode(), 'utf-8')
     bar.tick();
     if(bar.complete){
-        log(Chalk.blue('【javascript-obfuscator】代码混淆完成'));
+        log(Chalk.blue('【javascript-obfuscator】代码混淆加密完成'));
     }
 })

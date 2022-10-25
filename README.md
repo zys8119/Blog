@@ -82,7 +82,7 @@ web端
 
 [前端资源自动化部署](serve/node/buildServe.js)
 
-[前端资源javascript-obfuscator代码混淆](serve/node/javascript-obfuscator-serve.ts)
+[前端资源javascript-obfuscator代码混淆加密](serve/node/javascript-obfuscator-serve.ts)
 
 
 ## 其他
