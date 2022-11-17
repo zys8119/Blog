@@ -3,6 +3,26 @@ import {Dialog, DialogOptions, closeAllModals, ModalProps, WpButton, Toast} from
 import {merge} from 'lodash'
 import CommonModalHeader from '@/components/CommonModalHeader.vue'
 import AlertFooter from '@/components/AlertFooter.vue'
+
+/**
+ // vant 兼容处理
+ import {Dialog} from 'vant'
+ import 'vant/lib/index.css'
+ import {merge} from 'lodash'
+ import alert, {AlertPlugConfig} from '@/alert'
+ app.use(alert, {
+    defineComponent:async(config: any) => {
+        const content = await config.content
+        const vnode = h(content?.default)
+        return h(Dialog(merge( {
+            title:config.title,
+            message:content?.default ? (() => vnode) : content,
+            className:'van-popup--bottom',
+            showConfirmButton:false,
+        }, config)))
+    }
+} as AlertPlugConfig)
+ */
 export interface AlertPlugConfig {
     defineComponent?(config: any):void
 }
