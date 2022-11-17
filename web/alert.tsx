@@ -13,7 +13,7 @@ import AlertFooter from '@/components/AlertFooter.vue'
  app.use(alert, {
     defineComponent:async(config: any) => {
         const content = await config.content
-        const vnode = h(content?.default)
+        const vnode = h(content?.default, config.props)
         return h(Dialog(merge( {
             title:config.title,
             message:content?.default ? (() => vnode) : content,
