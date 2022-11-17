@@ -1,49 +1,108 @@
-import {App, h} from "vue"
-import {Dialog, DialogOptions, closeAllModals, ModalProps} from "wisdom-plus"
-import {merge} from "lodash"
-import CommonModalHeader from "@/components/CommonModalHeader.vue"
-export const alertPlug = (options:Partial<DialogOptions & AlertOptions> = {}) => Dialog(merge({
-    showFooter:false,
-    content: h(defineComponent({
-        data(){
-            return {
-                components:null
-            }
-        },
-        setup() {
-            console.log()
-            return () => [
-                h(CommonModalHeader,{
-                    title:options.title,
-                    onClose:()=>{
-                        closeAllModals()
-                    }
-                }),
-                h(Object.prototype.toString.call(options.components) === '[object Promise]' ? defineAsyncComponent(()=> options.components) as any : options.components, merge({
-                    title:options.props,
-                }, options.props), options.children),
-            ]
-        }
-    }))
-}, options, {
-    title:false,
-    props:merge({
-        class:"common-wp-modal",
-        showClose:false,
-        width:"1000px",
-    }, options.modalProps)
-}))
+import {App, h} from 'vue'
+import {Dialog, DialogOptions, closeAllModals, ModalProps, WpButton, Toast} from 'wisdom-plus'
+import {merge} from 'lodash'
+import CommonModalHeader from '@/components/CommonModalHeader.vue'
+import AlertFooter from '@/components/AlertFooter.vue'
+export interface AlertPlugConfig {
+    defineComponent?(config: any):void
+}
 
-alertPlug.install = (app: App<Element>) => {
+const alertOptionsInIt = ref<AlertPlugConfig>({} as any)
+export const alertPlug = (alertOptions:Partial<DialogOptions & AlertOptions> = {}) => {
+    const options = merge({
+        showCloseIcon:true,
+        showTitle:true,
+    }, alertOptions)
+    const config = merge({
+        showFooter:false,
+        content:options.component ? h(defineComponent({
+            setup() {
+                return () => [
+                    options.showTitle ? h(CommonModalHeader, {
+                        // title:options.title,
+                        showClose:options.showCloseIcon,
+                        onClose:() => {
+                            closeAllModals()
+                        },
+                    }, {
+                        title:() => Object.prototype.toString.call(options.title) === '[object Object]' ? h(options.title) : options.title
+                    }) : null,
+                    h(Object.prototype.toString.call(options.component) === '[object Promise]' ? defineAsyncComponent(() => options.component) as any : options.component, merge({
+                        title:options.props,
+                    }, options.props), options.children),
+                ]
+            }
+        })) : options.content
+    }, options, {
+        title:false,
+        showCloseIcon:true,
+        props:merge({
+            class:'common-wp-modal',
+            showClose:false,
+            width:'700px',
+        }, options.modalProps)
+    }, options.alert ? {
+        title:options.title || '温馨提示',
+        props:{
+            width:400,
+        },
+        content:h(defineComponent({
+            setup() {
+                return () => [
+                    h('div', {
+                        class:{
+                            'p-a-15':true
+                        }
+                    }, options.content),
+                    h(AlertFooter, () => [
+                        h(WpButton, {
+                            onClick:ev => {
+                                closeAllModals()
+                                options.onCancel?.(ev)
+                            }
+                        }, {
+                            default:() => '取消'
+                        }),
+                        h(WpButton, {
+                            type:'primary',
+                            onClick:ev => {
+                                closeAllModals()
+                                options.onConfirm?.(ev)
+                            }
+                        }, {
+                            default:() => '确定'
+                        })
+                    ]),
+                ]
+            }
+        }))
+    } : {})
+    return alertOptionsInIt.value.defineComponent?.(config as any)
+}
+
+alertPlug.install = (app: App<Element>, options:AlertPlugConfig = {}) => {
+    alertOptionsInIt.value = merge<AlertPlugConfig, AlertPlugConfig>({
+        defineComponent(config:any) {
+            return Dialog(config)
+        }
+    }, options)
     app.config.globalProperties.$alert = alertPlug
     window.$alert = alertPlug
+    app.config.globalProperties.$toast = Toast
+    app.config.globalProperties.$Toast = Toast
+    window.$toast = Toast
 }
 
 alertPlug.close = closeAllModals
-
 interface AlertOptions {
-    components?:any
+    onConfirm?:(ev:MouseEvent)=>void
+    onCancel?:(ev:MouseEvent)=>void
+    content?:any
+    alert?:boolean
+    component?:any
     title?:any
+    showCloseIcon?:boolean
+    showTitle?:boolean
     props?:Record<string, any>
     modalProps?: Partial<ModalProps> & Record<string, any>;
     children?: any []
@@ -52,11 +111,15 @@ interface AlertOptions {
 declare global {
     interface Window {
         $alert:typeof alertPlug
+        $toast: typeof Toast;
+        $Toast: typeof Toast;
     }
 }
 declare module '@vue/runtime-core' {
     export interface ComponentCustomProperties {
-        readonly $alert: typeof alertPlug;
+        $alert: typeof alertPlug;
+        $toast: typeof Toast;
+        $Toast: typeof Toast;
     }
 }
 
