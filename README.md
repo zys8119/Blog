@@ -84,6 +84,9 @@ web端
 
 [前端资源javascript-obfuscator代码混淆加密](serve/node/javascript-obfuscator-serve.ts)
 
+[创建FormData数据格式](serve/node/FormData.md)
+
+
 
 ## 其他
 
@@ -93,4 +96,3 @@ other
 
 [git 提交规范校验](./other/HooksCommitMsg.js)
 
-[创建FormData数据格式](serve/node/FormData.md)
