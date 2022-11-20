@@ -6,12 +6,7 @@
 const FormData = async(data:Record<string, any>, boundaryName:string = 'WebAppBoundary')=>{
     return  {
         contentType:`multipart/form-data; boundary=${boundaryName}`,
-        body:Object.entries({
-            email:'joanhg90172@chacuo.net',
-            password:'joanhg90172@chacuo.net',
-            invite_code:'',
-            email_code:'',
-        }).map(([name, value])=>`
+        body:Object.entries(data).map(([name, value])=>`
         --${boundaryName}
         Content-Disposition: form-data; name="${name}"
         Content-Type: text/plain
