@@ -77,8 +77,14 @@ export const alertPlug = (alertOptions:Partial<DialogOptions & AlertOptions> = {
                     h(AlertFooter, () => [
                         h(WpButton, {
                             onClick:ev => {
-                                closeAllModals()
-                                options.onCancel?.(ev)
+                                (async() => {
+                                    try {
+                                        await options.onCancel?.(ev)
+                                        await alertPlug.close()
+                                    } catch (e) {
+                                        // err
+                                    }
+                                })()
                             }
                         }, {
                             default:() => '取消'
@@ -86,8 +92,14 @@ export const alertPlug = (alertOptions:Partial<DialogOptions & AlertOptions> = {
                         h(WpButton, {
                             type:'primary',
                             onClick:ev => {
-                                closeAllModals()
-                                options.onConfirm?.(ev)
+                                (async() => {
+                                    try {
+                                        await options.onConfirm?.(ev)
+                                        await alertPlug.close()
+                                    } catch (e) {
+                                        // err
+                                    }
+                                })()
                             }
                         }, {
                             default:() => '确定'
@@ -115,8 +127,8 @@ alertPlug.install = (app: App<Element>, options:AlertPlugConfig = {}) => {
 
 alertPlug.close = closeAllModals
 interface AlertOptions {
-    onConfirm?:(ev:MouseEvent)=>void
-    onCancel?:(ev:MouseEvent)=>void
+    onConfirm?:(ev:MouseEvent)=>(Promise<void> | void)
+    onCancel?:(ev:MouseEvent)=>(Promise<void> | void)
     content?:any
     alert?:boolean
     component?:any
