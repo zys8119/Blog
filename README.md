@@ -70,6 +70,8 @@ web端
 
 [进度图表 CommonProgressChart.vue](web/CommonProgressChart.vue)
 
+[占位图代理](web/PlaceholderImage.md)
+
 
 
 
