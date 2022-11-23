@@ -100,3 +100,7 @@ other
 
 [git 提交规范校验](./other/HooksCommitMsg.js)
 
+## 备忘
+
+[北外测试题](./other/beiwaitest.md)
+
