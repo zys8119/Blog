@@ -72,6 +72,8 @@ web端
 
 [占位图代理](web/PlaceholderImage.md)
 
+[vue3 表单提交通用逻辑](web/vue3-form-submit.md)
+
 
 
 
