@@ -92,7 +92,7 @@ web端
 
 [uf-node + vpn + giaoyun 订阅获取](serve/node/IndexController.ts)
 
-[依赖包查找](serve/node/DependentPackageLookup.ts)
+[依赖包查找](serve/DependentPackageLookup.ts)
 
 
 
