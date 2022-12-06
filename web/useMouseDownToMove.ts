@@ -6,9 +6,10 @@ export type Results = {
     x:Ref<any>
     y:Ref<any>
     isMousedown:Ref<boolean>
+    isMousemove:Ref<boolean>
     buttonType:Ref<any>
 }
-export type UseMouseDownToMove = (target?:TargetType<HTMLElement>, options?:Partial<{
+export type UseMouseDownToMove = (target?:TargetType<HTMLElement | Window>, options?:Partial<{
     onMousedown(result:Results, ev:MouseEvent, key:number):void
     onMousemove(result:Results, ev:MouseEvent, key:number):void
     onMouseup(result:Results, ev:MouseEvent, key:number):void
@@ -26,15 +27,18 @@ const useMouseDownToMove:UseMouseDownToMove = (target:any = window, options = {}
     const y = ref<any>(0)
     const buttonType = ref<any>(0)
     const isMousedown = ref<any>(false)
+    const isMousemove = ref<any>(false)
     const result:Results = {
         xs,
         ys,
         x,
         y,
         isMousedown,
+        isMousemove,
         buttonType
     }
     const mousedown = (ev:any) => {
+        isMousemove.value = false
         buttonType.value = ev.button
         const bool = options.isMousedown?.(result, ev, options.key as number)
         isMousedown.value = typeof bool === 'boolean' ? bool : true
@@ -45,6 +49,7 @@ const useMouseDownToMove:UseMouseDownToMove = (target:any = window, options = {}
         }
     }
     const mousemove = (ev:any) => {
+        isMousemove.value = true
         if (isMousedown.value) {
             x.value = ev.layerX - xs.value
             y.value = ev.layerY - ys.value
@@ -53,6 +58,7 @@ const useMouseDownToMove:UseMouseDownToMove = (target:any = window, options = {}
     }
     const mouseup = (ev:any) => {
         isMousedown.value = false
+        isMousemove.value = false
         options.onMouseup?.(result, ev, options.key as number)
         nextTick(() => {
             x.value = 0
