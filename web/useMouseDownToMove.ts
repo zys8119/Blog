@@ -6,8 +6,9 @@ export type Results = {
     x:Ref<any>
     y:Ref<any>
     isMousedown:Ref<boolean>
+    buttonType:Ref<any>
 }
-export type UseMouseDownToMove = (target:TargetType<HTMLElement>, options?:Partial<{
+export type UseMouseDownToMove = (target?:TargetType<HTMLElement>, options?:Partial<{
     onMousedown(result:Results, ev:MouseEvent, key:number):void
     onMousemove(result:Results, ev:MouseEvent, key:number):void
     onMouseup(result:Results, ev:MouseEvent, key:number):void
@@ -15,7 +16,7 @@ export type UseMouseDownToMove = (target:TargetType<HTMLElement>, options?:Parti
     key:number
 }>, isInit?:boolean)=> Results;
 
-const useMouseDownToMove:UseMouseDownToMove = (target:any, options = {}, isInit?:boolean) => {
+const useMouseDownToMove:UseMouseDownToMove = (target:any = window, options = {}, isInit?:boolean) => {
     if (!isRef(target)) {
         target = ref(target)
     }
@@ -23,15 +24,18 @@ const useMouseDownToMove:UseMouseDownToMove = (target:any, options = {}, isInit?
     const ys = ref<any>(0)
     const x = ref<any>(0)
     const y = ref<any>(0)
+    const buttonType = ref<any>(0)
     const isMousedown = ref<any>(false)
     const result:Results = {
         xs,
         ys,
         x,
         y,
-        isMousedown
+        isMousedown,
+        buttonType
     }
     const mousedown = (ev:any) => {
+        buttonType.value = ev.button
         const bool = options.isMousedown?.(result, ev, options.key as number)
         isMousedown.value = typeof bool === 'boolean' ? bool : true
         if (isMousedown.value) {
