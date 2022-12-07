@@ -9,6 +9,8 @@ export type Results = {
     my:Ref<any>
     mxs:Ref<any>
     mys:Ref<any>
+    ox:Ref<any>
+    oy:Ref<any>
     isMousedown:Ref<boolean>
     isMousemove:Ref<boolean>
     isMMousedown:Ref<boolean>
@@ -38,6 +40,8 @@ const useMouseDownToMove:UseMouseDownToMove = (target:any = window, options = {}
     const my = ref<any>(0)
     const mxs = ref<any>(0)
     const mys = ref<any>(0)
+    const ox = ref<any>(0)
+    const oy = ref<any>(0)
     const buttonType = ref<any>(0)
     const isMousedown = ref<any>(false)
     const isMMousedown = ref<any>(false)
@@ -54,9 +58,13 @@ const useMouseDownToMove:UseMouseDownToMove = (target:any = window, options = {}
         mys,
         isMMousedown,
         isMousemove,
+        ox,
+        oy,
         buttonType
     }
     const mousedown = (ev:any) => {
+        ox.value = ev.layerX
+        oy.value = ev.layerY
         buttonType.value = ev.button
         isMousemove.value = false
         isMMousedown.value = true
@@ -73,6 +81,8 @@ const useMouseDownToMove:UseMouseDownToMove = (target:any = window, options = {}
         options.onMousedown?.(result, ev, options.key as number)
     }
     const mousemove = (ev:any) => {
+        ox.value = ev.layerX
+        oy.value = ev.layerY
         isMousemove.value = true
         if (isMMousedown.value) {
             mx.value = ev.layerX - mxs.value
@@ -85,6 +95,8 @@ const useMouseDownToMove:UseMouseDownToMove = (target:any = window, options = {}
         options.onMousemove?.(result, ev, options.key as number)
     }
     const mouseup = (ev:any) => {
+        ox.value = ev.layerX
+        oy.value = ev.layerY
         isMMousedown.value = false
         isMousedown.value = false
         isMousemove.value = false
