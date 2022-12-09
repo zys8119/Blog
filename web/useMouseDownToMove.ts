@@ -26,7 +26,7 @@ export type UseMouseDownToMove = (target?:TargetType<HTMLElement | Window>, opti
     onMousemove(result:Results, ev:MouseEventType, key:number):void
     onMouseup(result:Results, ev:MouseEventType, key:number):void
     onContextmenu(result:Results, ev:MouseEventType, key:number):void
-    isMousedown(result:Results, ev:MouseEventType, key:number):boolean
+    isMousedown(result:Results, ev:MouseEventType, key:number):boolean | void | undefined
     key:number
 }>, isInit?:boolean)=> Results;
 
