@@ -75,12 +75,12 @@ const useMouseDownToMove:UseMouseDownToMove = (target:any = window, options = {}
         const bool = options.isMousedown?.(result, ev, options.key as number)
         isMousedown.value = typeof bool === 'boolean' ? bool : true
         if (isMousedown.value) {
-            xs.value = ev.offsetX
-            ys.value = ev.offsetY
+            xs.value = ev.layerX
+            ys.value = ev.layerY
         }
         if (isMMousedown.value) {
-            mxs.value = ev.offsetX
-            mys.value = ev.offsetY
+            mxs.value = ev.layerX
+            mys.value = ev.layerY
         }
         if (isMousedown.value || isMMousedown.value) {
             oxs.value = ev.pageX
@@ -91,12 +91,12 @@ const useMouseDownToMove:UseMouseDownToMove = (target:any = window, options = {}
     const mousemove = (ev:any) => {
         isMousemove.value = true
         if (isMMousedown.value) {
-            mx.value = ev.offsetX - mxs.value
-            my.value = ev.offsetY - mys.value
+            mx.value = ev.layerX - mxs.value
+            my.value = ev.layerY - mys.value
         }
         if (isMousedown.value) {
-            x.value = ev.offsetX - xs.value
-            y.value = ev.offsetY - ys.value
+            x.value = ev.layerX - xs.value
+            y.value = ev.layerY - ys.value
         }
         if (isMousedown.value || isMMousedown.value) {
             ox.value = ev.pageX - oxs.value
