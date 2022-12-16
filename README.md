@@ -76,6 +76,8 @@ web端
 
 [鼠标拖拽坐标捕获 useMouseDownToMove.ts](web/useMouseDownToMove.ts)
 
+[wp-alert 动态表单实现](web/DynamicFormImplementation.md)
+
 
 
 
