@@ -78,6 +78,8 @@ web端
 
 [wp-alert 动态表单实现](web/DynamicFormImplementation.md)
 
+[基于wujie的vue3微前端组件封装](web/WujieVueRouterView.vue)
+
 
 
 
