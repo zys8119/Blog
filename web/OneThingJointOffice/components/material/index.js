@@ -1,9 +1,0 @@
-module.exports.MaterialRadio = ()=>import("./MaterialRadio");
-module.exports.MaterialCheckbox = ()=>import("./MaterialCheckbox");
-module.exports.MaterialInput = ()=>import("./MaterialInput");
-module.exports.MaterialDatePicker = ()=>import("./MaterialDatePicker");
-module.exports.MaterialSelect = ()=>import("./MaterialSelect");
-module.exports.MaterialFileUpload = ()=>import("./MaterialFileUpload");
-module.exports.MaterialMap = ()=>import("./MaterialMap");
-module.exports.MaterialCascader = ()=>import("./MaterialCascader");
-module.exports.MaterialWangeditor = ()=>import("./MaterialWangeditor");
