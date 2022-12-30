@@ -1,6 +1,12 @@
 <template>
     <div ref="container" class="Home">
-        Home
+        <div class="slides">
+            <section>Horizontal Slide</section>
+            <section>
+                <section>Vertical Slide 1</section>
+                <section>Vertical Slide 2</section>
+            </section>
+        </div>
     </div>
 </template>
 
@@ -8,10 +14,12 @@
 import Reveal from 'reveal.js'
 import Markdown from 'reveal.js/plugin/markdown/markdown.esm.js'
 const container = ref()
-const deck = new Reveal({
-    plugins: [ Markdown ],
+onMounted(() => {
+    const deck = new Reveal(container.value, {
+        plugins: [ Markdown ],
+    })
+    deck.initialize()
 })
-deck.initialize()
 </script>
 
 <style scoped lang="less">
