@@ -17,6 +17,5 @@
   },
   "homepage": "https://github.com/zys8119/Blog#readme",
   "dependencies": {
-    "vite": "^4.0.3"
   }
 }
