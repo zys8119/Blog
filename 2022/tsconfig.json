@@ -3,7 +3,15 @@
         "module": "ESNext",
         "target": "ESNext",
         "sourceMap": false,
-        "moduleResolution": "Node"
+        "moduleResolution": "Node",
+        "allowSyntheticDefaultImports": true,
+        "types": [
+            "vite/client",
+            "@types/node"
+        ],
+        "paths": {
+            "@/*": ["./src/*"],
+        }
     },
     "exclude": [
         "node_modules"
