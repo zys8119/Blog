@@ -1,19 +1,14 @@
 <template>
-    <div ref="container" class="Home reveal">
+    <div ref="container" class="Home reveal" v-if="show">
         <div class="slides">
-            <section data-markdown data-background-color="aquamarine">
+            <section data-markdown data-background-color="#10162c">
                 <textarea data-template>
-                    ## Slide 1
-                    A paragraph with some text and a [link](http://hakim.se).
-                    # asdaswd
-                    > asdasdad
-                    ```
-                    asdasda
-                    ```
+                    # 2023
+                    # 年度工作计划
+
                     ---
-                    ## Slide 2
-                    ---
-                    ## Slide 3asdasdaasdasdasdasdas
+
+                    # dasdas
                   </textarea>
             </section>
         </div>
@@ -25,14 +20,25 @@
 import Reveal from 'reveal.js'
 import Markdown from 'reveal.js/plugin/markdown/markdown.esm.js'
 const container = ref()
-Reveal.on( 'make-it-pop', () => {
-    console.log('✨')
-} )
-onMounted(() => {
-    const deck = new Reveal(container.value, {
-        plugins: [ Markdown ],
+
+const deck = ref<Reveal.Api>()
+const show = ref<boolean>(true)
+const init = ()=>{
+    show.value = false
+    nextTick(()=>{
+        show.value = true
+        setTimeout(()=>{
+            deck.value?.destroy?.()
+            deck.value = new Reveal(container.value, {
+                plugins: [ Markdown ],
+            })
+            deck.value.initialize()
+        }, 500)
     })
-    deck.initialize()
+}
+import.meta.hot.dispose(init)
+onMounted(()=>{
+    init()
 })
 </script>
 
