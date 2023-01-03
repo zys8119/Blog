@@ -1,5 +1,5 @@
 <template>
-    <div ref="container" class="Home reveal" v-if="show">
+    <div v-if="show" ref="container" class="Home reveal">
         <div class="slides">
             <section data-markdown data-background-color="#10162c">
                 <textarea data-template>
@@ -23,11 +23,11 @@ const container = ref()
 
 const deck = ref<Reveal.Api>()
 const show = ref<boolean>(true)
-const init = ()=>{
+const init = () => {
     show.value = false
-    nextTick(()=>{
+    nextTick(() => {
         show.value = true
-        setTimeout(()=>{
+        setTimeout(() => {
             deck.value?.destroy?.()
             deck.value = new Reveal(container.value, {
                 plugins: [ Markdown ],
@@ -37,7 +37,7 @@ const init = ()=>{
     })
 }
 import.meta.hot.dispose(init)
-onMounted(()=>{
+onMounted(() => {
     init()
 })
 </script>
