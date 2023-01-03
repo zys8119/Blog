@@ -2,14 +2,7 @@
     <div v-if="show" ref="container" class="Home reveal">
         <div class="slides">
             <section data-markdown data-background-color="#10162c">
-                <textarea data-template>
-                    # 2023
-                    # 年度工作计划
-
-                    ---
-
-                    # dasdas
-                  </textarea>
+                <textarea data-template v-text="HomeMd"/>
             </section>
         </div>
     </div>
@@ -19,6 +12,7 @@
 // https://revealjs.com/markup/
 import Reveal from 'reveal.js'
 import Markdown from 'reveal.js/plugin/markdown/markdown.esm.js'
+import HomeMd from './Home.md?raw'
 const container = ref()
 
 const deck = ref<Reveal.Api>()
