@@ -20,6 +20,17 @@ export default defineConfig({
                 'pinia'
             ],
             resolvers: [
+                [
+                    (name) => {
+                        if (name.match(/^l_.*/)) {
+                            return {
+                                name:name.replace(/^l_/, ''),
+                                as:name,
+                                from: 'lodash',
+                            }
+                        }
+                    }
+                ]
             ]
         }),
         Components({
