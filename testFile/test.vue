@@ -1,11 +1,11 @@
 <h1 class="header">
-    <img width="50" height="50" src="https://www.gstatic.com/android/keyboard/emojikitchen/20220110/u1f42f/u1f42f_u1f338.png" alt="">
-    <span>个人博客</span>
+<img width="50" height="50" src="https://avatars.githubusercontent.com/u/19203342?v=4" alt="">
+<span>个人博客@张云山</span>
 </h1>
 
 <nav>
-    <div index="0" class="active">菜单1</div>
-    <div index="1">菜单二</div>
+<div index="0" class="active">菜单1</div>
+<div index="1">菜单二</div>
 </nav>
 
 <section data-markdown>
