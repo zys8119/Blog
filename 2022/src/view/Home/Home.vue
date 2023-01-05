@@ -85,6 +85,7 @@ const init = () => {
 if (import.meta.env.DEV) {
     import.meta.hot.dispose(init)
 }
+watch(query, init)
 onMounted(() => {
     init()
     if (query.title) {
