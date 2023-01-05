@@ -37,7 +37,6 @@ const fileUrl = computed(() => typeof query.fileUrl === 'string' ? decodeURIComp
 const isMd = computed(() => /\.md/.test(fileUrl.value as any))
 const isHtml = computed(() => /\.(html|htm)/.test(fileUrl.value as any))
 const html = ref<string>(null)
-console.log(fileUrl.value)
 watchEffect(async() => {
     if (isHtml.value) {
         try {
