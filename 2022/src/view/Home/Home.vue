@@ -35,7 +35,7 @@ const {query} = useRoute()
 const container = ref()
 const fileUrl = computed(() => typeof query.fileUrl === 'string' ? decodeURIComponent(query.fileUrl as string) : null)
 const isMd = computed(() => /\.md/.test(fileUrl.value as any))
-const isHtml = computed(() => /\.(html|htm)/.test(fileUrl.value as any))
+const isHtml = computed(() => /\.(html|htm|vue)/.test(fileUrl.value as any))
 const html = ref<string>(null)
 watchEffect(async() => {
     if (isHtml.value) {
