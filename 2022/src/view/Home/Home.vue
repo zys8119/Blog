@@ -10,7 +10,7 @@
         >
             <div v-if="isHtml && html" class="slides" v-bind="query" v-html="html"/>
             <div v-else class="slides">
-                <section v-if="isMd" :data-markdown="$route.query.fileUrl" data-background-color="#10162c" v-bind="query">
+                <section v-if="isMd" :data-markdown="fileUrl" data-background-color="#10162c" v-bind="query">
                     <textarea data-template v-text="defaultMd"/>
                 </section>
                 <section v-else data-markdown data-background-color="#10162c" v-bind="query">
@@ -33,9 +33,11 @@ import zoom from 'reveal.js/plugin/zoom/zoom.esm.js'
 import defaultMd from './default.md?raw'
 const {query} = useRoute()
 const container = ref()
-const isMd = computed(() => /\.md$/.test(query.fileUrl as any))
-const isHtml = computed(() => /\.(html|htm)$/.test(query.fileUrl as any))
+const fileUrl = computed(() => typeof query.fileUrl === 'string' ? decodeURIComponent(query.fileUrl as string) : null)
+const isMd = computed(() => /\.md/.test(fileUrl.value as any))
+const isHtml = computed(() => /\.(html|htm)/.test(fileUrl.value as any))
 const html = ref<string>(null)
+console.log(fileUrl.value)
 watchEffect(async() => {
     if (isHtml.value) {
         try {
@@ -64,11 +66,11 @@ const init = () => {
                         let config:any = {}
                         try {
                             // 尝试json
-                            config = await (await fetch(query.configApiUrl as string)).json()
+                            config = await (await fetch(decodeURIComponent(query.configApiUrl as string))).json()
                         } catch (e) {
                             try {
                                 // 尝试脚本
-                                config = eval(await (await fetch(query.configApiUrl as string)).text())
+                                config = eval(await (await fetch(decodeURIComponent(query.configApiUrl as string))).text())
                             } catch (e) {
                                 // err
                             }
