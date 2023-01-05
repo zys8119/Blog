@@ -1,8 +1,18 @@
 <template>
-    <div v-if="show" ref="container" class="Home reveal">
+    <div
+        v-if="show"
+        ref="container"
+        class="Home reveal"
+        :class="{
+            'markdown-body':query.githubCss !== 'false'
+        }"
+    >
         <div class="slides">
-            <section data-markdown data-background-color="#10162c">
-                <textarea data-template v-text="HomeMd"/>
+            <section v-if="typeof $route.query.fileUrl === 'string'" :data-markdown="$route.query.fileUrl" data-background-color="#10162c">
+                <textarea data-template v-text="defaultMd"/>
+            </section>
+            <section v-else data-markdown data-background-color="#10162c">
+                <textarea data-template v-text="defaultMd"/>
             </section>
         </div>
     </div>
@@ -12,7 +22,9 @@
 // https://revealjs.com/markup/
 import Reveal from 'reveal.js'
 import Markdown from 'reveal.js/plugin/markdown/markdown.esm.js'
-import HomeMd from './Home.md?raw'
+import highlight from 'reveal.js/plugin/highlight/highlight.esm.js'
+import defaultMd from './default.md?raw'
+import {useRoute} from 'vue-router'
 const container = ref()
 
 const deck = ref<Reveal.Api>()
@@ -24,15 +36,21 @@ const init = () => {
         setTimeout(() => {
             deck.value?.destroy?.()
             deck.value = new Reveal(container.value, {
-                plugins: [ Markdown ],
+                plugins: [ Markdown, highlight ],
             })
             deck.value.initialize()
         }, 500)
     })
 }
-import.meta.hot.dispose(init)
+if (import.meta.env.DEV) {
+    import.meta.hot.dispose(init)
+}
+const {query} = useRoute()
 onMounted(() => {
     init()
+    if (query.title) {
+        document.title = query.title as string
+    }
 })
 </script>
 

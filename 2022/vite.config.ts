@@ -4,6 +4,7 @@ import path from 'path'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
 export default defineConfig({
+    base:'',
     plugins:[
         vue(),
         AutoImport({

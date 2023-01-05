@@ -4,11 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "vite --host"
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --port 5000",
+    "optimize": "vite optimize --force"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "github-markdown-css": "^5.1.0",
     "less": "^4.1.3",
     "pinia": "^2.0.28",
     "reveal.js": "^4.4.0",
