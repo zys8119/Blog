@@ -1,31 +1,94 @@
 # 演示模版
 
-<div class="fragment fade-in-then-out">代码演示asdas</div>
+<pre class="fragment fade-in-then-out"><code data-trim data-noescape>
+(def lazy-fib
+  (concat
+   [0 1]
+   ((fn rfib [a b]
+        (lazy-cons (+ a b) (rfib b (+ a b)))) 0 1)))
+  </code></pre>
 
-<div class="fragment fade-in-then-out">代码演示asdas</div>
 
-<div class="fragment fade-in-then-out">代码演示asdas</div>
+``asdsa``
 
----
+```
+asdas
+```
 
-```typescript
+```vue
+<template>
+    <div
+        v-if="show"
+        ref="container"
+        class="Home reveal"
+        :class="{
+            'markdown-body':query.githubCss !== 'false'
+        }"
+    >
+        <div class="slides">
+            <section v-if="typeof $route.query.fileUrl === 'string'" :data-markdown="$route.query.fileUrl" data-background-color="#10162c">
+                <textarea data-template v-text="defaultMd"/>
+            </section>
+            <section v-else data-markdown data-background-color="#10162c">
+                <textarea data-template v-text="defaultMd"/>
+            </section>
+        </div>
+    </div>
+</template>
 
-interface AA<T> {
-    [key: string]: any
-    a?: string,
-    b: T
+<script setup lang="ts">
+// https://revealjs.com/markup/
+import Reveal from 'reveal.js'
+import Markdown from 'reveal.js/plugin/markdown/markdown.esm.js'
+import highlight from 'reveal.js/plugin/highlight/highlight.esm.js'
+import defaultMd from './default.md?raw'
+import {useRoute} from 'vue-router'
+const container = ref()
+
+const deck = ref<Reveal.Api>()
+const show = ref<boolean>(true)
+const init = () => {
+    show.value = false
+    nextTick(() => {
+        show.value = true
+        setTimeout(() => {
+            deck.value?.destroy?.()
+            deck.value = new Reveal(container.value, {
+                plugins: [ Markdown, highlight ],
+            })
+            deck.value.initialize()
+        }, 500)
+    })
 }
-
-const a: AA<string> = {
-    a: "asdasda",
-    b: "asdasda",
-    c: true,
-    d: false,
-    e: 1111,
-    f:[1,2,3]
+if (import.meta.env.DEV) {
+    import.meta.hot.dispose(init)
 }
+const {query} = useRoute()
+onMounted(() => {
+    init()
+    if (query.title) {
+        document.title = query.title as string
+    }
+})
+</script>
+
+<style scoped lang="less">
+.Home {
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    :deep(.reveal){
+        .make-it-pop {
+            filter: drop-shadow(0 0 10px purple);
+        }
+    }
+}
+</style>
+
 ```
 
 ---
 
-<a href="https://revealjs.com/markup/" target="_blank">演示文档</a>
+asdasda

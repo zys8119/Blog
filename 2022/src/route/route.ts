@@ -5,15 +5,14 @@ const routes = createRouter({
         {
             path:'/',
             component:() => import('@/view/Home/Home.vue'),
-            meta:{
-                title:'asdas'
-            }
         }
     ]
 })
 
 routes.beforeEach((to, from, next) => {
-    document.title = to.meta?.title || '演示模版'
+    if (to.meta?.title) {
+        document.title = to.meta?.title
+    }
     next()
 })
 export default routes

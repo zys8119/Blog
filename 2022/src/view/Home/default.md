@@ -2,11 +2,11 @@
 
 ## 页面query参数说明
 
-| 参数      | 类型       | 数名                |
-|---------|----------|-------------------|
-| fileUrl | `string` | Markdown远程文件地址    |
-| title   | `string` | 当前页面标题            |
-| githubCss   | `Boolean`    | 是否开启github样式，默认开启 |
+| 参数      | 类型       | 数名               |
+|---------|----------|------------------|
+| fileUrl | `string` | Markdown远程文件地址   |
+| title   | `string` | 当前页面标题           |
+| githubCss   | `Boolean`    | 是否开启github样式 |
 
 ## 演示文档
 

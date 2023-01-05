@@ -4,11 +4,11 @@
         ref="container"
         class="Home reveal"
         :class="{
-            'markdown-body':query.githubCss !== 'false'
+            'markdown-body':query.githubCss === 'true'
         }"
     >
         <div class="slides">
-            <section v-if="typeof $route.query.fileUrl === 'string'" :data-markdown="$route.query.fileUrl" data-background-color="#10162c">
+            <section v-if="isMd" :data-markdown="$route.query.fileUrl" data-background-color="#10162c">
                 <textarea data-template v-text="defaultMd"/>
             </section>
             <section v-else data-markdown data-background-color="#10162c">
@@ -24,8 +24,11 @@ import Reveal from 'reveal.js'
 import Markdown from 'reveal.js/plugin/markdown/markdown.esm.js'
 import highlight from 'reveal.js/plugin/highlight/highlight.esm.js'
 import defaultMd from './default.md?raw'
-import {useRoute} from 'vue-router'
+const {query} = useRoute()
 const container = ref()
+const isMd = computed(() => {
+    return /\.md$/.test(query.fileUrl as any)
+})
 
 const deck = ref<Reveal.Api>()
 const show = ref<boolean>(true)
@@ -45,7 +48,6 @@ const init = () => {
 if (import.meta.env.DEV) {
     import.meta.hot.dispose(init)
 }
-const {query} = useRoute()
 onMounted(() => {
     init()
     if (query.title) {
@@ -61,7 +63,7 @@ onMounted(() => {
     top: 0;
     width: 100%;
     height: 100%;
-    :deep(.reveal){
+    &.reveal{
         .make-it-pop {
             filter: drop-shadow(0 0 10px purple);
         }
