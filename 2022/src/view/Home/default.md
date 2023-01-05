@@ -24,7 +24,6 @@ declare global {
 }
 ```
 
-## 演示文档
 
-<a href="https://revealjs.com/markup/" target="_blank">演示文档</a>
+<a href="https://revealjs.com/markup/" target="_blank">查看演示文档</a>
 
