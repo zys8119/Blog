@@ -31,7 +31,10 @@ import notes from 'reveal.js/plugin/notes/notes.esm.js'
 import math from 'reveal.js/plugin/math/math.esm.js'
 import zoom from 'reveal.js/plugin/zoom/zoom.esm.js'
 import defaultMd from './default.md?raw'
-const {query} = useRoute()
+const route = useRoute()
+const router = useRouter()
+const queryLocal = ref({})
+const query:any = computed(() => l_merge({}, route.query, queryLocal.value))
 const container = ref()
 const fileUrl = computed(() => typeof query.fileUrl === 'string' ? decodeURIComponent(query.fileUrl as string) : null)
 const isMd = computed(() => /\.md/.test(fileUrl.value as any))
@@ -86,12 +89,27 @@ const init = () => {
 if (import.meta.env.DEV) {
     import.meta.hot.dispose(init)
 }
-watch(query, init)
+watch(computed(() => query), init)
 onMounted(() => {
     init()
     if (query.title) {
         document.title = query.title as string
     }
+})
+defineExpose({
+    init,
+    route,
+    router,
+    deck,
+    fileUrl,
+    defaultMd,
+    isMd,
+    isHtml,
+    html,
+    container,
+    queryLocal,
+    Reveal,
+    show
 })
 </script>
 
