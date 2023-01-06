@@ -31,19 +31,20 @@ import notes from 'reveal.js/plugin/notes/notes.esm.js'
 import math from 'reveal.js/plugin/math/math.esm.js'
 import zoom from 'reveal.js/plugin/zoom/zoom.esm.js'
 import defaultMd from './default.md?raw'
+const vm = getCurrentInstance()
 const route = useRoute()
 const router = useRouter()
 const queryLocal = ref({})
 const query:any = computed(() => l_merge({}, route.query, queryLocal.value))
 const container = ref()
-const fileUrl = computed(() => typeof query.fileUrl === 'string' ? decodeURIComponent(query.fileUrl as string) : null)
+const fileUrl = computed(() => typeof query.value.fileUrl === 'string' ? decodeURIComponent(query.value.fileUrl as string) : null)
 const isMd = computed(() => /\.md/.test(fileUrl.value as any))
 const isHtml = computed(() => /\.(html|htm|vue)/.test(fileUrl.value as any))
 const html = ref<string>(null)
 watchEffect(async() => {
     if (isHtml.value) {
         try {
-            html.value = await (await fetch(query.fileUrl as string)).text()
+            html.value = await (await fetch(query.value.fileUrl as string)).text()
         } catch (e) {
             console.error(e)
         }
@@ -63,18 +64,19 @@ const init = () => {
             })
             deck.value.initialize(l_merge({} as Options, window.revealJsConfig))
             ;(async() => {
-                if (query.configApiUrl) {
+                if (query.value.configApiUrl) {
                     try {
                         let config:any = {}
                         try {
                             // 尝试json
-                            config = await (await fetch(decodeURIComponent(query.configApiUrl as string))).json()
+                            config = await (await fetch(decodeURIComponent(query.value.configApiUrl as string))).json()
                         } catch (e) {
                             try {
                                 // 尝试脚本
-                                config = eval(await (await fetch(decodeURIComponent(query.configApiUrl as string))).text())
+                                config = eval(await (await fetch(decodeURIComponent(query.value.configApiUrl as string))).text())
                             } catch (e) {
                                 // err
+                                console.error(e)
                             }
                         }
                         deck.value.configure(l_merge({}, config))
@@ -89,11 +91,11 @@ const init = () => {
 if (import.meta.env.DEV) {
     import.meta.hot.dispose(init)
 }
-watch(computed(() => query), init)
+watch(computed(() => query.value), init)
 onMounted(() => {
     init()
-    if (query.title) {
-        document.title = query.title as string
+    if (query.value.title) {
+        document.title = query.value.title as string
     }
 })
 defineExpose({
@@ -109,7 +111,8 @@ defineExpose({
     container,
     queryLocal,
     Reveal,
-    show
+    show,
+    vm
 })
 </script>
 
