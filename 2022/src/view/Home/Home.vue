@@ -35,7 +35,7 @@ const defaultMd = ref(defaultMdText)
 const vm = getCurrentInstance()
 const route = useRoute()
 const router = useRouter()
-const queryLocal = ref({})
+const queryLocal = ref<any>({})
 const query:any = computed(() => l_merge({}, route.query, queryLocal.value))
 const container = ref()
 const fileUrl = computed(() => typeof query.value.fileUrl === 'string' ? decodeURIComponent(query.value.fileUrl as string) : null)
@@ -78,6 +78,15 @@ const init = () => {
                             try {
                                 // 尝试脚本
                                 config = eval(await (await fetch(decodeURIComponent(query.value.configApiUrl as string))).text())
+                            } catch (e) {
+                                // err
+                                console.error(e)
+                            }
+                            try {
+                                // 尝试本地脚本
+                                if (typeof queryLocal.value.execFun === 'string') {
+                                    eval(queryLocal.value.execFun)
+                                }
                             } catch (e) {
                                 // err
                                 console.error(e)
