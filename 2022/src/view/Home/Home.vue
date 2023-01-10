@@ -31,7 +31,8 @@ import notes from 'reveal.js/plugin/notes/notes.esm.js'
 import math from 'reveal.js/plugin/math/math.esm.js'
 import zoom from 'reveal.js/plugin/zoom/zoom.esm.js'
 import defaultMdText from './default.md?raw'
-const defaultMd = ref(defaultMdText)
+const mdLocal = ref<string>(null)
+const defaultMd = computed(() => mdLocal.value || mdLocal.value)
 const vm = getCurrentInstance()
 const route = useRoute()
 const router = useRouter()
@@ -117,7 +118,9 @@ defineExpose({
     router,
     deck,
     fileUrl,
+    defaultMdText,
     defaultMd,
+    mdLocal,
     isMd,
     isHtml,
     html,
