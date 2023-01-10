@@ -32,7 +32,7 @@ import math from 'reveal.js/plugin/math/math.esm.js'
 import zoom from 'reveal.js/plugin/zoom/zoom.esm.js'
 import defaultMdText from './default.md?raw'
 const mdLocal = ref<string>(null)
-const defaultMd = computed(() => mdLocal.value || mdLocal.value)
+const defaultMd = computed(() => mdLocal.value || defaultMdText)
 const vm = getCurrentInstance()
 const route = useRoute()
 const router = useRouter()
