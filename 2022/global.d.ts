@@ -9,5 +9,6 @@ declare module 'vue-router' {
 declare global {
     interface Window {
         revealJsConfig:Options
+        _THIS_PPT_VM_:any
     }
 }

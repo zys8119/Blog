@@ -30,7 +30,8 @@ import search from 'reveal.js/plugin/search/search.esm.js'
 import notes from 'reveal.js/plugin/notes/notes.esm.js'
 import math from 'reveal.js/plugin/math/math.esm.js'
 import zoom from 'reveal.js/plugin/zoom/zoom.esm.js'
-import defaultMd from './default.md?raw'
+import defaultMdText from './default.md?raw'
+const defaultMd = ref(defaultMdText)
 const vm = getCurrentInstance()
 const route = useRoute()
 const router = useRouter()
@@ -54,6 +55,9 @@ watchEffect(async() => {
 const deck = ref<Reveal.Api>()
 const show = ref<boolean>(true)
 const init = () => {
+    if (query.value.title) {
+        document.title = query.value.title as string
+    }
     show.value = false
     nextTick(() => {
         show.value = true
@@ -91,12 +95,12 @@ const init = () => {
 if (import.meta.env.DEV) {
     import.meta.hot.dispose(init)
 }
-watch(computed(() => query.value), init)
+watch([query, defaultMd], init, {
+    deep:true,
+})
 onMounted(() => {
     init()
-    if (query.value.title) {
-        document.title = query.value.title as string
-    }
+    window._THIS_PPT_VM_ = vm
 })
 defineExpose({
     init,
