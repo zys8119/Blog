@@ -92,7 +92,8 @@ export default [
                         wujie:{
                             title:'无界ppt在线编辑',
                             appName:'无界ppt在线编辑',
-                            host:'http://system-monitoring.zhijiasoft.com:40013/ppt/#/',
+                            //todo 填写您的演示文档地址
+                            host:'页面地址',
                             execFun() {
                                 (function _THIS_PPT_VM_INIT_() {
                                     if (window._THIS_PPT_VM_) {
