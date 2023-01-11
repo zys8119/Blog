@@ -92,13 +92,9 @@ export default [
                         wujie:{
                             title:'无界ppt在线编辑',
                             appName:'无界ppt在线编辑',
-                            //todo 填写您的演示文档地址
-                            host:'页面地址',
+                            host:'http://system-monitoring.zhijiasoft.com:40013/ppt/#/',
                             execFun() {
-                                const css = document.createElement('style')
-                                css.innerHTML = '.Home{position: absolute;}'
-                                window.document.body.appendChild(css)
-                                ;(function _THIS_PPT_VM_INIT_() {
+                                (function _THIS_PPT_VM_INIT_() {
                                     if (window._THIS_PPT_VM_) {
                                         window.$wujie.bus.$on('ppt', function(mdLocal:string) {
                                             const vm = window._THIS_PPT_VM_
@@ -110,36 +106,35 @@ export default [
                                                 console.error(e)
                                             }
                                             try {
-                                                Promise.all((mdLocal.match(/<style.*lang.*less(.|\n)*?style>/img) || ['']).map((styleLess:any) => {
+                                                Promise.all((mdLocal.match(/<style.*lang.*less(.|\n)*?style>/img) || ['']).map(function(styleLess:any) {
                                                     const arr = styleLess.split('\n')
                                                     const body = arr.slice(1, arr.length - 1).join('\n')
-                                                    return new Promise((resolve) => {
-                                                        window.less.render(body).then(res => {
-                                                            resolve({
-                                                                ...res,
+                                                    return new Promise(function(resolve) {
+                                                        window.less.render(body).then(function(res) {
+                                                            resolve(Object.assign(res, {
                                                                 body,
                                                                 styleLess,
                                                                 css:res.css.replace(/;/img, ' !important;')
-                                                            })
-                                                        }).catch(e => {
+                                                            }))
+                                                        }).catch(function(e) {
                                                             console.error(e)
                                                         })
                                                     })
-                                                })).then(res => {
-                                                    res.forEach((it:any) => {
+                                                })).then(function(res) {
+                                                    res.forEach(function(it:any) {
                                                         mdLocal = mdLocal.replace(it.body, it.css)
                                                     })
-                                                    Promise.all((mdLocal.match(/<script(.|\n)*?script>/img) || ['']).map((js:any) => {
+                                                    Promise.all((mdLocal.match(/<script(.|\n)*?script>/img) || ['']).map(function(js:any) {
                                                         const arr = js.split('\n')
                                                         const body = arr.slice(1, arr.length - 1).join('\n')
-                                                        return new Promise(resolve => {
+                                                        return new Promise(function(resolve) {
                                                             resolve({
                                                                 js,
                                                                 body,
                                                             })
                                                         })
-                                                    })).then(res => {
-                                                        res.forEach((it:any) => {
+                                                    })).then(function(res) {
+                                                        res.forEach(function(it:any) {
                                                             mdLocal = mdLocal.replace(it.js, '')
                                                             try {
                                                                 eval(it.body)
