@@ -17,7 +17,7 @@ vue页面代码
 ```vue
 <template>
     <div class="PPT">
-        <wp-layout-split auto-scroll drag-line :span="[0.2]" lineMsg="可拖拽">
+        <wp-layout-split auto-scroll drag-line :span="[0.35]" lineMsg="可拖拽">
             <template #left>
                 <mavon-editor v-model="value" class="mavon-editor" v-bind="config"/>
             </template>
