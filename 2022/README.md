@@ -137,14 +137,18 @@ export default [
                                                     })).then(function(res) {
                                                         res.forEach(function(it:any) {
                                                             mdLocal = mdLocal.replace(it.js, '')
-                                                            try {
-                                                                eval(it.body)
-                                                            } catch (e) {
-                                                                console.error( e)
-                                                            }
                                                         })
                                                         vm.exposed.mdLocal.value = mdLocal
                                                         vm.exposed.init()
+                                                        setTimeout(function() {
+                                                            res.forEach(function(it:any) {
+                                                                try {
+                                                                    eval(it.body)
+                                                                } catch (e) {
+                                                                    console.error( e)
+                                                                }
+                                                            })
+                                                        }, 700)
                                                     })
                                                 })
                                             } catch (e) {
