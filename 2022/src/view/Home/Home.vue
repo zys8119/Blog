@@ -31,8 +31,9 @@ import notes from 'reveal.js/plugin/notes/notes.esm.js'
 import math from 'reveal.js/plugin/math/math.esm.js'
 import zoom from 'reveal.js/plugin/zoom/zoom.esm.js'
 import defaultMdText from './default.md?raw'
+import xiaozhuMdText from './xiaozhu.md?raw'
 const mdLocal = ref<string>(null)
-const defaultMd = computed(() => mdLocal.value || defaultMdText)
+const defaultMd = computed(() => mdLocal.value || xiaozhuMdText || defaultMdText)
 const vm = getCurrentInstance()
 const route = useRoute()
 const router = useRouter()
