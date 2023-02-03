@@ -110,6 +110,8 @@ other
 
 [发布release.cmd](./other/发布release.cmd)
 
+[gitLab Release 自动化推送](./serve/push-release/README.md)
+
 [git 提交规范校验](./other/HooksCommitMsg.js)
 
 ## 备忘
