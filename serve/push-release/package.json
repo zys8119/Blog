@@ -1,5 +1,5 @@
 {
-  "name": "build",
+  "name": "push-release",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
