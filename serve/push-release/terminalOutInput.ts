@@ -70,3 +70,18 @@ export default class TerminalOutInput {
         this.rl.close()
     }
 }
+
+/**
+ * 多行交互
+ * @param config
+ * @param result
+ * @param isOutHelp
+ */
+export const multiLineTerminal = async(config:Config, result:string = '', isOutHelp = true) => {
+    const reg = /(;|；)$/
+    result += `${isOutHelp ? '' : '\n\n'}` + await new TerminalOutInput(merge(config, {isOutHelp})).init()
+    if (!reg.test(result)) {
+        result = `${await multiLineTerminal(config, result, false)}`
+    }
+    return result.replace(reg, '')
+}

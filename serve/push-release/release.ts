@@ -6,7 +6,7 @@ import {execSync} from 'child_process'
 import {template, merge} from 'lodash'
 import BuildServe from 'ts-node-build'
 import config, {ProjectName} from './config'
-import terminalOuInput, {Config} from './terminalOutInput'
+import terminalOuInput, {Config, multiLineTerminal as descriptionInit} from './terminalOutInput'
 const ncol = require('ncol')
 ;(async() => {
     const gitUserName = execSync('git config --global user.name').toString()
@@ -63,14 +63,6 @@ const ncol = require('ncol')
                 }
             ]
         }).compile()
-        const descriptionInit = async(config:Config, result:string = '', isOutHelp = true) => {
-            const reg = /(;|；)$/
-            result += `${isOutHelp ? '' : '\n\n'}` + await new terminalOuInput(merge(config, {isOutHelp})).init()
-            if (!reg.test(result)) {
-                result = `${await descriptionInit(config, result, false)}`
-            }
-            return result.replace(reg, '')
-        }
         const description = [
             '#### 发布信息:',
             `**发布人员**：${gitUserConfig.username}`,
@@ -82,8 +74,8 @@ const ncol = require('ncol')
             message:`${[
                 '请输入Releases发布描述, 支持Markdown 语法,最后以分号(;)结束输入',
                 '例如：',
-                '- 修复了序号为300的bug;',
-                '- 优化了新增逻辑;',
+                '- 修复了xxxBug;',
+                '- 优化了xxx功能;',
             ].map(e => `  ${e.trim()}`).join('\n')}`,
             error:'输入有误！不选择该选项',
         }) + '\n<hr/>'
