@@ -102,6 +102,8 @@ web端
 
 [依赖包查找](serve/DependentPackageLookup.ts)
 
+[Chat Gpt AI](serve/ChatGpt.md)
+
 
 
 ## 其他
