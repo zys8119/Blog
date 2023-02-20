@@ -55,7 +55,7 @@ export default createCompletion
 import createCompletion from "./createCompletion";
 
 await createCompletion({
-    query:'农历怎么计算',
+    query:'你要咨询的问题',
     callback(data: CreateCompletionResponse) {
         console.log(data.choices[0].text)
     },
