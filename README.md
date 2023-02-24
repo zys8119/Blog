@@ -104,6 +104,8 @@ web端
 
 [Chat Gpt AI](serve/ChatGpt.md)
 
+[获取git指定Head节点文件详情](serve/getHeadFileInfoList.md)
+
 
 
 ## 其他
