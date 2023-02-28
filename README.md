@@ -82,6 +82,8 @@ web端
 
 [表情获取](web/Emoji/index.md)
 
+[vue3+vite 动态路由](web/vue/route.md)
+
 
 
 
