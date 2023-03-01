@@ -33,7 +33,6 @@ for(const [key, component] of Object.entries(files)){
         })
     }
 }
-
 const pathToTree = (input, reg) => {
     const currInput = input.map(e=>e.replace(/^\.\/views\//,''))
     const output = [];
@@ -73,7 +72,7 @@ const pathToTree = (input, reg) => {
                     filePath:path,
                     path:chain[j].toLowerCase(),
                     component:directory ? layoutComponent : files[path],
-                    meta:Object.assign(metaMaps[key] || {},(pages[pageJsonPath] || {})[`${chain[j]}.${suffix}`] || {})
+                    meta:Object.assign(metaMaps[path] || {},(pages[pageJsonPath] || {})[`${chain[j]}.${suffix}`] || {})
                 };
                 currentNode[k] = newNode
                 currentNode = newNode.children;
@@ -94,6 +93,7 @@ export default createRouter({
     history:createWebHashHistory(),
     routes
 })
+
 
 ```
 
