@@ -20,7 +20,7 @@ for(const [key, component] of Object.entries(files)){
         routes.push({
             component,
             name,
-            path,
+            path:path.toLowerCase(),
             key,
             fileName,
             layout,
@@ -67,7 +67,7 @@ const pathToTree = (input, reg) => {
                     directory,
                     suffix:directory ? null : suffix,
                     filePath:path,
-                    path:chain[j],
+                    path:chain[j].toLowerCase(),
                     component:directory ? layoutComponent : files[path],
                     meta:(pages[pageJsonPath] || {})[`${chain[j]}.${suffix}`] || {}
                 };
@@ -86,7 +86,6 @@ const pathToTree = (input, reg) => {
 
 // 嵌套路由
 routes = routes.filter(e=>!e.layout).concat(pathToTree(routes.filter(e=>e.layout).map(e=>e.key),/\.(vue|tsx|jsx)$/))
-console.log(routes)
 export default createRouter({
     history:createWebHashHistory(),
     routes
