@@ -1,10 +1,13 @@
 # vue3+vite 动态路由
 
+router.ts
+
 ```typescript
 import {createRouter, createWebHashHistory, RouterView} from "vue-router"
 let files = import.meta.glob("./views/**/*.{vue,jsx,tsx}", {})
 const pages = import.meta.glob("./views/**/page.json", {eager:true, import:'default'})
 const filesKeys = Object.keys(files)
+const metaMaps = ROUTES_META
 let routes:any = []
 // 平铺路由
 for(const [key, component] of Object.entries(files)){
@@ -17,6 +20,7 @@ for(const [key, component] of Object.entries(files)){
     const layout = filesKeys.find(e=>layoutRegs.some(ee=>ee.test(e)))
     // 过滤Alert
     if(!/\/alert\//.test(key)){
+        console.log()
         routes.push({
             component,
             name,
@@ -25,7 +29,7 @@ for(const [key, component] of Object.entries(files)){
             fileName,
             layout,
             directory,
-            meta:(pages[pageJson] || {})[fileName] || {}
+            meta:Object.assign(metaMaps[key] || {}, (pages[pageJson] || {})[fileName] || {})
         })
     }
 }
@@ -69,7 +73,7 @@ const pathToTree = (input, reg) => {
                     filePath:path,
                     path:chain[j].toLowerCase(),
                     component:directory ? layoutComponent : files[path],
-                    meta:(pages[pageJsonPath] || {})[`${chain[j]}.${suffix}`] || {}
+                    meta:Object.assign(metaMaps[key] || {},(pages[pageJsonPath] || {})[`${chain[j]}.${suffix}`] || {})
                 };
                 currentNode[k] = newNode
                 currentNode = newNode.children;
@@ -89,5 +93,49 @@ routes = routes.filter(e=>!e.layout).concat(pathToTree(routes.filter(e=>e.layout
 export default createRouter({
     history:createWebHashHistory(),
     routes
+})
+
+```
+
+vite.config.ts 
+
+```typescript
+import {readFileSync} from 'fs'
+import * as sfc from 'vue/compiler-sfc'
+import glob from 'fast-glob'
+const ROUTES_META = function ():Plugin{
+    let routeModuleId = null
+    return {
+        name:"ROUTES_META",
+        enforce:'pre',
+        load(id){
+            if(/route\.ts$/.test(id)){
+                routeModuleId = id
+                const map = glob.sync("**/*.vue", {absolute:true}).reduce((res, id)=>{
+                    const code = readFileSync(id, 'utf-8')
+                    const descriptor = sfc.parse(`${code.match(/<script([^>])*>/)?.[0] || '<script>'}console.log(1)<script/>`).descriptor
+                    return {
+                        ...res,
+                        [id.replace(process.cwd(),'.')]:descriptor?.scriptSetup?.attrs
+                    }
+                },{})
+                return readFileSync(id, 'utf-8').replace('ROUTES_META', JSON.stringify(map))
+            }
+        },
+        handleHotUpdate(cxt){
+            cxt.server.reloadModule(cxt.server.moduleGraph.getModuleById(routeModuleId))
+        }
+    }
+}
+
+declare global{
+    const ROUTES_META:Record<string, any>
+}
+
+
+export default defineConfig({
+    plugins:[
+        ROUTES_META()
+    ]
 })
 ```
