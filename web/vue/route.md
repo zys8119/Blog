@@ -1,6 +1,6 @@
 # vue3+vite 动态路由
 
-router.ts
+根目录 router.ts
 
 ```typescript
 import {createRouter, createWebHashHistory, RouterView} from "vue-router"
@@ -97,7 +97,7 @@ export default createRouter({
 
 ```
 
-vite.config.ts 
+根目录vite.config.ts 
 
 ```typescript
 import {readFileSync} from 'fs'
