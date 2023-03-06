@@ -139,3 +139,39 @@ export default defineConfig({
     ]
 })
 ```
+
+
+
+## 核心代码
+
+```typescript
+import {RouteRecordRaw, RouterView} from "vue-router"
+const files = import.meta.glob('./views/**/*.vue')
+const keys = Object.keys(files)
+const routes = []
+for(const u of keys){
+    const urls = u.replace(/^\/|(\.+\/)+views\/|\.\D+$/g,'').split('/')
+    let currDir = routes
+    for (const [k,name] of Object.entries(urls)){
+        const index = Number(k)
+        const currNames = urls.slice(0, index+1).join("-")
+        let child = currDir.find(e=>e.name === currNames)
+        const isDir = index+1 !== urls.length
+        const layoutPath = `./views/${urls.slice(0, index+1).join('/')}/layout.vue`
+        if(!child){
+            child = {
+                isDir,
+                path:name,
+                name:currNames,
+                children:[],
+                currNames,
+                layoutPath,
+                component:isDir ? files[layoutPath] || RouterView : files[u]
+            } as RouteRecordRaw
+            currDir.push(child)
+        }
+        currDir = child.children
+    }
+}
+console.log(routes)
+```
