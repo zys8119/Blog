@@ -104,6 +104,8 @@ web端
 
 [uf-node + vpn + giaoyun 订阅获取](serve/node/IndexController.ts)
 
+[node-serve 订阅获取](serve/node/SubscriptionQcquisition.md)
+
 [依赖包查找](serve/DependentPackageLookup.ts)
 
 [Chat Gpt AI](serve/ChatGpt.md)
