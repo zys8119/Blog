@@ -6,7 +6,7 @@
 {
     path:"/clashNode",
         controller:async function (){
-        let d = dayjs().add(6,'day')
+        let d = dayjs()
         let index = 0
         const max = Number(this.$query.get('max') || 10)
         console.log("【clashNode】最大重试次数", max)
