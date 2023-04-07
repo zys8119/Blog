@@ -65,6 +65,22 @@ await createCompletion({
 })
 ```
 
+# chatGpt api接口
+```
+POST https://api.openai.com/v1/chat/completions
+Accept: application/json
+Content-Type: application/json
+Authorization: Bearer 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
+
+{
+    "model": "gpt-3.5-turbo",
+    "messages": [{
+        "role": "user",
+        "content": "Hello!"
+    }]
+  }
+```
+
 ## 相关资料
 
 [chat 在线演示](https://chat.openai.com/chat) 需要翻墙，最好是美国节点
