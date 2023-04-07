@@ -70,7 +70,7 @@ await createCompletion({
 POST https://api.openai.com/v1/chat/completions
 Accept: application/json
 Content-Type: application/json
-Authorization: Bearer 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
+Authorization: Bearer $OPENAI_API_KEY
 
 {
     "model": "gpt-3.5-turbo",
