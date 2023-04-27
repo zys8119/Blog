@@ -86,6 +86,8 @@ web端
 
 [判断鼠标进入方向](web/vue/determineDirectionMouseEntry.md)
 
+[获取事件冒泡路径，兼容ie11,edge,chrome,firefox,safari](web/eventPath.md)
+
 
 
 
