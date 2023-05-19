@@ -82,7 +82,7 @@ Authorization: Bearer $OPENAI_API_KEY
 ```
 
 
-# chatGpt api转发 + [ChatGPT-Desktop](https://github.com/zys8119/ChatGPT-Desktop)
+# chatGpt api转发 + [ChatGPT-Desktop](https://github.com/zys8119/ChatGPT-Desktop) + Clash
 
 ```typescript
 import {createRoute} from "@wisdom-serve/serve"
