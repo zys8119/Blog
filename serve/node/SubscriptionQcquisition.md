@@ -225,3 +225,12 @@ export default createRoute({
     ]
 });
 ```
+
+> 使用ChatGPT有很多限制，比如需要魔法、容易掉线和被封号等等。本期视频可以让你在本地使用ChatGPT，无需API、免魔法，并且摆脱各种限制，不用担心掉线和封号的困扰。这个黑科技将会改变你对ChatGPT的使用方式，让你拥有更好的体验和更高的效率。
+
+Docker应用安装：https://www.docker.com/products/docke...
+获取TOKEN：http://chat.openai.com/api/auth/session
+免费体验地址：https://chat.zhile.io
+
+第一条指令：docker pull pengzhile/pandora
+第二条指令：docker run  -e PANDORA_CLOUD=cloud -e PANDORA_SERVER=0.0.0.0:8899 -p 8899:8899 -d pengzhile/pandora
