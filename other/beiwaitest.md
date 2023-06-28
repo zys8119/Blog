@@ -1,26 +1,41 @@
 # 北外测试
 
+测试题获取
+
 ```javascript
 let els = document.querySelector(".content_right_left_02_newwords").childNodes;
-let result = {};
-let key = ''
+let result = '';
+let isStart = false
+console.clear()
 els.forEach(e=>{
-    switch(Object.prototype.toString.call(e)){
-        case '[object HTMLParagraphElement]':
-            key = e.innerText
-            result[key] = {}
-            break;
-        case '[object HTMLInputElement]':
-            let kk = e.nextSibling.data.trim();
-            if(kk){
-                result[key][kk] = false
-            }else{
-                kk = e.nextSibling.nextSibling.innerText
-                result[key][kk] = true
-            }
-            break;
+    if(e.src){
+        result += "\n----------------------------------------------------------------------\n"
+        isStart = true
+    }
+    if(/[A-Z]、/.test(e.textContent)){
+        isStart = false
+    }
+    if(isStart && e.textContent.trim().length > 0){
+        result += e.textContent.trim()
+    }
+    if(e.className && e.className.indexOf('righted') > -1){
+        result += `%c ${e.textContent} %c`
     }
 })
-result = Object.fromEntries(Object.entries(result).map(e=>{e[1] = (Object.entries(e[1]).find(e=>e[1] === true) || [])[0]; return e}))
-console.log(result)
+console.log(result, ...result.match(/%c/g).map((e, k)=>k % 2 === 0? 'color:#ff0':'color:#bdc5ce'))
 ```
+
+视频题目获取
+
+```javascript
+$0.__vue__.lists.filter(e=>/测试|练习/.test(e.name)).map(e=>({
+    id:e.id,
+    projectUserId: $0.__vue__.$bus.store.userInfo.userId,
+    courseCode: $0.__vue__.$bus.store.courseInfo.courseCodes,
+    courseElementId: e.courseElementId,
+    learnerCourseId: e.learnerCourseId,
+    orgCode: $0.__vue__.$bus.store.userInfo.orgCode,
+    validCode: CryptoJS.MD5([$0.__vue__.$bus.store.userInfo.userId,e.id,'QUIZMD5',$0.__vue__.$bus.store.courseInfo.courseCodes,$0.__vue__.$bus.store.userInfo.orgCode].join('')).toString()
+})).map(e=>`https://quiz.ebeiwai.com/icourse/fore/myselftest/learnerDo/${e.id}?${Object.entries(e).map(e=>e.join('=')).join('&')}`)
+```
+
