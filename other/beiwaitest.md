@@ -28,14 +28,10 @@ console.log(result, ...result.match(/%c/g).map((e, k)=>k % 2 === 0? 'color:#ff0'
 视频题目获取
 
 ```javascript
-$0.__vue__.lists.filter(e=>/测试|练习/.test(e.name)).map(e=>({
-    id:e.id,
-    projectUserId: $0.__vue__.$bus.store.userInfo.userId,
-    courseCode: $0.__vue__.$bus.store.courseInfo.courseCodes,
-    courseElementId: e.courseElementId,
-    learnerCourseId: e.learnerCourseId,
-    orgCode: $0.__vue__.$bus.store.userInfo.orgCode,
-    validCode: CryptoJS.MD5([$0.__vue__.$bus.store.userInfo.userId,e.id,'QUIZMD5',$0.__vue__.$bus.store.courseInfo.courseCodes,$0.__vue__.$bus.store.userInfo.orgCode].join('')).toString()
-})).map(e=>`https://quiz.ebeiwai.com/icourse/fore/myselftest/learnerDo/${e.id}?${Object.entries(e).map(e=>e.join('=')).join('&')}`)
+console.clear()
+console.log(JSON.stringify($$('#Anchor li').map(e=>(el=>({
+    title:el.querySelector('.flex-a-s .question-stem').innerText,
+    "答案":[...el.querySelectorAll('.choice-options .color-47A66F')].map(e=>e.innerText)
+}))($$(`[id="${e.dataset.id}"]`)[0])), null, 4))
 ```
 
