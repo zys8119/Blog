@@ -216,18 +216,21 @@ export default defineConfig({
             /^bg-(lg|rlg|rg|rrg|url)-(.{1,})$/,
             (match) => {
                 return {
-                   "background-image": `${({
-                    lg:'linear-gradient',
-                    rlg:'radial-gradient',
-                    rg:'repeating-linear-gradient',
-                    rrg:'repeating-radial-gradient',
-                    url:'url'
-                })[match[1]]}(${match[2].replace(/--/g,',').replace(/-/g,' ')})`
+                    'background-image': `${
+                        {
+                            lg: 'linear-gradient',
+                            rlg: 'radial-gradient',
+                            rg: 'repeating-linear-gradient',
+                            rrg: 'repeating-radial-gradient',
+                            url: 'url',
+                        }[match[1]]
+                    }(${match[2].replace(/--/g, ' , ').replace(/-/g, ' ').replace(/\$([^\s]+)/g, 'var(--$1)')})`,
                 };
             },
         ],
     ],
 });
+
 
 ```
 
