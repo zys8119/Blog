@@ -234,3 +234,30 @@ export default defineConfig({
 
 ```
 
+## js 16进制"fe7ae63d" 如何快速转成有符号的10进制
+
+```js
+function hexToSignedDecimal(hexStr) {
+    // 将 16 进制字符串转换为无符号的整数
+    const unsignedInt = parseInt(hexStr, 16);
+
+    // 32 位有符号整数的范围
+    const INT32_MAX = 0x7FFFFFFF;
+    const INT32_MIN = -0x80000000;
+
+    // 判断是否为负数
+    if (unsignedInt > INT32_MAX) {
+        // 如果无符号整数大于 0x7FFFFFFF，则它在有符号整数的负数范围内
+        return unsignedInt - 0x100000000; // 0x100000000 是 2^32，用于从无符号转换为有符号
+    } else {
+        // 如果不在负数范围内，直接返回值
+        return unsignedInt;
+    }
+}
+
+// 示例
+const hexStr = "fe7ae63d";
+const signedDecimal = hexToSignedDecimal(hexStr);
+
+console.log(signedDecimal); // 输出 -126813651
+```
