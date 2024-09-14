@@ -237,6 +237,7 @@ export default defineConfig({
 ## js 16进制"fe7ae63d" 如何快速转成有符号的10进制
 
 ```js
+//10进制转成有符号的10进制
 function hexToSignedDecimal(hexStr) {
     // 将 16 进制字符串转换为无符号的整数
     const unsignedInt = parseInt(hexStr, 16);
@@ -255,9 +256,22 @@ function hexToSignedDecimal(hexStr) {
     }
 }
 
-// 示例
 const hexStr = "fe7ae63d";
 const signedDecimal = hexToSignedDecimal(hexStr);
 
 console.log(signedDecimal); // 输出 -126813651
+
+
+// 转符号10进制示例
+
+function signedDecimalToHex(unsignedInt) {
+    // 判断是否为负数
+    if (unsignedInt < 0) {
+        // 如果无符号整数大于 0x7FFFFFFF，则它在有符号整数的负数范围内
+        return (unsignedInt + 0x100000000).toString(16); // 0x100000000 是 2^32，用于从无符号转换为有符号
+    } else {
+        // 如果不在负数范围内，直接返回值
+        return unsignedInt.toString(16);
+    }
+}
 ```
