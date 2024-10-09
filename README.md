@@ -285,7 +285,7 @@ import { readFileSync } from "fs"
  * @param sqlFilePath sql文件路径
  * @returns 
  */
-export default function (sqlFilePath: string): Record<string, any>{
+export default function <T = Record<string, any>>(sqlFilePath: string): T{
     const sql = readFileSync(sqlFilePath, 'utf8')
     const sqlNames = []
     sql.replace(/\/\*(.|\n)*?\*\//g, function(m){
