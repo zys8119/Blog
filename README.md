@@ -302,3 +302,19 @@ export default function <T = Record<string, any>>(sqlFilePath: string): T{
     },{})
 }
 ```
+
+## puppeteer 等待选择器
+```typescript
+const waitForSelector = async (selector: string) => {
+    return await page.evaluate(async function name(selector) {
+        if (!document.querySelector(selector)) {
+            return await new Promise(r => {
+                requestAnimationFrame(async () => {
+                    await name(selector)
+                    r(true)
+                })
+            })
+        }
+    },selector)
+}
+```
