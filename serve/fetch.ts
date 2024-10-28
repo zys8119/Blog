@@ -3,7 +3,7 @@ type Body = {
     [k:string]:any
     stream?:boolean
 }
-globalThis.fetch = async function (url: any, config: Record<any, any>) {
+globalThis.fetch = globalThis.fetch || async function (url: any, config: Record<any, any>) {
   let body:Body = {} as Body
   try{
     body = JSON.parse(config.body)
