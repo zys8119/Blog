@@ -318,3 +318,26 @@ const waitForSelector = async (selector: string) => {
     },selector)
 }
 ```
+
+## adb保持手机屏幕不关闭，请使用tsnd 运行
+```shell
+import { CronJob  } from 'cron';
+import { execSync, execFileSync  } from 'child_process';
+new CronJob('* * * * * *',()=>{
+    try {
+    execSync(`
+screen_status=$(adb shell dumpsys power | grep "Display Power" | grep -o 'OFF')
+if [ "$screen_status" = "OFF" ]; then
+    echo "Screen is off";
+    adb shell input keyevent 26;
+fi;
+adb shell dumpsys window | grep -i "current=[immersive]"
+adb devices
+        `,{
+            stdio:'inherit',
+        });
+    }catch (error) {
+        console.log(error)
+    }
+}).start();
+```
