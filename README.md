@@ -320,7 +320,7 @@ const waitForSelector = async (selector: string) => {
 ```
 
 ## adb保持手机屏幕不关闭，请使用tsnd 运行
-```shell
+```typescript
 import { CronJob  } from 'cron';
 import { execSync, execFileSync  } from 'child_process';
 new CronJob('* * * * * *',()=>{
