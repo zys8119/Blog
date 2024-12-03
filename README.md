@@ -341,3 +341,10 @@ adb devices
     }
 }).start();
 ```
+
+## zsh 常用插件
+```
+aliases            command-not-found  dirhistory         extract            git-prompt         macos              vscode             z                                                    
+colored-man-pages  copyfile           docker             git                history            nmap               wd                                                                    
+colorize           copypath           dotenv             git-commit         jsontools          sudo               web-search  
+```
