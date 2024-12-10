@@ -348,3 +348,21 @@ aliases            command-not-found  dirhistory         extract            git-
 colored-man-pages  copyfile           docker             git                history            nmap               wd                                                                    
 colorize           copypath           dotenv             git-commit         jsontools          sudo               web-search  
 ```
+
+## rollup manualChunks for pnpm
+```javascript
+{
+  manualChunks(id) {
+      const deps = ['wp-request', 'lodash', 'vueuse/', 'vue/', 'lodash-es', 'vconsole-hide', 'gsap', 'qrcode', 'vant'];
+      const dep = deps.find((dep) => new RegExp(`${__dirname}/node_modules.*${dep}`).test(id));
+      if (dep) {
+          return dep.replace(/\//g, '');
+      }
+      const depslocl = ['api', 'alert', 'datas', 'utils'];
+      const dep2 = depslocl.find((dep) => id.includes(path.resolve(__dirname, 'src', dep)));
+      if (dep2) {
+          return dep2;
+      }
+  },
+}
+```
