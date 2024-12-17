@@ -418,4 +418,44 @@ h1, h2, h3, h4, h5, h6 {
   isolation: isolate;
 }
 ```
+##  flutter sm4 加解密
+```dart
+import 'package:flutter/foundation.dart';
+import 'package:dart_sm/dart_sm.dart';
 
+class CryptoUtil {
+  static String convertToHex(String input) {
+    return input.runes.map((rune) {
+      return rune.toRadixString(16);
+    }).join();
+  }
+
+  static final String _SM4KEY = "9r17u127a9z64h4p";
+  static final String iv = convertToHex(_SM4KEY);
+
+  //SM4加密
+  static String encryptedSM4(String content) {
+    SM4.setKey(iv);
+    String cipherText = SM4.encrypt(content, mode: SM4CryptoMode.CBC, iv: iv);
+    return cipherText.toLowerCase();
+  }
+
+  //SM4解密
+  static String decryptSM4(String content) {
+    Stopwatch stopwatch = Stopwatch()..start();
+    String cbcDecryptData =
+        SM4.decrypt(content, mode: SM4CryptoMode.CBC, iv: iv);
+    stopwatch.stop();
+    return cbcDecryptData;
+  }
+
+  static Future<String> encryptedSM4ByAsync(String data) async {
+    return await compute(encryptedSM4, data);
+  }
+
+  static Future<String> decryptSM4ByAsync(String data) async {
+    return await compute(decryptSM4, data);
+  }
+}
+
+```
