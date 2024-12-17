@@ -430,7 +430,7 @@ class CryptoUtil {
     }).join();
   }
 
-  static final String _SM4KEY = "9r17u127a9z64h4p";
+  static final String _SM4KEY = "";
   static final String iv = convertToHex(_SM4KEY);
 
   //SM4加密
