@@ -442,6 +442,7 @@ class CryptoUtil {
 
   //SM4解密
   static String decryptSM4(String content) {
+    SM4.setKey(iv);
     //Stopwatch stopwatch = Stopwatch()..start();
     String cbcDecryptData =
         SM4.decrypt(content, mode: SM4CryptoMode.CBC, iv: iv);
