@@ -442,10 +442,11 @@ class CryptoUtil {
 
   //SM4解密
   static String decryptSM4(String content) {
-    Stopwatch stopwatch = Stopwatch()..start();
+    //Stopwatch stopwatch = Stopwatch()..start();
     String cbcDecryptData =
         SM4.decrypt(content, mode: SM4CryptoMode.CBC, iv: iv);
-    stopwatch.stop();
+    //stopwatch.stop();
+    // print('执行时间：${stopwatch.elapsedMilliseconds} 毫秒');
     return cbcDecryptData;
   }
 
