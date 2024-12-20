@@ -461,3 +461,19 @@ class CryptoUtil {
 }
 
 ```
+
+## shell 脚本提取私包
+
+```shell
+dir='packages'
+node_modules_dir='node_modules'
+package_json_dir='package.json'
+packages=($(echo $(cat $package_json_dir | grep -e 'http' | awk '{print $1}' | sed 's/^"//g' | sed 's/":$//g')))
+rm -rf $dir
+for i in ${packages[@]};
+do
+    target=$dir/$i
+    mkdir -p $target
+    ls $node_modules_dir/$i | grep -E -v "node_modules" | xargs -I {} cp -r $node_modules_dir/$i/{} $target
+done
+```
