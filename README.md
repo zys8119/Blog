@@ -477,3 +477,36 @@ do
     ls $node_modules_dir/$i | grep -E -v "node_modules" | xargs -I {} cp -r $node_modules_dir/$i/{} $target
 done
 ```
+
+## 242 服务vite代理配置
+
+```
+{
+    '/242': {
+        target: 'http://192.168.110.242/',
+        rewrite: (path) => {
+            console.log(path);
+            return path.replace(/^\/242/, '');
+        },
+        headers: {
+            Referrer: 'http://192.168.110.242'
+        },
+        autoRewrite: true,
+        selfHandleResponse: true,
+        // changeOrigin: true,
+        ws: true,
+        configure(proxy: HttpProxy.Server) {
+            proxy.on('proxyRes', (proxyRes: IncomingMessage, req: IncomingMessage, res: ServerResponse) => {
+                const chunks: any = [];
+                proxyRes.on('data', (chunk) => {
+                    chunks.push(chunk);
+                });
+                proxyRes.on('end', () => {
+                    res.setHeader('access-control-allow-origin', '*');
+                    res.end(Buffer.concat(chunks));
+                });
+            });
+        }
+    }
+}
+```
