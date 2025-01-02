@@ -510,3 +510,23 @@ done
     }
 }
 ```
+
+## flutter 依赖重启
+```typescript
+import { exec } from "child_process";
+import { watch } from "chokidar";
+const run = () => {
+  const child = exec("flutter run", {});
+  child.stdout?.pipe(process.stdout);
+  return child;
+};
+let child = run();
+watch("./pdf_explorer", {
+  cwd: process.cwd(),
+  awaitWriteFinish: true,
+}).on("change", (event, path) => {
+  child.kill();
+  child = run();
+});
+
+```
