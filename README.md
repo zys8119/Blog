@@ -558,3 +558,35 @@ launch.json
 }
 
 ```
+
+## 获取pdf文件字体
+```
+const pdfjsLib = require('pdfjs-dist/build/pdf');
+
+async function checkMissingFonts(pdfUrl) {
+    const loadingTask = pdfjsLib.getDocument(pdfUrl);
+    const pdf = await loadingTask.promise;
+
+    const missingFonts = new Set();
+
+    for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const operatorList = await page.getOperatorList();
+
+        operatorList.argsArray.forEach((args, index) => {
+            // 检查操作符是否为使用字体的操作
+            if (operatorList.fnArray[index] === pdfjsLib.OPS.setFont) {
+                const fontName = args[0];
+                // 记录字体名称
+                missingFonts.add(fontName);
+            }
+        });
+    }
+
+    console.log('Missing Fonts:', Array.from(missingFonts));
+}
+
+// 使用示例
+checkMissingFonts('path/to/your.pdf');
+
+```
