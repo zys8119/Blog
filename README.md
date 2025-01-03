@@ -560,6 +560,24 @@ launch.json
 ```
 
 ## 获取pdf文件字体
+
+配合浏览器字体api完成,如 `document.fonts` `document.fonts.values()`
+
+```
+// 检查特定字体是否已加载
+function isFontAvailable(fontName) {
+    return document.fonts.check(`16px "${fontName}"`);
+}
+
+// 使用示例
+if (isFontAvailable('MySpecialFont')) {
+    console.log('Font is available!');
+} else {
+    console.log('Font is not available.');
+}
+
+```
+
 ```
 const pdfjsLib = require('pdfjs-dist/build/pdf');
 
