@@ -608,7 +608,7 @@ async function checkMissingFonts(pdfUrl) {
 checkMissingFonts('path/to/your.pdf');
 
 ```
-更改字体
+更改字体,需要启用pdfBug模式
 ```
 window.FontInspector = {
   enabled: true,
