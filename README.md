@@ -608,3 +608,15 @@ async function checkMissingFonts(pdfUrl) {
 checkMissingFonts('path/to/your.pdf');
 
 ```
+更改字体
+```
+window.FontInspector = {
+  enabled: true,
+  fontAdded(font) {
+    if (["g_d0_f1", "g_d0_f20", "g_d0_f3"].includes(font.loadedName)) {
+      return;
+    }
+    font.loadedName = "Nabla";
+  },
+}
+```
