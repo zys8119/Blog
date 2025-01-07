@@ -623,7 +623,7 @@ window.FontInspector = {
 
 ## javascript-obfuscator 配置
 
-```json
+```typescript
 {
     controlFlowFlattening: true,
     stringArrayThreshold: 1,
