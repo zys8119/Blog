@@ -620,3 +620,22 @@ window.FontInspector = {
   },
 }
 ```
+
+## javascript-obfuscator 配置
+
+```json
+{
+    controlFlowFlattening: true,
+    stringArrayThreshold: 1,
+    unicodeEscapeSequence: true,
+    stringArrayEncoding: ['none', 'base64', 'rc4'],
+    forceTransformStrings: ['.'],
+    deadCodeInjection: true,
+    deadCodeInjectionThreshold: 1,
+    numbersToExpressions: true,
+    renameGlobals: true,
+    splitStrings: true,
+    stringArray: true,
+    disableConsoleOutput: true,
+}
+```
