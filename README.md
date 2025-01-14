@@ -639,7 +639,7 @@ window.FontInspector = {
     disableConsoleOutput: true,
 }
 ```
-#防止 debugger 调试
+# 防止 debugger 调试
 ```typescript
 (function _debuggerInit(){
   // Check if the DevTools are open by measuring the time taken to execute a function
