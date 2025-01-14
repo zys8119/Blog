@@ -639,3 +639,18 @@ window.FontInspector = {
     disableConsoleOutput: true,
 }
 ```
+#防止 debugger 调试
+```typescript
+(function _debuggerInit(){
+  // Check if the DevTools are open by measuring the time taken to execute a function
+  const start = Date.now();
+  new Function(`debugger;`)()
+  const end = Date.now()
+  if(Date.now() - start > 100){
+    location.replace('about:blank')
+  }
+  setTimeout(()=>{
+    _debuggerInit()
+  })
+})()
+```
