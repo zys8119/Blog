@@ -654,3 +654,81 @@ window.FontInspector = {
   })
 })()
 ```
+
+# 拖拽悬浮球
+```vue
+<template>
+    <div class="abs-f z-100000 right-0 bottom-$h5-bottom-nav-height tr-y--150px levitated-sphere" :style="style"
+        ref="el">
+        <Drager ref="drager" @drag-end="handleDragEnd" @drag-start="handleDragStart" v-bind="info2" v-if="show">
+            <div class="op-$op levitated-sphere-content">
+                <slot>
+                    悬浮内容
+                </slot>
+            </div>
+        </Drager>
+    </div>
+</template>
+<script setup lang="ts">
+import Drager from 'es-drager'
+import winframe from 'winframe'
+const props = withDefaults(defineProps<{
+    isOp?: boolean | number
+}>(), {
+    isOp: true
+})
+const el = ref()
+const { top, height } = useElementBounding(el)
+const info = ref({
+    top: 0,
+    left: 0,
+})
+const info2 = ref({
+    top: 0,
+    left: 0,
+})
+const style = computed(() => {
+    return {
+        right: info.value.left + 'px',
+        bottom: info.value.top + 'px',
+    }
+})
+const posY = computed(() => {
+    return top.value + height.value
+})
+const drager = ref(null)
+const show = ref(true)
+const isOP = ref(true)
+const handleDragStart = () => {
+    isOP.value = false
+}
+useCssVars(() => ({
+    op: props.isOp ? (isOP.value ? (typeof props.isOp === 'number' ? props.isOp : 0.5) : 1 as any) : 1
+}))
+const handleDragEnd = (e: any) => {
+    isOP.value = true
+    show.value = false
+    info.value.left += -e.left
+    info.value.top += -e.top
+    const left = info.value.left
+    nextTick(() => {
+        show.value = true
+        const copyPosY = posY.value
+        const copyPosYOffset = copyPosY - height.value
+        const top = info.value.top
+        winframe((p) => {
+            info.value.left = left * (1 - p)
+            if (copyPosYOffset < 0) {
+                info.value.top = top - height.value + copyPosYOffset * p
+            }
+            if (copyPosYOffset > innerHeight) {
+                info.value.top = top + (copyPosYOffset - innerHeight) * p
+            }
+        }, 100)
+    })
+}
+</script>
+<style scoped lang="less">
+.levitated-sphere {}
+</style>
+```
