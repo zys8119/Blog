@@ -735,7 +735,9 @@ const handleDragEnd = (e: any) => {
 # 历史面板
 ```vue
 <template>
-    <div ref="history_el" class="abs-content hidden">
+    <div ref="history_el" class="abs-content hidden" :class="{
+        'pointer-events-none': !isShowHistory
+    }">
         <div ref="history_mask_el" class="abs left-0 top-0 h-100% w-100% bg-#000 bg-op-36 op-0"
             @click="handleShowHistory(false)"></div>
         <div ref="history_content_el" class="abs left-0 top-0 h-100% w-80% bg-#fff">
@@ -748,34 +750,161 @@ import winframe from 'winframe';
 const history_el = ref() as unknown as Ref<HTMLDivElement>
 const history_mask_el = ref() as unknown as Ref<HTMLDivElement>
 const history_content_el = ref() as unknown as Ref<HTMLDivElement>
-const handleShowHistory = async (bool: boolean, timeout = 300) => {
+const isShowHistory = ref(false)
+const debounceTime = ref(0)
+const isDone = ref(true)
+// timeout 单位ms，开启或关闭的动画时间
+const handleShowHistory = async (bool: boolean, timeout = 300, isMoveMode?: boolean) => {
+    if (!isDone.value) return
+    isDone.value = false
+    debounceTime.value = performance.now()
+    const opacity = Number(history_mask_el.value.style.opacity)
     if (bool) {
         history_el.value.style.display = 'block'
         history_mask_el.value.style.opacity = '0'
         await nextTick()
-        const width = history_content_el.value.offsetWidth
+        const width = Math.abs(Number(history_content_el.value.style.transform.match(/translateX\((.*)px\)/)?.[1]) || history_content_el.value.offsetWidth)
         history_content_el.value.style.transform = `translateX(${-width}px)`
         await winframe(p => {
-            history_mask_el.value.style.opacity = p as unknown as string
+            history_mask_el.value.style.opacity = (isMoveMode ? opacity + (1 - opacity) * p : p) as unknown as string
             history_content_el.value.style.transform = `translateX(${-width * (1 - p)}px)`
         }, timeout)
+        isShowHistory.value = true
     } else {
         history_el.value.style.display = 'block'
         await nextTick()
         const width = history_content_el.value.offsetWidth
+        const width2 = Math.abs(Number(history_content_el.value.style.transform.match(/translateX\((.*)px\)/)?.[1]))
         history_mask_el.value.style.opacity = '1'
-        history_content_el.value.style.transform = `translateX(0px)`
+        history_content_el.value.style.transform = `translateX(${isMoveMode ? -width2 : 0}px)`
         await winframe(p => {
-            history_mask_el.value.style.opacity = (1 - p) as unknown as string
-            history_content_el.value.style.transform = `translateX(${-width * p}px)`
+            history_mask_el.value.style.opacity = (isMoveMode ? opacity * (1 - p) : (1 - p)) as unknown as string
+            const translateX = isMoveMode ? -width2 - (width - width2) * p : -width * p
+            history_content_el.value.style.transform = `translateX(${translateX}px)`
         }, timeout)
         history_content_el.value.style.transform = `translateX(${-width}px)`
         history_mask_el.value.style.opacity = '0'
         history_el.value.style.display = 'none'
+        isShowHistory.value = false
+    }
+    if (performance.now() - debounceTime.value > timeout) {
+        isDone.value = true
     }
 }
 defineExpose({
     handleShowHistory
+})
+const useTouchmove = (cb: (data: {
+    x: number,
+    y: number,
+    event: TouchEvent,
+    type: 'touchstart' | 'touchmove' | 'touchend',
+    isTouchstart: boolean,
+}) => void) => {
+    let clientX = 0
+    let clientY = 0
+    let offsetX = 0
+    let offsetY = 0
+    let isTouchstart = false
+    const touchstart = (e: TouchEvent) => {
+        clientX = e.touches[0].clientX
+        clientY = e.touches[0].clientY
+        isTouchstart = true
+        cb({
+            x: offsetX,
+            y: offsetY,
+            event: e,
+            type: 'touchstart',
+            isTouchstart,
+        })
+    }
+    const touchmove = (e: TouchEvent) => {
+        if (!isTouchstart) return
+        offsetX = e.touches[0].clientX - clientX
+        offsetY = e.touches[0].clientY - clientY
+        cb({
+            x: offsetX,
+            y: offsetY,
+            event: e,
+            type: 'touchmove',
+            isTouchstart,
+        })
+    }
+    const touchend = (e: TouchEvent) => {
+        cb({
+            x: offsetX,
+            y: offsetY,
+            event: e,
+            type: 'touchend',
+            isTouchstart,
+        })
+        isTouchstart = false
+        clientX = 0
+        clientY = 0
+        offsetX = 0
+        offsetY = 0
+    }
+    return {
+        start() {
+            window.addEventListener('touchstart', touchstart)
+            window.addEventListener('touchmove', touchmove)
+            window.addEventListener('touchend', touchend)
+        },
+        stop() {
+            window.removeEventListener('touchstart', touchstart)
+            window.removeEventListener('touchmove', touchmove)
+            window.removeEventListener('touchend', touchend)
+        }
+    }
+}
+const moveRectWidth = ref(0)
+const hasScrollbar: any = (element: HTMLElement) => {
+    if (!element || element.attributes.getNamedItem('history-max-box')) { return false }
+    return element?.scrollHeight > element?.clientHeight || hasScrollbar(element?.parentElement as any) as unknown as any;
+}
+const {
+    start
+} = useTouchmove(async ({ x, y, type, isTouchstart, event }) => {
+    if (hasScrollbar(event.target as unknown as any)) {
+        return
+    }
+    const mx = 50
+    if (Math.abs(y) > mx) {
+        handleShowHistory(false, undefined, true)
+        return
+    }
+    if (isShowHistory.value || !history_el.value) { return }
+    const offsetMvX = x - mx
+    const offset = -moveRectWidth.value + offsetMvX
+    setTimeout(async () => {
+        if (type === 'touchstart') {
+            history_el.value.style.display = 'block'
+            history_mask_el.value.style.opacity = '0'
+            history_content_el.value.style.transform = `translateX(-100%)`
+            await nextTick()
+            moveRectWidth.value = history_content_el.value.offsetWidth
+            return
+        }
+        if (type === 'touchend') {
+            // Math.abs(offsetMvX) > window.innerWidth / 6 判断是否是现实滑动的最大阀值，默认是屏幕的1/6
+            handleShowHistory(Math.abs(offsetMvX) > window.innerWidth / 6, undefined, true)
+            return
+        }
+    }, 0)
+    if (isTouchstart && type === 'touchmove') {
+        if (offset > 0 && offset < moveRectWidth.value) { return }
+        if (x > mx) {
+            history_mask_el.value.style.opacity = (1 - Math.abs(offset / moveRectWidth.value) as unknown as string)
+            history_content_el.value.style.transform = `translateX(${offset}px)`
+        }
+    }
+
+})
+onMounted(() => {
+    start()
+})
+onBeforeUnmount(() => {
+    start()
 })
 </script>
 <style scoped lang="less">
