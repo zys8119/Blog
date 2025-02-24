@@ -783,6 +783,73 @@ defineExpose({
 </style>
 ```
 
+# 移动端触摸移动事件
+```typescript
+const useTouchmove = (cb: (data: {
+    x: number,
+    y: number,
+    event: TouchEvent,
+    type: 'touchstart' | 'touchmove' | 'touchend',
+    isTouchstart: boolean,
+}) => void) => {
+    let clientX = 0
+    let clientY = 0
+    let offsetX = 0
+    let offsetY = 0
+    let isTouchstart = false
+    const touchstart = (e: TouchEvent) => {
+        clientX = e.touches[0].clientX
+        clientY = e.touches[0].clientY
+        isTouchstart = true
+        cb({
+            x: offsetX,
+            y: offsetY,
+            event: e,
+            type: 'touchstart',
+            isTouchstart,
+        })
+    }
+    const touchmove = (e: TouchEvent) => {
+        if (!isTouchstart) return
+        offsetX = e.touches[0].clientX - clientX
+        offsetY = e.touches[0].clientY - clientY
+        cb({
+            x: offsetX,
+            y: offsetY,
+            event: e,
+            type: 'touchmove',
+            isTouchstart,
+        })
+    }
+    const touchend = (e: TouchEvent) => {
+        cb({
+            x: offsetX,
+            y: offsetY,
+            event: e,
+            type: 'touchend',
+            isTouchstart,
+        })
+        isTouchstart = false
+        clientX = 0
+        clientY = 0
+        offsetX = 0
+        offsetY = 0
+    }
+    return {
+        start() {
+            window.addEventListener('touchstart', touchstart)
+            window.addEventListener('touchmove', touchmove)
+            window.addEventListener('touchend', touchend)
+        },
+        stop() {
+            window.removeEventListener('touchstart', touchstart)
+            window.removeEventListener('touchmove', touchmove)
+            window.removeEventListener('touchend', touchend)
+        }
+    }
+}
+```
+
 # 表单封装
 ```vue
 <template>
