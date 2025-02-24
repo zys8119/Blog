@@ -863,7 +863,8 @@ const hasScrollbar: any = (element: HTMLElement) => {
     return element?.scrollHeight > element?.clientHeight || hasScrollbar(element?.parentElement as any) as unknown as any;
 }
 const {
-    start
+    start,
+    stop
 } = useTouchmove(async ({ x, y, type, isTouchstart, event }) => {
     if (hasScrollbar(event.target as unknown as any)) {
         return
@@ -904,7 +905,7 @@ onMounted(() => {
     start()
 })
 onBeforeUnmount(() => {
-    start()
+    stop()
 })
 </script>
 <style scoped lang="less">
