@@ -732,6 +732,56 @@ const handleDragEnd = (e: any) => {
 .levitated-sphere {}
 </style>
 ```
+# 历史面板
+```vue
+<template>
+    <div ref="history_el" class="abs-content hidden">
+        <div ref="history_mask_el" class="abs left-0 top-0 h-100% w-100% bg-#000 bg-op-36 op-0"
+            @click="handleShowHistory(false)"></div>
+        <div ref="history_content_el" class="abs left-0 top-0 h-100% w-80% bg-#fff">
+            <slot></slot>
+        </div>
+    </div>
+</template>
+<script setup lang="ts">
+import winframe from 'winframe';
+const history_el = ref() as unknown as Ref<HTMLDivElement>
+const history_mask_el = ref() as unknown as Ref<HTMLDivElement>
+const history_content_el = ref() as unknown as Ref<HTMLDivElement>
+const handleShowHistory = async (bool: boolean, timeout = 300) => {
+    if (bool) {
+        history_el.value.style.display = 'block'
+        history_mask_el.value.style.opacity = '0'
+        await nextTick()
+        const width = history_content_el.value.offsetWidth
+        history_content_el.value.style.transform = `translateX(${-width}px)`
+        await winframe(p => {
+            history_mask_el.value.style.opacity = p as unknown as string
+            history_content_el.value.style.transform = `translateX(${-width * (1 - p)}px)`
+        }, timeout)
+    } else {
+        history_el.value.style.display = 'block'
+        await nextTick()
+        const width = history_content_el.value.offsetWidth
+        history_mask_el.value.style.opacity = '1'
+        history_content_el.value.style.transform = `translateX(0px)`
+        await winframe(p => {
+            history_mask_el.value.style.opacity = (1 - p) as unknown as string
+            history_content_el.value.style.transform = `translateX(${-width * p}px)`
+        }, timeout)
+        history_content_el.value.style.transform = `translateX(${-width}px)`
+        history_mask_el.value.style.opacity = '0'
+        history_el.value.style.display = 'none'
+    }
+}
+defineExpose({
+    handleShowHistory
+})
+</script>
+<style scoped lang="less">
+.history {}
+</style>
+```
 
 # 表单封装
 ```vue
