@@ -233,7 +233,31 @@ export default defineConfig({
 
 
 ```
+## uni-app 微信小程序之unocss规则
+```typescript
+import { defineConfig } from "unocss";
+export default defineConfig({
+  // ...UnoCSS optionstr
+  configResolved(config) {
+    config.preflights = [];
+  },
+  rules: [
+    [
+      /^u-?(text|bg|color|w)-?(.*)/,
+      (m) => {
+        return {
+          text: `.${m[0]}{color:${m[2].replace("0x", "#")};}`,
+          color: `.${m[0]}{color:${m[2].replace("0x", "#")};}`,
+          bg: `.${m[0]}{background-color:${m[2].replace("0x", "#")};}`,
+          w: `.${m[0]}{width:${m[2]}%;}`,
+          h: `.${m[0]}{height:${m[2]}%;}`,
+        }[m[1]];
+      },
+    ],
+  ],
+});
 
+```
 ## js 16进制"fe7ae63d" 如何快速转成有符号的10进制
 
 ```js
