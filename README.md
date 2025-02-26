@@ -1161,3 +1161,23 @@ declare global {
 }
 
 ```
+# ncol 类型补充
+```typescript
+declare module "ncol" {
+  interface Ncol {
+    log(...arg: any[]): Ncol;
+    error(...arg: any[]): Ncol;
+    errorBG(...arg: any[]): Ncol;
+    black(...arg: any[]): Ncol;
+    blue(...arg: any[]): Ncol;
+    success(...arg: any[]): Ncol;
+    successBG(...arg: any[]): Ncol;
+    info(...arg: any[]): Ncol;
+    infoBG(...arg: any[]): Ncol;
+    color(callback: (this: Ncol) => void): Ncol;
+  }
+  const ncol: Ncol;
+  export = ncol;
+}
+
+```
