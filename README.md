@@ -1181,3 +1181,49 @@ declare module "ncol" {
 }
 
 ```
+
+# nodejs读取execl 文件并提取所有图片（推荐xlsx）
+```typescript
+import fs from "fs";
+import path from "path";
+import ExcelJS from "exceljs";
+
+// 定义Excel文件路径和保存图片的目录
+const excelFilePath = "2.xlsx"; // 替换为你的Excel文件路径
+const outputDir = "./output_images"; // 图片保存目录
+
+// 确保输出目录存在
+if (!fs.existsSync(outputDir)) {
+  fs.mkdirSync(outputDir, { recursive: true });
+}
+
+async function extractImagesFromExcel(filePath: any) {
+  try {
+    // 创建一个新的工作簿实例
+    const workbook = new ExcelJS.Workbook();
+
+    // 加载Excel文件
+    await workbook.xlsx.readFile(filePath);
+
+    // 遍历每个工作表
+    for (const file of (workbook as any).model.media) {
+      if (file.type === "image") {
+        try {
+          // 将图片保存到文件
+          const imagePath = `${outputDir}/${file.name}.png`;
+          fs.writeFileSync(imagePath, file.buffer);
+          console.log(`Saved image: ${imagePath}`);
+        } catch (e) {}
+      }
+    }
+
+    console.log("All images extracted successfully.");
+  } catch (error) {
+    console.error("Error extracting images:", error);
+  }
+}
+
+// 调用函数
+extractImagesFromExcel(excelFilePath);
+
+```
