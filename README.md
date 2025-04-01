@@ -1007,90 +1007,39 @@ const useTouchmove = (cb: (data: {
 # 表单封装
 ```vue
 <template>
-    <n-form
-        class="formValidate"
-        ref="formRef"
-        :rules="rules"
-        :model="modelValue"
-        v-bind="config"
-    >
-        <n-form-item
-            v-for="(item, index) in field"
-            :key="index"
-            :label="item.label"
-            :path="item.field"
-            v-bind="item.config"
-        >
-            <template v-if="item.component === 'input'">
-                <n-input
-                    v-model:value="modelValue[item.field]"
-                    v-bind="item.props"
-                />
-            </template>
-            <template v-else-if="item.component === 'select'">
-                <n-select
-                    v-model:value="modelValue[item.field]"
-                    v-bind="item.props"
-                />
-            </template>
-            <template v-else-if="item.component === 'cascader'">
-                <n-cascader
-                    v-model:value="modelValue[item.field]"
-                    v-bind="item.props"
-                />
-            </template>
-            <template v-else-if="item.component === 'datePicker'">
-                <n-date-picker
-                    v-model:value="modelValue[item.field]"
-                    v-bind="item.props"
-                />
-            </template>
-            <template v-else-if="item.component === 'switch'">
-                <n-switch
-                    v-model:value="modelValue[item.field]"
-                    v-bind="item.props"
-                >
+    <n-form class="formValidate" ref="formRef" :rules="rules" :model="modelValue" v-bind="config">
+        <n-form-item v-for="(item, index) in field" :key="index" :label="item.label" :path="item.field"
+            v-bind="item.config">
+            <template v-if="componentMapConfig[item.component]">
+                <component :is="componentMapConfig[item.component]" v-model:value="modelValue[item.field]"
+                    v-bind="item.props">
                     <!-- 动态插槽继承，后续其他组件也可以这样做 -->
-                    <template
-                        v-for="(slotItem, key) in item?.slots"
-                        :key="key"
-                        #[key]="scope"
-                    >
-                        <component
-                            :is="item?.slots?.[key]"
-                            :field="item.field"
-                            :rules="item.rules"
-                            :formConfig="config"
-                            :formData="modelValue"
-                            v-bind="scope"
-                        />
+                    <template v-for="(slotItem, key) in item?.slots" :key="key" #[key]="scope">
+                        <component :is="item?.slots?.[key]" :field="item.field" :rules="item.rules" :formConfig="config"
+                            :formData="modelValue" v-bind="scope" />
                     </template>
-                </n-switch>
-            </template>
-            <template v-else-if="item.component === 'upload'">
-                <n-pro-upload
-                    v-model:value="modelValue[item.field]"
-                    v-bind="item.props"
-                >
-                </n-pro-upload>
+                </component>
             </template>
             <template v-else>
-                <component
-                    v-if="item.component"
-                    :is="item.component"
-                    v-model="modelValue[item.field]"
-                    :field="item.field"
-                    :rules="item.rules"
-                    :formConfig="config"
-                    :formData="modelValue"
-                    v-bind="item.props"
-                />
+                <component v-if="item.component" :is="item.component" v-model="modelValue[item.field]"
+                    :field="item.field" :rules="item.rules" :formConfig="config" :formData="modelValue"
+                    v-bind="item.props" />
             </template>
         </n-form-item>
     </n-form>
 </template>
 <script setup lang="ts">
 import { FormRules, FormProps } from 'naive-ui';
+import * as naiveUI from 'naive-ui';
+const componentMapConfig = shallowRef({
+    input: naiveUI.NInput,
+    number: naiveUI.NInputNumber,
+    select: naiveUI.NSelect,
+    cascader: naiveUI.NCalendar,
+    datePicker: naiveUI.NDatePicker,
+    switch: naiveUI.NSwitch,
+    upload: naiveUI.NProUpload,
+})
 const formRef = ref();
 const props = defineProps<{
     modelValue: Record<string, any>;
@@ -1113,10 +1062,8 @@ defineExpose({
 });
 </script>
 <style scoped lang="less">
-.formValidate {
-}
+.formValidate {}
 </style>
-
 ```
 ```typescript
 export {};
