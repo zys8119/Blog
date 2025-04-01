@@ -1039,7 +1039,7 @@ const componentMapConfig = shallowRef({
     input: naiveUI.NInput,
     number: naiveUI.NInputNumber,
     select: naiveUI.NSelect,
-    cascader: naiveUI.NCalendar,
+    cascader: naiveUI.NCascader,
     datePicker: naiveUI.NDatePicker,
     switch: naiveUI.NSwitch,
     upload: naiveUI.NProUpload,
