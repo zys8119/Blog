@@ -1010,21 +1010,25 @@ const useTouchmove = (cb: (data: {
     <n-form class="formValidate" ref="formRef" :rules="rules" :model="modelValue" v-bind="config">
         <n-form-item v-for="(item, index) in field" :key="index" :label="item.label" :path="item.field"
             v-bind="item.config">
-            <template v-if="componentMapConfig[item.component]">
-                <component :is="componentMapConfig[item.component]" v-model:value="modelValue[item.field]"
-                    v-bind="item.props">
-                    <!-- 动态插槽继承，后续其他组件也可以这样做 -->
-                    <template v-for="(slotItem, key) in item?.slots" :key="key" #[key]="scope">
-                        <component :is="item?.slots?.[key]" :field="item.field" :rules="item.rules" :formConfig="config"
-                            :formData="modelValue" v-bind="scope" />
+            <n-grid cols="1" v-bind="item.gridProps">
+                <n-grid-item v-bind="item.gridItemProps">
+                    <template v-if="componentMapConfig[item.component]">
+                        <component :is="componentMapConfig[item.component]" v-model:value="modelValue[item.field]"
+                            v-bind="item.props">
+                            <!-- 动态插槽继承，后续其他组件也可以这样做 -->
+                            <template v-for="(slotItem, key) in item?.slots" :key="key" #[key]="scope">
+                                <component :is="item?.slots?.[key]" :field="item.field" :rules="item.rules"
+                                    :formConfig="config" :formData="modelValue" v-bind="scope" />
+                            </template>
+                        </component>
                     </template>
-                </component>
-            </template>
-            <template v-else>
-                <component v-if="item.component" :is="item.component" v-model="modelValue[item.field]"
-                    :field="item.field" :rules="item.rules" :formConfig="config" :formData="modelValue"
-                    v-bind="item.props" />
-            </template>
+                    <template v-else>
+                        <component v-if="item.component" :is="item.component" v-model="modelValue[item.field]"
+                            :field="item.field" :rules="item.rules" :formConfig="config" :formData="modelValue"
+                            v-bind="item.props" />
+                    </template>
+                </n-grid-item>
+            </n-grid>
         </n-form-item>
     </n-form>
 </template>
@@ -1064,6 +1068,7 @@ defineExpose({
 <style scoped lang="less">
 .formValidate {}
 </style>
+
 ```
 ```typescript
 export {};
@@ -1076,6 +1081,9 @@ import {
     DatePickerProps,
     SwitchProps,
     UploadProps,
+    InputNumberProps,
+    GridProps,
+    GridItemProps,
 } from 'naive-ui';
 type FormValidateFieldItemComponent = {
     input: InputProps;
@@ -1084,6 +1092,7 @@ type FormValidateFieldItemComponent = {
     datePicker: DatePickerProps;
     switch: SwitchProps;
     upload: UploadProps;
+    number: InputNumberProps;
 };
 import { Component, VNode, ExtractPropTypes } from 'vue';
 declare global {
@@ -1096,6 +1105,8 @@ declare global {
         field: string;
         rules?: FormRules[string];
         config?: FormItemProps;
+        gridProps?: GridProps;
+        gridItemProps?: GridItemProps;
         props?: C extends keyof FormValidateFieldItemComponent
             ? FormValidateFieldItemComponent[C]
             : C extends VNode | Component
@@ -1106,6 +1117,7 @@ declare global {
         };
     };
 }
+
 
 ```
 # ncol 类型补充
