@@ -1008,32 +1008,33 @@ const useTouchmove = (cb: (data: {
 ```vue
 <template>
     <n-form class="formValidate" ref="formRef" :rules="rules" :model="modelValue" v-bind="config">
-        <n-form-item v-for="(item, index) in field" :key="index" :label="item.label" :path="item.field"
-            v-bind="item.config">
-            <n-grid cols="1" v-bind="item.gridProps">
+        <n-grid cols="1" v-bind="gridProps">
+            <template v-for="(item, index) in field" :key="index">
                 <n-grid-item v-bind="item.gridItemProps">
-                    <template v-if="componentMapConfig[item.component]">
-                        <component :is="componentMapConfig[item.component]" v-model:value="modelValue[item.field]"
-                            v-bind="item.props">
-                            <!-- 动态插槽继承，后续其他组件也可以这样做 -->
-                            <template v-for="(slotItem, key) in item?.slots" :key="key" #[key]="scope">
-                                <component :is="item?.slots?.[key]" :field="item.field" :rules="item.rules"
-                                    :formConfig="config" :formData="modelValue" v-bind="scope" />
-                            </template>
-                        </component>
-                    </template>
-                    <template v-else>
-                        <component v-if="item.component" :is="item.component" v-model="modelValue[item.field]"
-                            :field="item.field" :rules="item.rules" :formConfig="config" :formData="modelValue"
-                            v-bind="item.props" />
-                    </template>
+                    <n-form-item :label="item.label" :path="item.field" v-bind="item.config">
+                        <template v-if="componentMapConfig[item.component]">
+                            <component :is="componentMapConfig[item.component]" v-model:value="modelValue[item.field]"
+                                v-bind="item.props">
+                                <!-- 动态插槽继承，后续其他组件也可以这样做 -->
+                                <template v-for="(slotItem, key) in item?.slots" :key="key" #[key]="scope">
+                                    <component :is="item?.slots?.[key]" :field="item.field" :rules="item.rules"
+                                        :formConfig="config" :formData="modelValue" v-bind="scope" />
+                                </template>
+                            </component>
+                        </template>
+                        <template v-else>
+                            <component v-if="item.component" :is="item.component" v-model="modelValue[item.field]"
+                                :field="item.field" :rules="item.rules" :formConfig="config" :formData="modelValue"
+                                v-bind="item.props" />
+                        </template>
+                    </n-form-item>
                 </n-grid-item>
-            </n-grid>
-        </n-form-item>
+            </template>
+        </n-grid>
     </n-form>
 </template>
 <script setup lang="ts">
-import { FormRules, FormProps } from 'naive-ui';
+import { FormRules, FormProps, GridProps } from 'naive-ui';
 import * as naiveUI from 'naive-ui';
 const componentMapConfig = shallowRef({
     input: naiveUI.NInput,
@@ -1049,6 +1050,7 @@ const props = defineProps<{
     modelValue: Record<string, any>;
     field: FormValidateField;
     config?: FormProps;
+    gridProps?: GridProps;
 }>();
 const emit = defineEmits(['update:modelValue']);
 const { modelValue, field, config } = useVModels(props, emit);
@@ -1068,6 +1070,7 @@ defineExpose({
 <style scoped lang="less">
 .formValidate {}
 </style>
+
 
 ```
 ```typescript
@@ -1105,7 +1108,6 @@ declare global {
         field: string;
         rules?: FormRules[string];
         config?: FormItemProps;
-        gridProps?: GridProps;
         gridItemProps?: GridItemProps;
         props?: C extends keyof FormValidateFieldItemComponent
             ? FormValidateFieldItemComponent[C]
