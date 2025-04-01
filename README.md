@@ -1007,25 +1007,95 @@ const useTouchmove = (cb: (data: {
 # 表单封装
 ```vue
 <template>
-    <n-form class="formValidate" ref="formRef" :rules="rules" :model="modelValue" v-bind="config">
+    <n-form
+        class="formValidate"
+        ref="formRef"
+        :rules="rules"
+        :model="modelValue"
+        v-bind="config"
+    >
         <n-grid v-bind="gridProps" :cols="cols">
             <template v-for="(item, index) in field" :key="index">
-                <n-grid-item v-bind="item.gridItemProps" :span="get(item, 'gridItemProps.span', cols)">
-                    <n-form-item :label="item.label" :path="item.field" v-bind="item.config">
+                <n-grid-item
+                    v-bind="item.gridItemProps"
+                    :span="get(item, 'gridItemProps.span', cols)"
+                >
+                    <n-form-item
+                        :label="item.label"
+                        :path="item.field"
+                        v-bind="item.config"
+                    >
+                        <template v-if="item.slots && item.slots.gridBefore">
+                            <component
+                                :is="item.slots.gridBefore"
+                                :field="item.field"
+                                :rules="item.rules"
+                                :formConfig="config"
+                                :formData="modelValue"
+                            />
+                        </template>
                         <template v-if="componentMapConfig[item.component]">
-                            <component :is="componentMapConfig[item.component]" v-model:value="modelValue[item.field]"
-                                v-bind="item.props">
+                            <component
+                                :is="componentMapConfig[item.component]"
+                                v-model:value="modelValue[item.field]"
+                                v-bind="item.props"
+                            >
                                 <!-- 动态插槽继承，后续其他组件也可以这样做 -->
-                                <template v-for="(slotItem, key) in item?.slots" :key="key" #[key]="scope">
-                                    <component :is="slotItem" :field="item.field" :rules="item.rules"
-                                        :formConfig="config" :formData="modelValue" v-bind="scope" />
+                                <template
+                                    v-for="(slotItem, key) in item?.slots"
+                                    :key="key"
+                                    #[key]="scope"
+                                >
+                                    <template v-if="!builtInSlot.includes(key)">
+                                        <component
+                                            :is="slotItem"
+                                            :field="item.field"
+                                            :rules="item.rules"
+                                            :formConfig="config"
+                                            :formData="modelValue"
+                                            v-bind="scope"
+                                        />
+                                    </template>
                                 </template>
                             </component>
                         </template>
                         <template v-else>
-                            <component v-if="item.component" :is="item.component" v-model="modelValue[item.field]"
-                                :field="item.field" :rules="item.rules" :formConfig="config" :formData="modelValue"
-                                v-bind="item.props" />
+                            <component
+                                v-if="item.component"
+                                :is="item.component"
+                                v-model="modelValue[item.field]"
+                                :field="item.field"
+                                :rules="item.rules"
+                                :formConfig="config"
+                                :formData="modelValue"
+                                v-bind="item.props"
+                            />
+                        </template>
+                        <template v-if="item.slots && item.slots.gridBefore">
+                            <component
+                                :is="item.slots.gridAefter"
+                                :field="item.field"
+                                :rules="item.rules"
+                                :formConfig="config"
+                                :formData="modelValue"
+                            />
+                        </template>
+                        <!-- 动态插槽继承，后续其他组件也可以这样做 -->
+                        <template
+                            v-for="(slotItem, key) in item?.slots"
+                            :key="key"
+                            #[getKey(key)]="scope"
+                        >
+                            <template v-if="builtInFormSlot.includes(key)">
+                                <component
+                                    :is="slotItem"
+                                    :field="item.field"
+                                    :rules="item.rules"
+                                    :formConfig="config"
+                                    :formData="modelValue"
+                                    v-bind="scope"
+                                />
+                            </template>
                         </template>
                     </n-form-item>
                 </n-grid-item>
@@ -1037,7 +1107,12 @@ const useTouchmove = (cb: (data: {
 import { FormRules, FormProps, GridProps } from 'naive-ui';
 import * as naiveUI from 'naive-ui';
 import { get } from 'lodash';
-const componentMapConfig = shallowRef({
+const getKey = (key: any) => (key || '').replace(/form/, '').toLowerCase();
+const builtInFormSlot = ref<any>(['formFeedback', 'formLabel']);
+const builtInSlot = computed<any>(() =>
+    ['gridBefore', 'gridAefter'].concat(builtInFormSlot.value)
+);
+const componentMapConfig = shallowRef<any>({
     input: naiveUI.NInput,
     number: naiveUI.NInputNumber,
     select: naiveUI.NSelect,
@@ -1045,7 +1120,7 @@ const componentMapConfig = shallowRef({
     datePicker: naiveUI.NDatePicker,
     switch: naiveUI.NSwitch,
     upload: naiveUI.NProUpload,
-})
+});
 const formRef = ref();
 const props = defineProps<{
     modelValue: Record<string, any>;
@@ -1072,7 +1147,8 @@ defineExpose({
 });
 </script>
 <style scoped lang="less">
-.formValidate {}
+.formValidate {
+}
 </style>
 
 ```
@@ -1117,6 +1193,10 @@ declare global {
             ? ExtractPropTypes<C>
             : never;
         slots?: {
+            formFeedback?: Component | VNode;
+            formLabel?: Component | VNode;
+            gridBefore?: Component | VNode;
+            gridAefter?: Component | VNode;
             [key: string]: Component | VNode;
         };
     };
