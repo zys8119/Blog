@@ -1008,16 +1008,16 @@ const useTouchmove = (cb: (data: {
 ```vue
 <template>
     <n-form class="formValidate" ref="formRef" :rules="rules" :model="modelValue" v-bind="config">
-        <n-grid cols="1" v-bind="gridProps">
+        <n-grid v-bind="gridProps" :cols="cols">
             <template v-for="(item, index) in field" :key="index">
-                <n-grid-item v-bind="item.gridItemProps">
+                <n-grid-item v-bind="item.gridItemProps" :span="get(item, 'gridItemProps.span', cols)">
                     <n-form-item :label="item.label" :path="item.field" v-bind="item.config">
                         <template v-if="componentMapConfig[item.component]">
                             <component :is="componentMapConfig[item.component]" v-model:value="modelValue[item.field]"
                                 v-bind="item.props">
                                 <!-- 动态插槽继承，后续其他组件也可以这样做 -->
                                 <template v-for="(slotItem, key) in item?.slots" :key="key" #[key]="scope">
-                                    <component :is="item?.slots?.[key]" :field="item.field" :rules="item.rules"
+                                    <component :is="slotItem" :field="item.field" :rules="item.rules"
                                         :formConfig="config" :formData="modelValue" v-bind="scope" />
                                 </template>
                             </component>
@@ -1036,6 +1036,7 @@ const useTouchmove = (cb: (data: {
 <script setup lang="ts">
 import { FormRules, FormProps, GridProps } from 'naive-ui';
 import * as naiveUI from 'naive-ui';
+import { get } from 'lodash';
 const componentMapConfig = shallowRef({
     input: naiveUI.NInput,
     number: naiveUI.NInputNumber,
@@ -1052,6 +1053,9 @@ const props = defineProps<{
     config?: FormProps;
     gridProps?: GridProps;
 }>();
+const cols = computed(() => {
+    return get(props.gridProps, 'cols', 1);
+});
 const emit = defineEmits(['update:modelValue']);
 const { modelValue, field, config } = useVModels(props, emit);
 const rules = computed(() => {
@@ -1071,7 +1075,6 @@ defineExpose({
 .formValidate {}
 </style>
 
-
 ```
 ```typescript
 export {};
@@ -1085,7 +1088,6 @@ import {
     SwitchProps,
     UploadProps,
     InputNumberProps,
-    GridProps,
     GridItemProps,
 } from 'naive-ui';
 type FormValidateFieldItemComponent = {
@@ -1119,7 +1121,6 @@ declare global {
         };
     };
 }
-
 
 ```
 # ncol 类型补充
