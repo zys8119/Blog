@@ -1054,7 +1054,10 @@ const useTouchmove = (cb: (data: {
 import { FormRules, FormProps, GridProps } from 'naive-ui';
 import * as naiveUI from 'naive-ui';
 import { get } from 'lodash';
-const getKey = (key: any) => (key || '').replace(/form/, '').toLowerCase();
+const getKey = (key: any) => {
+    const name = (key || '').replace(/form/, '').toLowerCase()
+    return name === 'default' ? null : name;
+};
 const builtInFormSlot = ref<any>(['formFeedback', 'formLabel']);
 const builtInSlot = computed<any>(() =>
     ['gridBefore', 'gridAefter'].concat(builtInFormSlot.value)
@@ -1096,57 +1099,6 @@ defineExpose({
 <style scoped lang="less">
 .formValidate {}
 </style>
-
-```
-```typescript
-export {};
-import {
-    FormRules,
-    FormItemProps,
-    InputProps,
-    CascaderProps,
-    SelectProps,
-    DatePickerProps,
-    SwitchProps,
-    UploadProps,
-    InputNumberProps,
-    GridItemProps,
-} from 'naive-ui';
-type FormValidateFieldItemComponent = {
-    input: InputProps;
-    select: SelectProps;
-    cascader: CascaderProps;
-    datePicker: DatePickerProps;
-    switch: SwitchProps;
-    upload: UploadProps;
-    number: InputNumberProps;
-};
-import { Component, VNode, ExtractPropTypes } from 'vue';
-declare global {
-    type FormValidateField = FormValidateFieldItem[];
-    type FormValidateFieldItem<
-        C = keyof FormValidateFieldItemComponent | Component | VNode
-    > = {
-        label?: string;
-        component: C;
-        field: string;
-        rules?: FormRules[string];
-        config?: FormItemProps;
-        gridItemProps?: GridItemProps;
-        props?: C extends keyof FormValidateFieldItemComponent
-            ? FormValidateFieldItemComponent[C]
-            : C extends VNode | Component
-            ? ExtractPropTypes<C>
-            : never;
-        slots?: {
-            formFeedback?: Component | VNode;
-            formLabel?: Component | VNode;
-            gridBefore?: Component | VNode;
-            gridAefter?: Component | VNode;
-            [key: string]: Component | VNode;
-        };
-    };
-}
 
 ```
 # ncol 类型补充
