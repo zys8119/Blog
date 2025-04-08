@@ -1167,3 +1167,59 @@ async function extractImagesFromExcel(filePath: any) {
 extractImagesFromExcel(excelFilePath);
 
 ```
+# nodejs pdf 批注绘制（非浏览器方式绘制）
+```typescript
+import { createCanvas } from "canvas";
+import { writeFileSync, readFileSync } from "fs";
+import { PDFDocument, PDFPage } from "pdf-lib";
+class pdfForCanvasDraw {
+  constructor() {}
+  async init() {
+    try {
+      const pdfFileBuff = readFileSync("test1.pdf");
+      const pdfDoc = await PDFDocument.load(pdfFileBuff);
+      const pages = pdfDoc.getPages();
+      for (let i = 0; i < pages.length; i++) {
+        const page = pages[i];
+        const { width, height } = page.getSize();
+        const canvas = createCanvas(width, height);
+        const ctx = canvas.getContext(
+          "2d"
+        ) as unknown as CanvasRenderingContext2D;
+        ctx.clearRect(0, 0, width, height);
+        //开始绘制===========================
+        await this.draw({
+          ctx,
+          width,
+          height,
+          page,
+        });
+        //结束绘制============================
+        const buffer = canvas.toBuffer("image/png");
+        const pngImage = await pdfDoc.embedPng(buffer);
+        writeFileSync("output.png", buffer);
+        page.drawImage(pngImage, {
+          x: 0,
+          y: 0,
+          width,
+          height,
+        });
+      }
+
+      writeFileSync("output.pdf", Buffer.from(await pdfDoc.save()));
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  }
+  async draw({
+    ctx,
+    page,
+  }: {
+    ctx: CanvasRenderingContext2D;
+    width: number;
+    height: number;
+    page: PDFPage;
+  }) {}
+}
+new pdfForCanvasDraw().init();
+```
