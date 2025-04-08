@@ -1223,3 +1223,266 @@ class pdfForCanvasDraw {
 }
 new pdfForCanvasDraw().init();
 ```
+
+# 无纸化pdf批注nodejs渲染
+```typescript
+import { createCanvas } from "canvas";
+import { PDFDocument, PDFPage } from "pdf-lib";
+import { chunk } from "lodash";
+type PenTypeMapRect = {
+  left: number;
+  right: number;
+  top: number;
+  bottom: number;
+};
+type PenTypeMapBRUSHPEN = {
+  x: number;
+  y: number;
+};
+type PenTypeMapTEXTPEN = {
+  data: any;
+  height: any;
+  key: any;
+  leftTopPdfSize: {
+    height: any;
+    width: any;
+  };
+  page: any;
+  rightBottomPdfSize: {
+    height: any;
+    width: any;
+  };
+  scale: any;
+  width: any;
+  x: any;
+  y: any;
+  zoom: any;
+};
+export class PdfForCanvasDraw {
+  get annotations() {
+    return JSON.parse(this.annotationsStr);
+  }
+  constructor(public annotationsStr, public data: Buffer) {}
+  async init() {
+    try {
+      const pdfDoc = await PDFDocument.load(this.data as any);
+      const pages = pdfDoc.getPages();
+      await Promise.all(
+        new Array(pages.length).fill(0).map(
+          (_, i) =>
+            new Promise((resolve) => {
+              (async () => {
+                const page = pages[i];
+                const { width, height } = page.getSize();
+                const canvas = createCanvas(width, height);
+                const ctx = canvas.getContext(
+                  "2d"
+                ) as unknown as CanvasRenderingContext2D;
+                ctx.clearRect(0, 0, width, height);
+                //开始绘制===========================
+                await this.draw({
+                  ctx,
+                  width,
+                  height,
+                  page,
+                  index: i,
+                });
+                //结束绘制============================
+                const buffer = canvas.toBuffer("image/png");
+                const pngImage = await pdfDoc.embedPng(buffer as any);
+                page.drawImage(pngImage, {
+                  x: 0,
+                  y: 0,
+                  width,
+                  height,
+                });
+                resolve(i);
+              })();
+            })
+        )
+      );
+
+      return Buffer.from(await pdfDoc.save());
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  }
+  toHex8(value: number) {
+    let color = null;
+    if (value >= 0) {
+      color = value.toString(16);
+    } else {
+      const hex = (value >>> 0).toString(16).toUpperCase();
+      color = ("00000000" + hex).slice(-8);
+    }
+    return chunk(color.slice(2) + color.slice(0, 2), 2)
+      .map((e) => parseInt(e.join(""), 16))
+      .reduce((a, b, k) => ((a[["r", "g", "b", "a"][k]] = b), a), {} as any);
+  }
+  async draw({
+    ctx,
+    index,
+    height,
+  }: {
+    ctx: CanvasRenderingContext2D;
+    width: number;
+    height: number;
+    page: PDFPage;
+    index: number;
+  }) {
+    const devicePixelRatio = 1;
+    await Promise.all(
+      this.annotations
+        ?.filter((e: any) => e.page === index)
+        .map(
+          (e: any) =>
+            new Promise((resolve) => {
+              (async () => {
+                if (typeof e.data === "string") {
+                  e.data = JSON.parse(e.data as unknown as string);
+                }
+
+                const { color: penColor, penWidthScale: penWidth } = JSON.parse(
+                  e.data.pen
+                );
+                const { r, g, b, a } = this.toHex8(penColor) as any;
+
+                switch (e.penType) {
+                  case "UNDERWAVELINE":
+                    // 波浪线
+                    await Promise.all(
+                      (
+                        JSON.parse(
+                          e.data.mergeData as string
+                        ) as Array<PenTypeMapRect>
+                      ).map(async (ee) => {
+                        const startX = ee.left * devicePixelRatio;
+                        const startY = height - ee.bottom * devicePixelRatio;
+                        const lineWidth =
+                          ee.right * devicePixelRatio -
+                          ee.left * devicePixelRatio;
+                        const amplitude = 2;
+                        const frequency = 0.8;
+                        const offsetX = 0;
+                        const offsetY = startY;
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(${r || 0}, ${g || 0}, ${
+                          b || 0
+                        }, ${a || 1})`;
+                        ctx.lineWidth = penWidth;
+                        ctx.moveTo(startX, startY);
+                        for (let x = 0; x < lineWidth; x++) {
+                          const y =
+                            offsetY +
+                            amplitude * Math.sin((x + offsetX) * frequency);
+                          ctx.lineTo(startX + x, y);
+                        }
+                        ctx.stroke();
+                        ctx.closePath();
+                      })
+                    );
+                    break;
+                  case "UNDERLINE":
+                    // 下划线
+                    (
+                      JSON.parse(
+                        e.data.mergeData as string
+                      ) as Array<PenTypeMapRect>
+                    ).forEach((ee) => {
+                      // ctx 绘制线段，定义颜色和粗细
+                      ctx.beginPath();
+                      ctx.lineWidth = penWidth;
+                      ctx.strokeStyle = `rgba(${r || 0}, ${g || 0}, ${
+                        b || 0
+                      }, ${a || 1})`;
+                      ctx.moveTo(
+                        ee.left * devicePixelRatio,
+                        height - ee.bottom * devicePixelRatio
+                      );
+                      ctx.lineTo(
+                        ee.right * devicePixelRatio,
+                        height - ee.bottom * devicePixelRatio
+                      );
+                      ctx.stroke();
+                      ctx.closePath();
+                    });
+                    break;
+                  case "HIGHLIGHTPEN":
+                    // 矩形
+                    (
+                      JSON.parse(
+                        e.data.mergeData as string
+                      ) as Array<PenTypeMapRect>
+                    ).forEach((ee) => {
+                      ctx.beginPath();
+                      ctx.fillStyle = `rgba(${r || 0}, ${g || 0}, ${
+                        b || 0
+                      }, 0.2)`;
+                      ctx.fillRect(
+                        ee.left * devicePixelRatio,
+
+                        height - ee.top * devicePixelRatio,
+                        (ee.right - ee.left) * devicePixelRatio,
+
+                        (ee.top - ee.bottom) * devicePixelRatio
+                      );
+                      ctx.stroke();
+                      ctx.closePath();
+                    });
+                    break;
+                  case "BRUSHPEN":
+                    // 线
+                    (e.data.data as Array<PenTypeMapBRUSHPEN>).forEach(
+                      (ee, k: number, arr: any[]) => {
+                        if (!arr[k + 1]) {
+                          return;
+                        }
+                        // ctx 绘制线段，定义颜色和粗细
+                        ctx.beginPath();
+                        ctx.lineWidth = penWidth;
+                        ctx.strokeStyle = `rgba(${r || 0}, ${g || 0}, ${
+                          b || 0
+                        }, ${a || 1})`;
+                        ctx.moveTo(
+                          ee.x * devicePixelRatio,
+                          height - ee.y * devicePixelRatio
+                        );
+                        ctx.lineTo(
+                          arr[k + 1].x * devicePixelRatio,
+                          height - arr[k + 1].y * devicePixelRatio
+                        );
+                        ctx.stroke();
+                        ctx.closePath();
+                      }
+                    );
+                    break;
+                  case "TEXTPEN":
+                    await (async (data: PenTypeMapTEXTPEN) => {
+                      ctx.fillStyle = `rgba(${r || 0}, ${g || 0}, ${b || 0}, ${
+                        a || 1
+                      })`;
+                      const textMap = data.data.split("\n");
+                      ctx.font = `30px 黑体`;
+                      ctx.textBaseline = "top";
+                      textMap.forEach((text: string, index: number) => {
+                        ctx.fillText(
+                          text,
+                          data.leftTopPdfSize.width * devicePixelRatio,
+                          height -
+                            data.leftTopPdfSize.height * devicePixelRatio +
+                            index * 30,
+                          data.width * devicePixelRatio
+                        );
+                      });
+                    })(e.data.data as PenTypeMapTEXTPEN);
+                    break;
+                }
+                resolve(1);
+              })();
+            })
+        )
+    );
+  }
+}
+export default PdfForCanvasDraw;
+```
