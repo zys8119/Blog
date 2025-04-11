@@ -115,6 +115,7 @@ web端
 [获取git指定Head节点文件详情](serve/getHeadFileInfoList.md)
 
 [nodejs 17 以下fetch兼容，以axios方式-可解决llama-js 在低版本的nodejs中的正常运行](serve/fetch.ts)
+[wisdom-node bodyData 解析](serve/bodyData.ts)
 
 ## 其他
 
