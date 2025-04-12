@@ -1227,6 +1227,9 @@ new pdfForCanvasDraw().init();
 ```
 
 # 无纸化pdf批注nodejs渲染
+
+[非canvas 版本,canvas会导致cpu爆满](./serve/pdf-annotation-synthesis.ts)
+
 ```typescript
 import { createCanvas } from "canvas";
 import { PDFDocument, PDFPage } from "pdf-lib";
