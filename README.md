@@ -1491,3 +1491,86 @@ export class PdfForCanvasDraw {
 }
 export default PdfForCanvasDraw;
 ```
+
+# excel表格公式使用
+
+>  "@handsontable/vue3": "^15.2.0",
+>  "handsontable": "^15.2.0",
+>  "hyperformula": "^3.0.0",
+
+```vue
+<template>
+    <div class="aaaa abs-center w-80% h-80% of-auto">
+        <hot-table v-bind="config"></hot-table>
+    </div>
+</template>
+<script setup lang="ts">
+import { HotTable } from '@handsontable/vue3';
+import { registerAllModules } from 'handsontable/registry';
+import 'handsontable/styles/handsontable.min.css';
+import 'handsontable/styles/ht-theme-main.min.css';
+import { HyperFormula, FunctionPlugin, FunctionArgumentType, ImplementedFunctions } from 'hyperformula';
+registerAllModules();
+const licenseKey = 'gpl-v3'
+class MyCustomPlugin extends FunctionPlugin {
+    static implementedFunctions: ImplementedFunctions = {
+        GREET: {
+            method: 'GREET',
+            parameters: [
+                { argumentType: FunctionArgumentType.ANY, },
+            ],
+            // 如果需要多参数，使用repeatLastArgs
+            repeatLastArgs: 1
+        },
+    };
+    constructor(instance) {
+        super(instance);
+    }
+    GREET(ast, state) {
+        console.log(11, ast, state)
+        return this.runFunction(
+            ast.args,
+            state,
+            this.metadata('GREET'),
+            (...firstName) => {
+                return `👋 Hello, ${firstName}!`;
+            }
+        );
+    }
+}
+HyperFormula.registerFunctionPlugin(MyCustomPlugin, {
+    enGB: Object.fromEntries(Object.entries(MyCustomPlugin.implementedFunctions).map(([key]: any) => [key, key]))
+});
+
+const data = ref([
+    new Array(50).fill(''),
+    ['', 'Ford', 'Volvo', 'Toyota', 'Honda'],
+    ['2016', 10, 11, 12, 13],
+    ['2017', 20, 11, 14, 13],
+    ['2018', 30, 15, 12, "=sum(B5:D5)"],
+    ['2018', 30, 15, 12, "=GREET(E5,E3)"]
+]);
+const config = ref({
+    mergeCells: {
+        cells: [{ row: 1, col: 1, rowspan: 3, colspan: 2 }]
+    },
+    formulas: {
+        licenseKey,
+        engine: HyperFormula.buildEmpty({
+            language: 'enGB',
+            licenseKey
+        }),
+    },
+    matchWholeCell: true,
+    licenseKey,
+    data,
+    colHeaders: true,
+    rowHeaders: true,
+})
+onMounted(() => {
+})
+</script>
+<style scoped lang="less">
+.xlsx {}
+</style>
+```
