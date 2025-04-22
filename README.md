@@ -1494,9 +1494,17 @@ export default PdfForCanvasDraw;
 
 # excel表格公式使用
 
->  "@handsontable/vue3": "^15.2.0",
->  "handsontable": "^15.2.0",
->  "hyperformula": "^3.0.0",
+相关依赖
+
+```json
+{
+  "@handsontable/vue3": "^15.2.0",
+  "handsontable": "^15.2.0",
+  "hyperformula": "^3.0.0",
+}
+```
+
+具体代码 
 
 ```vue
 <template>
