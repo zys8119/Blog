@@ -1606,92 +1606,92 @@ DIAGONALLINE: function () {
 ```
 ```js
 /**
-						 * @param {*} cell 单元格
-						 * @param {*} postion 单元格位置
-						 * @param {*} sheetFile 工作表
-						 * @param {CanvasRenderingContext2D} ctx 画布
-						 * */
-						cellRenderAfter: function (cell, postion, sheetFile, ctx) {
-							// console.log(postion);
-							if (/^=DIAGONALLINE/.test(cell?.f)) {
-								const value = cell.v?.split?.("__DIAGONALLINE__") || [cell.v];
-								const x = postion.start_c;
-								const y = postion.start_r;
-								const ex = postion.end_c;
-								const ey = postion.end_r;
-								const w = Math.abs(postion.start_c + postion.end_c);
-								const h = Math.abs(postion.start_r + postion.end_r);
-								ctx.clearRect(x, y, w, h);
-								ctx.fillStyle = cell.bg || "#fff";
-								ctx.fillRect(x, y, w, h);
-								let length = value.length - 1
-								ctx.strokeStyle = cell.fc;
-								ctx.lineWidth = 1;
-								if (length % 2 !== 0) {
-									ctx.beginPath();
-									ctx.moveTo(x, y);
-									ctx.lineTo(ex, ey);
-									ctx.stroke();
-									length -= 1
-								}
-								const length2 = length / 2
-								for (let i = 0; i < length2; i++) {
-									ctx.beginPath();
-									ctx.moveTo(x, y);
-									const width = w / (length2 + 1) * (i + 1)
-									ctx.lineTo(width, h);
-									ctx.stroke();
+ * @param {*} cell 单元格
+ * @param {*} postion 单元格位置
+ * @param {*} sheetFile 工作表
+ * @param {CanvasRenderingContext2D} ctx 画布
+ * */
+cellRenderAfter: function (cell, postion, sheetFile, ctx) {
+  // console.log(postion);
+  if (/^=DIAGONALLINE/.test(cell?.f)) {
+    const value = cell.v?.split?.("__DIAGONALLINE__") || [cell.v];
+    const x = postion.start_c;
+    const y = postion.start_r;
+    const ex = postion.end_c;
+    const ey = postion.end_r;
+    const w = Math.abs(postion.start_c + postion.end_c);
+    const h = Math.abs(postion.start_r + postion.end_r);
+    ctx.clearRect(x, y, w, h);
+    ctx.fillStyle = cell.bg || "#fff";
+    ctx.fillRect(x, y, w, h);
+    let length = value.length - 1
+    ctx.strokeStyle = cell.fc;
+    ctx.lineWidth = 1;
+    if (length % 2 !== 0) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(ex, ey);
+      ctx.stroke();
+      length -= 1
+    }
+    const length2 = length / 2
+    for (let i = 0; i < length2; i++) {
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      const width = w / (length2 + 1) * (i + 1)
+      ctx.lineTo(width, h);
+      ctx.stroke();
 
-									ctx.beginPath();
-									ctx.moveTo(x, y);
-									const height = h / (length2 + 1) * (i + 1)
-									ctx.lineTo(w, height);
-									ctx.stroke();
-								}
-								const length3 = ((length2 + 1) * 2)
-								function getAngleFromTwoPoints(x1, y1, x2, y2) {
-									const dy = y2 - y1;
-									const dx = x2 - x1;
-									const radians = Math.atan2(dy, dx); // 处理所有象限情况
-									const degrees = radians * (180 / Math.PI);
-									return degrees;
-								}
-								function getPointOnLineByTwoPoints(x1, y1, x2, y2, t) {
-									// t ∈ [0,1] 表示从 A 到 B 的线段上点
-									// t ∈ R 表示整条直线上的点
-									const x = x1 + t * (x2 - x1);
-									const y = y1 + t * (y2 - y1);
-									return { x, y, angle: getAngleFromTwoPoints(x1, y1, x2, y2) };
-								}
-								// 计算文字位置
-								const textPos = []
-								const wz = 0.5
-								for (let i = 0; i < length3; i++) {
-									if (i % 2 !== 0) {
-										continue
-									}
-									textPos.push(getPointOnLineByTwoPoints(x, y, w / length3 * (i + 1), h, wz))
-									textPos.push(getPointOnLineByTwoPoints(x, y, w, h / length3 * (i + 1), wz))
-								}
-								// 绘制内容
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      const height = h / (length2 + 1) * (i + 1)
+      ctx.lineTo(w, height);
+      ctx.stroke();
+    }
+    const length3 = ((length2 + 1) * 2)
+    function getAngleFromTwoPoints(x1, y1, x2, y2) {
+      const dy = y2 - y1;
+      const dx = x2 - x1;
+      const radians = Math.atan2(dy, dx); // 处理所有象限情况
+      const degrees = radians * (180 / Math.PI);
+      return degrees;
+    }
+    function getPointOnLineByTwoPoints(x1, y1, x2, y2, t) {
+      // t ∈ [0,1] 表示从 A 到 B 的线段上点
+      // t ∈ R 表示整条直线上的点
+      const x = x1 + t * (x2 - x1);
+      const y = y1 + t * (y2 - y1);
+      return { x, y, angle: getAngleFromTwoPoints(x1, y1, x2, y2) };
+    }
+    // 计算文字位置
+    const textPos = []
+    const wz = 0.5
+    for (let i = 0; i < length3; i++) {
+      if (i % 2 !== 0) {
+        continue
+      }
+      textPos.push(getPointOnLineByTwoPoints(x, y, w / length3 * (i + 1), h, wz))
+      textPos.push(getPointOnLineByTwoPoints(x, y, w, h / length3 * (i + 1), wz))
+    }
+    // 绘制内容
 
-								ctx.font = `${typeof Number(cell.fs) === 'number' ? Number(cell.fs) : 16}px ${cell.ff || 'sans-serif'} `
-								ctx.fillStyle = cell.fc
-								if (value.length === 0) {
-									ctx.save();
-									ctx.rotate(Math.PI / 180 * 10);
-									ctx.fillText(value[0], x + 5, y + 15);
-									ctx.restore();
-								} else {
-									value.forEach((item, index) => {
-										ctx.save();
-										ctx.translate(textPos[index].x, textPos[index].y);
-										ctx.rotate(Math.PI / 180 * textPos[index].angle);
-										ctx.textBaseline = "middle";
-										ctx.fillText(item, 0, 0);
-										ctx.restore();
-									})
-								}
-							}
-						},
+    ctx.font = `${typeof Number(cell.fs) === 'number' ? Number(cell.fs) : 16}px ${cell.ff || 'sans-serif'} `
+    ctx.fillStyle = cell.fc
+    if (value.length === 0) {
+      ctx.save();
+      ctx.rotate(Math.PI / 180 * 10);
+      ctx.fillText(value[0], x + 5, y + 15);
+      ctx.restore();
+    } else {
+      value.forEach((item, index) => {
+        ctx.save();
+        ctx.translate(textPos[index].x, textPos[index].y);
+        ctx.rotate(Math.PI / 180 * textPos[index].angle);
+        ctx.textBaseline = "middle";
+        ctx.fillText(item, 0, 0);
+        ctx.restore();
+      })
+    }
+  }
+},
 ```
