@@ -1706,11 +1706,11 @@ cellRenderAfter: function (cell, postion, sheetFile, ctx) {
 import { createPool, QueryOptions } from "mysql2";
 import * as ncol from "ncol";
 const pool = createPool({
-  host: "192.168.110.242",
+  host: "",
   port: 3306,
   user: "root",
-  password: "Ul6WI12AuZomj76Kvl700-",
-  database: "conference",
+  password: "",
+  database: "",
   connectionLimit: 10,
 });
 export default function (sql: string | QueryOptions, values?: any) {
