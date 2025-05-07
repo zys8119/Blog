@@ -1701,7 +1701,7 @@ cellRenderAfter: function (cell, postion, sheetFile, ctx) {
   }
 },
 ```
-# 数据库连接池node-serve 简单缝状
+# 数据库连接池node-serve 简单封装
 ```
 import { createPool, QueryOptions } from "mysql2";
 import * as ncol from "ncol";
