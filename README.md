@@ -1754,3 +1754,35 @@ export default function (sql: string | QueryOptions, values?: any) {
 
 
 ```
+
+### 计算一年度的周数，第一周必须包含周四
+
+```typescript
+options.value = new Array(11).fill(0).map((_, index) => {
+        const year = dayjs().add(index - 5, 'year').year()
+        const startFirstDay = dayjs().year(year).startOf('year');
+        const weekA = dayjs(startFirstDay).day()
+        let startDay = null
+        if (weekA > 4) {
+            // 非今年
+            startDay = startFirstDay.add(7 - weekA, 'day')
+        } else {
+            // 今年
+            startDay = startFirstDay.add(-weekA, 'day')
+        }
+        return {
+            label: year,
+            value: year,
+            children: new Array(53).fill(0).map((_, k) => {
+                const startWeekFirstDay = startDay.add(k * 7, 'day')
+                return {
+                    label: `第${k + 1}周(${startWeekFirstDay.format('YYYY年MM月DD日期')} ~ ${startDay.add(k * 7 + 6, 'day').format('YYYY年MM月DD日期')})`,
+                    value: `${year}年第${k + 1}周`,
+                    year,
+                    week: k + 1,
+                    isEffective: startWeekFirstDay.year() <= year
+                }
+            }).filter(e => e.isEffective)
+        }
+    });
+```
