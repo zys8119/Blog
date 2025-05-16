@@ -1773,10 +1773,10 @@ const getYearWeekOption = (year: number, startFirstDayByWeek = 1) => {
     } else {
         // 国际算法，每年的第一周必须包含周四
         if (weekA > 4) {
-            // 非今年
+            // 今年
             startDay = startFirstDay.add(7 - weekA, 'day')
         } else {
-            // 今年
+            // 非今年
             startDay = startFirstDay.add(-weekA, 'day')
         }
     }
