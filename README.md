@@ -1777,8 +1777,8 @@ const getYearWeekOption = (year: number) => {
         label: year,
         value: year,
         children: new Array(53).fill(0).map((_, k) => {
-            const startWeekFirstDay = startDay.add(k * 7, 'day')
-            const startWeekLastDay = startDay.add(k * 7 + 6, 'day')
+            const startWeekFirstDay = startDay.add(k * 7, 'day').set('hour', 0).set('m', 0).set('s', 0)
+            const startWeekLastDay = startDay.add(k * 7 + 6, 'day').set('hours', 23).set('m', 59).set('s', 59)
             return {
                 label: `第${k + 1}周(${startWeekFirstDay.format('YYYY年MM月DD日期')} ~ ${startWeekLastDay.format('YYYY年MM月DD日期')})`,
                 value: `${year}年第${k + 1}周`,
