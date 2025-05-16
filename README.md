@@ -1115,7 +1115,64 @@ defineExpose({
 
 
 
+
 ```
+```typescript
+export {};
+import {
+    FormRules,
+    FormItemProps,
+    InputProps,
+    CascaderProps,
+    SelectProps,
+    DatePickerProps,
+    SwitchProps,
+    UploadProps,
+    InputNumberProps,
+    GridItemProps,
+    TransferTreeProps,
+} from 'naive-ui';
+type FormValidateFieldItemComponent = {
+    input: InputProps;
+    select: SelectProps;
+    cascader: CascaderProps;
+    datePicker: DatePickerProps;
+    switch: SwitchProps;
+    upload: UploadProps;
+    number: InputNumberProps;
+    transferTree: TransferTreeProps;
+};
+import { Component, VNode, ExtractPropTypes } from 'vue';
+declare global {
+    type FormValidateField = FormValidateFieldItem[];
+    type FormValidateFieldItem<
+        C = keyof FormValidateFieldItemComponent | Component | VNode
+    > = {
+        label?: string;
+        component: C;
+        field: string;
+        rules?: FormRules[string];
+        config?: FormItemProps;
+        gridItemProps?: GridItemProps;
+        props?: C extends keyof FormValidateFieldItemComponent
+            ? FormValidateFieldItemComponent[C]
+            : C extends VNode | Component
+            ? ExtractPropTypes<C>
+            : never;
+        slots?: {
+            formFeedback?: Component | VNode;
+            formLabel?: Component | VNode;
+            gridBefore?: Component | VNode;
+            gridAefter?: Component | VNode;
+            [key: string]: Component | VNode;
+        };
+        fieldModel?: string;
+    };
+}
+
+```
+
+
 # ncol 类型补充
 ```typescript
 declare module "ncol" {
