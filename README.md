@@ -1758,31 +1758,71 @@ export default function (sql: string | QueryOptions, values?: any) {
 ### 计算一年度的周数，第一周必须包含周四
 
 ```typescript
-options.value = new Array(11).fill(0).map((_, index) => {
-        const year = dayjs().add(index - 5, 'year').year()
-        const startFirstDay = dayjs().year(year).startOf('year');
-        const weekA = dayjs(startFirstDay).day()
-        let startDay = null
-        if (weekA > 4) {
-            // 非今年
-            startDay = startFirstDay.add(7 - weekA, 'day')
-        } else {
-            // 今年
-            startDay = startFirstDay.add(-weekA, 'day')
-        }
-        return {
-            label: year,
-            value: year,
-            children: new Array(53).fill(0).map((_, k) => {
-                const startWeekFirstDay = startDay.add(k * 7, 'day')
-                return {
-                    label: `第${k + 1}周(${startWeekFirstDay.format('YYYY年MM月DD日期')} ~ ${startDay.add(k * 7 + 6, 'day').format('YYYY年MM月DD日期')})`,
-                    value: `${year}年第${k + 1}周`,
-                    year,
-                    week: k + 1,
-                    isEffective: startWeekFirstDay.year() <= year
-                }
-            }).filter(e => e.isEffective)
-        }
+/**
+ * 根据年份获取指定年份的week信息
+ * @param year 年份
+ */
+const getYearWeekOption = (year: number) => {
+    const startFirstDay = dayjs().year(year).startOf('year');
+    const weekA = dayjs(startFirstDay).day()
+    let startDay = null
+    if (weekA > 4) {
+        // 非今年
+        startDay = startFirstDay.add(7 - weekA, 'day')
+    } else {
+        // 今年
+        startDay = startFirstDay.add(-weekA, 'day')
+    }
+    return {
+        label: year,
+        value: year,
+        children: new Array(53).fill(0).map((_, k) => {
+            const startWeekFirstDay = startDay.add(k * 7, 'day')
+            const startWeekLastDay = startDay.add(k * 7 + 6, 'day')
+            return {
+                label: `第${k + 1}周(${startWeekFirstDay.format('YYYY年MM月DD日期')} ~ ${startWeekLastDay.format('YYYY年MM月DD日期')})`,
+                value: `${year}年第${k + 1}周`,
+                startTime: startWeekFirstDay.toDate().getTime(),
+                endTime: startWeekLastDay.toDate().getTime(),
+                year,
+                week: k + 1,
+                isEffective: startWeekFirstDay.year() <= year
+            }
+        }).filter(e => e.isEffective)
+    }
+}
+/**
+ * 获取指定年份的所有week信息
+ * @param time 指定年份
+ * @param offsetYear 指定年份的上下浮动的年份，默认为前后5年
+ */
+const getYearWeekOptions = (time: any = null, offsetYear = 5) => {
+    return new Array(offsetYear * 2 + 1).fill(0).map((_, index) => {
+        const year = dayjs(time || dayjs()).add(index - offsetYear, 'year').year()
+        return getYearWeekOption(year)
     });
+}
+/**
+ * 根据时间查询所属周信息
+ * @param time 时间
+ */
+const getWeekByDay = (time: any) => {
+    const day = dayjs(time || dayjs())
+    const year = day.year()
+    const weekData = getYearWeekOption(year)
+    const weekList = weekData.children
+    const timeNow = day.toDate().getTime()
+    return weekList.find(e => e.startTime <= timeNow && e.endTime >= timeNow) as typeof weekList[0]
+}
+// 获取当前年往后推5年的年份
+const getYearRange = async () => {
+    options.value = getYearWeekOptions()
+    const week = getWeekByDay(dayjs())
+    checkDate.value = {
+        key: week.year + '年第' + week.week + '周',
+        year: week.year,
+        week: week.week
+    };
+    await getScheduleData();
+};
 ```
