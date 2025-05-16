@@ -1019,8 +1019,13 @@ const useTouchmove = (cb: (data: {
                                 :formConfig="config" :formData="modelValue" />
                         </template>
                         <template v-if="componentMapConfig[item.component]">
-                            <component :is="componentMapConfig[item.component]" v-model:value="modelValue[item.field]"
-                                v-bind="item.props">
+                            <component :is="componentMapConfig[item.component]" v-bind="{
+                                ...item.props,
+                                [item.fieldModel || `value`]: modelValue[item.field],
+                                [`onUpdate:${item.fieldModel || 'value'}`]: (v: any) => {
+                                    modelValue[item.field] = v
+                                }
+                            }">
                                 <!-- 动态插槽继承，后续其他组件也可以这样做 -->
                                 <template v-for="(slotItem, key) in item?.slots" :key="key" #[key]="scope">
                                     <template v-if="!builtInSlot.includes(key)">
@@ -1031,9 +1036,14 @@ const useTouchmove = (cb: (data: {
                             </component>
                         </template>
                         <template v-else>
-                            <component v-if="item.component" :is="item.component" v-model="modelValue[item.field]"
-                                :field="item.field" :rules="item.rules" :formConfig="config" :formData="modelValue"
-                                v-bind="item.props" />
+                            <component v-if="item.component" :is="item.component" :field="item.field"
+                                :rules="item.rules" :formConfig="config" :formData="modelValue" v-bind="{
+                                    ...item.props,
+                                    [item.fieldModel || `modelValue`]: modelValue[item.field],
+                                    [`onUpdate:${item.fieldModel || 'modelValue'}`]: (v: any) => {
+                                        modelValue[item.field] = v
+                                    }
+                                }" />
                         </template>
                         <template v-if="item.slots && item.slots.gridAefter">
                             <component :is="item.slots.gridAefter" :field="item.field" :rules="item.rules"
@@ -1057,7 +1067,7 @@ import { FormRules, FormProps, GridProps } from 'naive-ui';
 import * as naiveUI from 'naive-ui';
 import { get } from 'lodash';
 const getKey = (key: any) => {
-    const name = (key || '').replace(/form/, '').toLowerCase()
+    const name = (key || '').replace(/form/, '').toLowerCase();
     return name === 'default' ? null : name;
 };
 const builtInFormSlot = ref<any>(['formFeedback', 'formLabel']);
@@ -1072,6 +1082,7 @@ const componentMapConfig = shallowRef<any>({
     datePicker: naiveUI.NDatePicker,
     switch: naiveUI.NSwitch,
     upload: naiveUI.NProUpload,
+    transferTree: naiveUI.NTransferTree,
 });
 const formRef = ref();
 const props = defineProps<{
@@ -1101,6 +1112,8 @@ defineExpose({
 <style scoped lang="less">
 .formValidate {}
 </style>
+
+
 
 ```
 # ncol 类型补充
