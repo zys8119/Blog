@@ -1761,17 +1761,24 @@ export default function (sql: string | QueryOptions, values?: any) {
 /**
  * 根据年份获取指定年份的week信息
  * @param year 年份
+ * @param startFirstDayByWeek 非国际算法，指定每年第一周重指定星期开始，默认周一开始， 取值范围0-6，0为周日，同dayjs一致
  */
-const getYearWeekOption = (year: number) => {
+const getYearWeekOption = (year: number, startFirstDayByWeek = 1) => {
     const startFirstDay = dayjs().year(year).startOf('year');
     const weekA = dayjs(startFirstDay).day()
     let startDay = null
-    if (weekA > 4) {
-        // 非今年
-        startDay = startFirstDay.add(7 - weekA, 'day')
+    if (startFirstDayByWeek > 0) {
+        // 非国际算法，指定每年第一周重指定星期开始，默认周一开始
+        startDay = startFirstDay.add(startFirstDayByWeek - weekA, 'day')
     } else {
-        // 今年
-        startDay = startFirstDay.add(-weekA, 'day')
+        // 国际算法，每年的第一周必须包含周四
+        if (weekA > 4) {
+            // 非今年
+            startDay = startFirstDay.add(7 - weekA, 'day')
+        } else {
+            // 今年
+            startDay = startFirstDay.add(-weekA, 'day')
+        }
     }
     return {
         label: year,
@@ -1780,7 +1787,7 @@ const getYearWeekOption = (year: number) => {
             const startWeekFirstDay = startDay.add(k * 7, 'day').set('hour', 0).set('m', 0).set('s', 0)
             const startWeekLastDay = startDay.add(k * 7 + 6, 'day').set('hours', 23).set('m', 59).set('s', 59)
             return {
-                label: `第${k + 1}周(${startWeekFirstDay.format('YYYY年MM月DD日期')} ~ ${startWeekLastDay.format('YYYY年MM月DD日期')})`,
+                label: `第${k + 1}周(${startWeekFirstDay.format('MM月DD日')}-${startWeekLastDay.format('MM月DD日')})`,
                 value: `${year}年第${k + 1}周`,
                 startTime: startWeekFirstDay.toDate().getTime(),
                 endTime: startWeekLastDay.toDate().getTime(),
@@ -1821,7 +1828,9 @@ const getYearRange = async () => {
     checkDate.value = {
         key: week.year + '年第' + week.week + '周',
         year: week.year,
-        week: week.week
+        week: week.week,
+        startTime: week.startTime,
+        endTime: week.endTime,
     };
     await getScheduleData();
 };
