@@ -1941,68 +1941,48 @@ function effect(fn) {
     fn();
     activeSub = null;
 }
+const renderHelper = (element, type, props, children) => {
+    if (children && children.isRef) {
+        element.innerText = children.value;
+    } else {
+        const innerText = typeof children === 'function' ? children() : children;
+        if (Array.isArray(innerText)) {
+            element.innerHTML = '';
+            innerText.forEach((child) => {
+                if (child.isVNode) {
+                    renderElement(element, child)
+                } else {
+                    effect(renderHelper.bind(null, element, type, props, child));
+                }
+            })
+        } else {
+            element.innerText = innerText;
+        }
+    }
+}
 function h(type, props, children) {
     return {
         type,
         props,
         children: Array.isArray(children) ? children : [children],
         render: (element) => {
-            if (children && children.isRef) {
-                element.innerText = children.value;
-            } else {
-                element.innerText = typeof children === 'function' ? children() : children;
-            }
+            renderHelper(element, type, props, children);
         },
         isVNode: true,
     }
 }
 const aa = ref(1222)
 const color = ref('red')
+const a = ref(new Array(Math.ceil(Math.random() * 10)).fill(0));
 setInterval(() => {
     aa.value = Math.random();
     color.value = Math.random() > 0.5 ? 'red' : 'blue';
+    // a.value = new Array(Math.ceil(Math.random() * 10)).fill(0)
 }, 1000);
 const cc = ref(null);
 effect(() => {
     console.log(cc.value);
 });
-const a = ref(h('div', {
-    class: 'w-500px h-500px bg-red-500',
-    onClick: () => {
-        console.log('click');
-    }
-}, [
-    h('div', {
-        class: 'w-100px h-100px bg-blue-500',
-        onClick: () => {
-            console.log('click');
-        }
-    }, 'child1'),
-    h('span', {
-        class: () => `w-100px h-100px bg-green-500 text-$color`,
-        style: () => ({
-            '--color': color.value,
-        }),
-        onClick: () => {
-            console.log('click');
-        }
-    }, 'child2'),
-    h('div', {
-        class: 'w-100px h-100px bg-green-500',
-        onClick: () => {
-            console.log('click');
-        },
-        ref: el => {
-            console.log(el)
-        }
-    }, h('span', {
-        class: () => 'w-100px h-100px bg-green-500',
-        onClick: (e: MouseEvent) => {
-            e.stopPropagation();
-            console.log('click');
-        },
-    }, () => `aa.value:${aa.value}`)),
-]));
 const el = useCurrentElement<HTMLElement>();
 function renderElement(el, VNode) {
     const { type, props, children } = VNode;
@@ -2044,7 +2024,7 @@ function renderElement(el, VNode) {
         }
     }
     children.forEach((child) => {
-        if (child.isVNode) {
+        if (child && child.isVNode) {
             renderElement(element, child);
         } else {
             effect(VNode.render.bind(null, element));
@@ -2054,7 +2034,47 @@ function renderElement(el, VNode) {
 }
 function render() {
     el.value.innerHTML = "";
-    renderElement(el.value, a.value)
+    renderElement(el.value, h('div', {
+        class: 'w-500px h-500px bg-red-500',
+        onClick: () => {
+            console.log('click');
+        }
+    }, [
+        h('div', {
+            class: 'w-100px h-100px bg-blue-500',
+            onClick: () => {
+                console.log('click');
+            }
+        }, 'child1'),
+        h('span', {
+            class: () => `w-100px h-100px bg-green-500 text-$color`,
+            style: () => ({
+                '--color': color.value,
+            }),
+            onClick: () => {
+                console.log('click');
+            }
+        }, 'child2'),
+        h('div', {
+            class: 'w-100px h-100px bg-green-500',
+            onClick: () => {
+                console.log('click');
+            },
+            ref: el => {
+                console.log(el)
+            }
+        }, h('span', {
+            class: () => 'w-100px h-100px bg-green-500',
+            onClick: (e: MouseEvent) => {
+                e.stopPropagation();
+                console.log('click');
+            },
+        }, () => `aa.value:${aa.value}`)),
+        h('div', {}, () => a.value.map((_, k) => h('div', {
+            aa: k === 0 ? (() => aa.value) : 'asda'
+        }, `div-${k}`))),
+        h('div', { class: 'bg-amber' }, null)
+    ]))
 }
 onMounted(() => {
     effect(render);
