@@ -1908,7 +1908,7 @@ const getYearRange = async () => {
 
 ### vue 简单的响应式代理
 
-```
+```vue
 <template>
     <div class='ref'></div>
 </template>
@@ -1957,9 +1957,15 @@ function h(type, props, children) {
     }
 }
 const aa = ref(1222)
+const color = ref('red')
 setInterval(() => {
     aa.value = Math.random();
+    color.value = Math.random() > 0.5 ? 'red' : 'blue';
 }, 1000);
+const cc = ref(null);
+effect(() => {
+    console.log(cc.value);
+});
 const a = ref(h('div', {
     class: 'w-500px h-500px bg-red-500',
     onClick: () => {
@@ -1973,7 +1979,10 @@ const a = ref(h('div', {
         }
     }, 'child1'),
     h('span', {
-        class: 'w-100px h-100px bg-green-500',
+        class: () => `w-100px h-100px bg-green-500 text-$color`,
+        style: () => ({
+            '--color': color.value,
+        }),
         onClick: () => {
             console.log('click');
         }
@@ -1982,13 +1991,16 @@ const a = ref(h('div', {
         class: 'w-100px h-100px bg-green-500',
         onClick: () => {
             console.log('click');
+        },
+        ref: el => {
+            console.log(el)
         }
     }, h('span', {
-        class: 'w-100px h-100px bg-green-500',
+        class: () => 'w-100px h-100px bg-green-500',
         onClick: (e: MouseEvent) => {
             e.stopPropagation();
             console.log('click');
-        }
+        },
     }, () => `aa.value:${aa.value}`)),
 ]));
 const el = useCurrentElement<HTMLElement>();
@@ -1997,12 +2009,39 @@ function renderElement(el, VNode) {
     const element = document.createElement(type);
     VNode.el = element;
     for (const key in props) {
-        if (/^on[A-Z]+/.test(key)) {
-            const eventName = key.slice(2).toLowerCase();
-            element.addEventListener(eventName, props[key]);
+        const _VNodeRef = props[key];
+        if (key === 'ref') {
+            if (_VNodeRef.isRef) {
+                _VNodeRef.value = element;
+            } else {
+                _VNodeRef?.(element)
+            }
             continue;
         }
-        element.setAttribute(key, props[key]);
+        const renderArrs = (bool, _value?) => {
+            const value = _value ? _value : bool ? _VNodeRef.value : _VNodeRef;
+            if (/^style$/.test(key)) {
+                for (const styleKey in value) {
+                    if (styleKey.startsWith('--')) {
+                        element.style.setProperty(styleKey, value[styleKey]);
+                    } else {
+                        element.style[styleKey] = value[styleKey];
+                    }
+                }
+            } else if (/^on[A-Z]+/.test(key)) {
+                const eventName = key.slice(2).toLowerCase();
+                element.addEventListener(eventName, value);
+            } else {
+                element.setAttribute(key, value);
+            }
+        }
+        if (_VNodeRef.isRef) {
+            effect(renderArrs.bind(null, true));
+        } else {
+            effect(() => {
+                renderArrs(false, typeof _VNodeRef === 'function' && !/^on[A-Z]+/.test(key) ? _VNodeRef() : _VNodeRef);
+            })
+        }
     }
     children.forEach((child) => {
         if (child.isVNode) {
