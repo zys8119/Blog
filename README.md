@@ -2086,8 +2086,6 @@ onMounted(() => {
 ```
 js 版本
 ```typescript
-import { c } from "naive-ui";
-
 export class shallowRef {
   _value: any;
   constructor(value) {
@@ -2213,10 +2211,16 @@ export function renderElement(el, VNode, parent = null) {
   }
 }
 export function render(el: HTMLElement, VNode) {
+  if (typeof VNode === "function") {
+    VNode = VNode();
+  }
   el.innerHTML = "";
   renderElement(el, VNode);
 }
 function VNodeForTsxHelper(VNode: any) {
+  if (typeof VNode === "function") {
+    VNode = VNode();
+  }
   if (!VNode?.__v_isVNode) {
     return VNode;
   }
