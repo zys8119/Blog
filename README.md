@@ -1905,3 +1905,123 @@ const getYearRange = async () => {
     await getScheduleData();
 };
 ```
+
+### vue 简单的响应式代理
+
+```
+<template>
+    <div class='ref'></div>
+</template>
+<script setup lang="ts">
+class shallowRef {
+    constructor(value) {
+        this._value = value;
+    }
+    subs = new Set();
+    isRef = true;
+    get value() {
+        if (activeSub) {
+            this.subs.add(activeSub);
+        }
+        return this._value;
+    }
+    set value(newValue) {
+        this._value = newValue;
+        this.subs.forEach((sub) => {
+            sub();
+        });
+    }
+}
+function ref(value) {
+    return new shallowRef(value);
+}
+let activeSub = null;
+function effect(fn) {
+    activeSub = fn;
+    fn();
+    activeSub = null;
+}
+function h(type, props, children) {
+    return {
+        type,
+        props,
+        children: Array.isArray(children) ? children : [children],
+        render: (element) => {
+            if (children && children.isRef) {
+                element.innerText = children.value;
+            } else {
+                element.innerText = typeof children === 'function' ? children() : children;
+            }
+        },
+        isVNode: true,
+    }
+}
+const aa = ref(1222)
+setInterval(() => {
+    aa.value = Math.random();
+}, 1000);
+const a = ref(h('div', {
+    class: 'w-500px h-500px bg-red-500',
+    onClick: () => {
+        console.log('click');
+    }
+}, [
+    h('div', {
+        class: 'w-100px h-100px bg-blue-500',
+        onClick: () => {
+            console.log('click');
+        }
+    }, 'child1'),
+    h('span', {
+        class: 'w-100px h-100px bg-green-500',
+        onClick: () => {
+            console.log('click');
+        }
+    }, 'child2'),
+    h('div', {
+        class: 'w-100px h-100px bg-green-500',
+        onClick: () => {
+            console.log('click');
+        }
+    }, h('span', {
+        class: 'w-100px h-100px bg-green-500',
+        onClick: (e: MouseEvent) => {
+            e.stopPropagation();
+            console.log('click');
+        }
+    }, () => `aa.value:${aa.value}`)),
+]));
+const el = useCurrentElement<HTMLElement>();
+function renderElement(el, VNode) {
+    const { type, props, children } = VNode;
+    const element = document.createElement(type);
+    VNode.el = element;
+    for (const key in props) {
+        if (/^on[A-Z]+/.test(key)) {
+            const eventName = key.slice(2).toLowerCase();
+            element.addEventListener(eventName, props[key]);
+            continue;
+        }
+        element.setAttribute(key, props[key]);
+    }
+    children.forEach((child) => {
+        if (child.isVNode) {
+            renderElement(element, child);
+        } else {
+            effect(VNode.render.bind(null, element));
+        }
+    });
+    el.appendChild(element);
+}
+function render() {
+    el.value.innerHTML = "";
+    renderElement(el.value, a.value)
+}
+onMounted(() => {
+    effect(render);
+})
+</script>
+<style scoped lang="less">
+.ref {}
+</style>
+```
