@@ -2236,6 +2236,10 @@ export function render(el: HTMLElement, VNode) {
   el.innerHTML = "";
   renderElement(el, VNode);
 }
+
+const propsKsyMapForTsx = {
+  className: "class",
+};
 function VNodeForTsxHelper(VNode: any) {
   if (VNode.isRef) {
     return h(VNode);
@@ -2250,15 +2254,23 @@ function VNodeForTsxHelper(VNode: any) {
   if (type?.toString?.() === "Symbol(v-txt)") {
     return h(children);
   }
+  const _props = Object.fromEntries(
+    Object.entries(props).map(([key, value]) => [
+      propsKsyMapForTsx[key] || key,
+      value,
+    ])
+  );
   return h(
     type,
-    props,
+    _props,
     (Array.isArray(children) ? children : [children]).map((e) =>
       VNodeForTsxHelper(e)
     )
   );
 }
 export function createApp(el: HTMLElement, VNode) {
+  console.log(VNodeForTsxHelper(VNode));
   effect(render.bind(null, el, VNodeForTsxHelper(VNode)));
 }
+
 ```
