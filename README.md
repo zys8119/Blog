@@ -1908,7 +1908,7 @@ const getYearRange = async () => {
 
 ### vue 简单的响应式代理
 
-```vue
+```typescript
 export class shallowRef {
   _value: any;
   constructor(value) {
@@ -1941,8 +1941,23 @@ export function effect(fn) {
 const renderHelper = (element, VNode, type, props, children) => {
   if (type === "text-node") {
     const innerText = typeof children === "function" ? children() : children;
-    element.textContent =
-      children && children.isRef ? children.value : innerText;
+    if (Array.isArray(innerText)) {
+      element = VNode.parent.el;
+      element.innerHTML = "";
+      innerText.forEach((child) => {
+        if (child.__v_isVNode) {
+          child = VNodeForTsxHelper(child);
+        }
+        if (child.isVNode || child.__v_isVNode) {
+          renderElement(element, child, VNode);
+        } else {
+          effect(renderHelper.bind(null, element, VNode, type, props, child));
+        }
+      });
+    } else {
+      element.textContent =
+        children && children.isRef ? children.value : innerText;
+    }
   } else if (children && children.isRef) {
     element.innerText = children.value;
   } else {
@@ -2092,7 +2107,6 @@ function VNodeForTsxHelper(VNode: any) {
   );
 }
 export function createApp(el: HTMLElement, VNode) {
-  console.log(VNodeForTsxHelper(VNode));
   effect(render.bind(null, el, VNodeForTsxHelper(VNode)));
 }
 
