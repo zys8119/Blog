@@ -2107,7 +2107,7 @@ export class shallowRef {
   }
 }
 export function ref(value) {
-  return new shallowRef(value);
+  return new shallowRef(value) as any;
 }
 let activeSub = null;
 export function effect(fn) {
@@ -2116,7 +2116,11 @@ export function effect(fn) {
   activeSub = null;
 }
 const renderHelper = (element, VNode, type, props, children) => {
-  if (children && children.isRef) {
+  if (type === "text-node") {
+    const innerText = typeof children === "function" ? children() : children;
+    element.textContent =
+      children && children.isRef ? children.value : innerText;
+  } else if (children && children.isRef) {
     element.innerText = children.value;
   } else {
     const innerText = typeof children === "function" ? children() : children;
@@ -2139,21 +2143,36 @@ const VNodeRender = (type, props, children) => {
     renderHelper(element, VNode, type, props, children);
   };
 };
-export function h(type, props, children) {
+export function h(type, props?, children?) {
+  if (!props && !children) {
+    children = type;
+    type = "text-node";
+    props = {};
+  } else if (!children) {
+    children = props;
+    props = {};
+  }
   return {
     type,
     props,
     children: Array.isArray(children) ? children : [children],
     render: VNodeRender(type, props, children),
     isVNode: true,
-  };
+  } as any;
 }
 
 export function renderElement(el, VNode, parent = null) {
   const { type, props, children } = VNode;
   let element = document.createElement("div");
   try {
-    element = document.createElement(type);
+    switch (type) {
+      case "text-node":
+        element = document.createTextNode("") as any;
+        break;
+      default:
+        element = document.createElement(type);
+        break;
+    }
   } catch (e) {
     element = parent?.el;
   }
@@ -2218,13 +2237,19 @@ export function render(el: HTMLElement, VNode) {
   renderElement(el, VNode);
 }
 function VNodeForTsxHelper(VNode: any) {
+  if (VNode.isRef) {
+    return h(VNode);
+  }
   if (typeof VNode === "function") {
     VNode = VNode();
   }
   if (!VNode?.__v_isVNode) {
     return VNode;
   }
-  const { type, props, children, __v_isVNode } = VNode;
+  const { type, props, children } = VNode;
+  if (type?.toString?.() === "Symbol(v-txt)") {
+    return h(children);
+  }
   return h(
     type,
     props,
@@ -2236,5 +2261,4 @@ function VNodeForTsxHelper(VNode: any) {
 export function createApp(el: HTMLElement, VNode) {
   effect(render.bind(null, el, VNodeForTsxHelper(VNode)));
 }
-
 ```
