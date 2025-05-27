@@ -2111,3 +2111,228 @@ export function createApp(el: HTMLElement, VNode) {
 }
 
 ```
+# useForm 
+
+```typescript
+import { merge } from 'lodash';
+export function useForm(fields: any[], options: Record<string, any> = {}) {
+    const config = merge(
+        {
+            showCancel: true,
+            showSave: true,
+            dialogProps: {},
+            success: () => void 0,
+        },
+        options
+    );
+    const value = ref<any>({});
+    const form = ref();
+    $alert.dialog(
+        merge(
+            {
+                title: '提示',
+                width: '700px',
+                content: fields,
+                props: {
+                    ref: form,
+                    modelValue: value.value,
+                    onSave(...args: any[]) {
+                        (config.success as unknown as any)(...args);
+                    },
+                },
+                footer: [
+                    {
+                        title: '取消',
+                        props: {
+                            type: 'default',
+                            onclick() {
+                                $alert.dialog.close();
+                            },
+                        },
+                        show: config.showCancel,
+                    },
+                    {
+                        title: '保存',
+                        props: {
+                            type: 'primary',
+                            onClick: async () => {
+                                await form.value.validate();
+                                window.$message.success(
+                                    config.successMsg || '验证成功'
+                                );
+                                $alert.dialog.close();
+                                await (config.success as unknown as any)(
+                                    form.value,
+                                    config
+                                );
+                            },
+                        },
+                        show: config.showSave,
+                    },
+                ].filter((e) => e.show),
+            },
+            config.dialogProps
+        )
+    );
+    return {
+        data: value,
+        form,
+    };
+}
+
+export default useForm;
+
+```
+
+```typescript
+import { createDiscreteApi, DialogReactive, NButton, NSpace } from 'naive-ui';
+import dialogAlertTitle from './dialogAlertTitle.vue';
+import App from '@/app.vue';
+import FormValidate from '@/components/formValidate.vue';
+import AlertContent from '@/components/alert-content.vue';
+const { dialog, app } = createDiscreteApi(['dialog']);
+let isUseInitGlobalProperties = false;
+const useInitGlobalProperties = () => {
+    try {
+        if (!isUseInitGlobalProperties) {
+            const appRoot: any = document.getElementById('app');
+            const globalProperties: Record<any, any> =
+                appRoot.__vue_app__.config.globalProperties;
+            const globalPropertiesEntries: Array<[string, any]> =
+                Object.entries(globalProperties);
+            for (const [k, v] of globalPropertiesEntries) {
+                app.config.globalProperties[k] = v;
+            }
+            isUseInitGlobalProperties = true;
+        }
+    } catch (e) {
+        // err
+    }
+};
+type DialogConfigType = {
+    content: any;
+    title: any;
+    props?: Record<string, any>;
+    width?: string | undefined;
+    footer?: any;
+    hideFooter?: boolean;
+    successMsg?: string;
+};
+const dialogCaches: Array<DialogReactive> = [];
+interface DialogDefault {
+    (config: DialogConfigType): DialogReactive;
+    close(): void;
+    closeAll(): void;
+}
+const renderForm = (config: any) => {
+    const form = ref();
+    return h(
+        defineComponent(() => {
+            return () =>
+                h(AlertContent, null, {
+                    default: () =>
+                        h(FormValidate, {
+                            field: unref(config.content),
+                            config: {},
+                            modelValue: {},
+                            gridProps: {},
+                            ref: form,
+                            ...config.props,
+                        }),
+                    footer: () =>
+                        !config.hideFooter
+                            ? Object.prototype.toString.call(config.footer) ===
+                              '[object Object]'
+                                ? config.footer
+                                : h(
+                                      NSpace,
+                                      {
+                                          justify: 'center',
+                                      },
+                                      () => {
+                                          return Array.isArray(config.footer)
+                                              ? config.footer.map((item: any) =>
+                                                    h(
+                                                        NButton,
+                                                        item.props,
+                                                        () => item.title
+                                                    )
+                                                )
+                                              : h(
+                                                    NButton,
+                                                    {
+                                                        type: 'primary',
+                                                        onClick: async () => {
+                                                            await form.value.validate();
+                                                            window.$message.success(
+                                                                config.successMsg ||
+                                                                    '验证成功'
+                                                            );
+                                                            $alert.dialog.close();
+                                                            await config?.props?.onSave?.(
+                                                                form.value,
+                                                                config
+                                                            );
+                                                        },
+                                                    },
+                                                    () => '确定'
+                                                );
+                                      }
+                                  )
+                            : null,
+                });
+        })
+    );
+};
+const dialogDefault: DialogDefault = (
+    config: DialogConfigType = {} as DialogConfigType
+) => {
+    useInitGlobalProperties();
+    const dialogApp = dialog.create({
+        title: config.title
+            ? () =>
+                  h(dialogAlertTitle, {
+                      title: config.title,
+                  })
+            : undefined,
+        class: 'alert-dialog-custom-theme',
+        style: `width:${config.width || 'auto'}`,
+        showIcon: false,
+        content: () =>
+            typeof config.content === 'object'
+                ? h(App, null, {
+                      default: () => {
+                          if (
+                              Array.isArray(config.content) ||
+                              isRef(config.content)
+                          ) {
+                              return renderForm(config);
+                          } else {
+                              return h(
+                                  defineAsyncComponent({
+                                      loader: () => config.content,
+                                  }),
+                                  config.props
+                              );
+                          }
+                      },
+                  })
+                : config.content,
+    } as any);
+    dialogCaches.push(dialogApp);
+    return dialogApp;
+};
+dialogDefault.close = () => {
+    const dialogPop = dialogCaches.pop();
+    setTimeout(() => {
+        dialogPop?.destroy();
+    }, 200);
+};
+dialogDefault.closeAll = () => {
+    while (dialogCaches.length > 0) {
+        dialogDefault.close();
+    }
+};
+export default dialogDefault;
+
+```
