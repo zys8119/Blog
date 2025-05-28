@@ -2336,3 +2336,16 @@ dialogDefault.closeAll = () => {
 export default dialogDefault;
 
 ```
+
+### Dockerfile + ohmyzsh + nodejs
+```dockerfile
+FROM node
+COPY . /app
+WORKDIR /app
+RUN apt-get update
+RUN apt-get install zsh git -y
+RUN npm i -g pnpm nrm n pm2
+RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+RUN aliases command-not-found dirhistory extract git-prompt macos vscode z colored-man-pages copyfile docker git history nmap wd colorize copypath dotenv git-commit jsontools sudo web-search 
+CMD zsh && tail -f /dev/null
+```
