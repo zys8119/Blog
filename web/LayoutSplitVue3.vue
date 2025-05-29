@@ -1,49 +1,30 @@
 <template>
-    <div
-        class="LayoutSplit h-full of-hidden"
-        :class="{
-            'select-none': pressed,
-        }"
-    >
-        {{ pressed }}
-        <div
-            class="abs top-0 left-0 LayoutSplitLeft of-auto"
-            :class="{
-                'h-full w-$leftHeight': props.horizontally,
-                'w-full h-$leftHeight': !props.horizontally,
-            }"
-            ref="left"
-        >
+    <div class="LayoutSplit h-full of-hidden" :class="{
+        'select-none': pressed,
+    }">
+        <div class="abs top-0 left-0 LayoutSplitLeft of-auto" :class="{
+            'h-full w-$leftHeight': props.horizontally,
+            'w-full h-$leftHeight': !props.horizontally,
+        }" ref="left">
             <slot name="left"></slot>
         </div>
-        <div
-            v-if="isDrag"
-            class="z-1 LayoutSplitLine group flex-center bg-#eee"
-            ref="line"
-            :class="{
-                'abs h-100% w-$lienSize top-0 left-50% transform-translate-x-$offset cursor-col-resize':
-                    props.horizontally,
-                'abs-center w-100% h-$lienSize transform-translate-y-$offset cursor-row-resize':
-                    !props.horizontally,
-                'bg-#999!': pressed,
-            }"
-        >
-            <div
-                class="bg-#666 b-rd-[calc(var(--lienSize)/2)] op-0 group-hover:op-100! transition-all"
-                :class="{
-                    'h-20px w-[calc(var(--lienSize)/2)]': props.horizontally,
-                    'w-10px h-[calc(var(--lienSize)/2)]': !props.horizontally,
-                    'bg-#fff!': pressed,
-                }"
-            ></div>
+        <div v-if="isDrag" class="z-1 LayoutSplitLine group flex-center bg-#eee" ref="line" :class="{
+            'abs h-100% w-$lienSize top-0 left-50% transform-translate-x-$offset cursor-col-resize':
+                props.horizontally,
+            'abs-center w-100% h-$lienSize transform-translate-y-$offset cursor-row-resize':
+                !props.horizontally,
+            'bg-#999!': pressed,
+        }">
+            <div class="bg-#666 b-rd-[calc(var(--lienSize)/2)] op-0 group-hover:op-100! transition-all" :class="{
+                'h-20px w-[calc(var(--lienSize)/2)]': props.horizontally,
+                'w-10px h-[calc(var(--lienSize)/2)]': !props.horizontally,
+                'bg-#fff!': pressed,
+            }"></div>
         </div>
-        <div
-            class="abs LayoutSplitRight of-auto"
-            :class="{
-                'h-full w-$rightHeight top-0 right-0': props.horizontally,
-                'w-full h-$rightHeight  left-0 bottom-0': !props.horizontally,
-            }"
-        >
+        <div class="abs LayoutSplitRight of-auto" :class="{
+            'h-full w-$rightHeight top-0 right-0': props.horizontally,
+            'w-full h-$rightHeight  left-0 bottom-0': !props.horizontally,
+        }">
             <slot name="right"></slot>
         </div>
     </div>
@@ -180,6 +161,5 @@ useCssVars(() => {
 });
 </script>
 <style scoped lang="less">
-.LayoutSplit {
-}
+.LayoutSplit {}
 </style>
