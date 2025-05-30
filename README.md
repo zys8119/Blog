@@ -2411,7 +2411,6 @@ for dir in */; do
     git clean -fd
     # 拉取最新代码
     git pull
-    therr 
 
     # 返回到初始目录
     cd "$BASE_DIR"
