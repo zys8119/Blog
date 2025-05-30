@@ -2351,3 +2351,72 @@ RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master
 RUN aliases command-not-found dirhistory extract git-prompt macos vscode z colored-man-pages copyfile docker git history nmap wd colorize copypath dotenv git-commit jsontools sudo web-search 
 CMD zsh && tail -f /dev/null
 ```
+### shell 脚本遍历当前目录下的所有文件夹后并进入文件夹同时执行相应的命令后退出的脚本（作用：同步当前目录下的所有git 仓库）
+```shell
+#!/bin/sh
+# ANSI color codes
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[0;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+RESET='\033[0m'
+
+# 定义颜色函数
+echo_red() {
+  printf "${RED}%s${RESET}\n" "$*"
+}
+
+echo_green() {
+  printf "${GREEN}%s${RESET}\n" "$*"
+}
+
+echo_yellow() {
+  printf "${YELLOW}%s${RESET}\n" "$*"
+}
+
+echo_blue() {
+  printf "${BLUE}%s${RESET}\n" "$*"
+}
+
+echo_cyan() {
+  printf "${CYAN}%s${RESET}\n" "$*"
+}
+
+# 保存当前路径
+BASE_DIR=$(pwd)
+echo_blue "正在执行同步"
+# 遍历所有子目录
+for dir in */; do
+    # 判断是否为目录
+    [ -d "$dir" ] || continue
+
+    echo_green "进入目录：$dir"
+    cd "$dir" || continue
+
+    # 这里是你要执行的一系列命令，可以添加多条
+    echo_yellow "正在执行命令..."
+    # 本地分支
+    branch=$(git rev-parse --abbrev-ref HEAD)
+    # 远程分支
+    remote_branch=$(git rev-parse --abbrev-ref --symbolic-full-name @{u})
+    echo_blue 当前分支：$branch 远程分支： $remote_branch
+    # 获取远程分支最新状态
+    git fetch --all
+
+    # 硬重置本地分支到远程分支（覆盖所有提交、代码）
+    git reset --hard $remote_branch
+
+    # 删除所有未跟踪文件和目录（彻底干净）
+    git clean -fd
+    # 拉取最新代码
+    git pull
+    therr 
+
+    # 返回到初始目录
+    cd "$BASE_DIR"
+done
+
+echo_green "所有项目同步完成"
+
+```
