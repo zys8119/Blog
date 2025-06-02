@@ -2351,6 +2351,28 @@ RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master
 RUN aliases command-not-found dirhistory extract git-prompt macos vscode z colored-man-pages copyfile docker git history nmap wd colorize copypath dotenv git-commit jsontools sudo web-search 
 CMD zsh && tail -f /dev/null
 ```
+### ubuntu 镜像更换
+```shell
+#!/bin/sh
+
+# 设置你的 Ubuntu 版本代号，例如 focal, jammy, bionic
+UBUNTU_CODENAME=focal
+
+# 备份原来的 sources.list
+cp /etc/apt/sources.list /etc/apt/sources.list.bak
+
+# 替换为阿里云镜像源
+cat > /etc/apt/sources.list <<EOF
+deb http://mirrors.aliyun.com/ubuntu/ $UBUNTU_CODENAME main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ $UBUNTU_CODENAME-security main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ $UBUNTU_CODENAME-updates main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ $UBUNTU_CODENAME-proposed main restricted universe multiverse
+deb http://mirrors.aliyun.com/ubuntu/ $UBUNTU_CODENAME-backports main restricted universe multiverse
+EOF
+apt update -y
+tail -f /dev/null
+
+```
 ### shell 脚本遍历当前目录下的所有文件夹后并进入文件夹同时执行相应的命令后退出的脚本（作用：同步当前目录下的所有git 仓库）
 ```shell
 #!/bin/sh
