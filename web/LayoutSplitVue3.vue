@@ -59,15 +59,15 @@ const props = withDefaults(
 const el = useCurrentElement() as Ref<HTMLElement>;
 const line = ref<HTMLElement>();
 const left = ref<HTMLElement>();
-const leftRect = useElementBounding(left);
+const leftRect = useElementSize(left);
 const leftSize = computed(() =>
     props.horizontally ? leftRect.width.value : leftRect.height.value
 );
-const elRect = useElementBounding(el);
+const elRect = useElementSize(el);
 const height = computed(() =>
     props.horizontally ? elRect.width.value : elRect.height.value
 );
-const lineRect = useElementBounding(line);
+const lineRect = useElementSize(line);
 const lienHeight = computed(() =>
     props.horizontally ? lineRect.width.value : lineRect.height.value
 );
@@ -143,6 +143,7 @@ const calcValueHelper = (value: any, isSource?: boolean) => {
         return height.value * (v - 0.5);
     }
 };
+
 watch(
     [computed(() => props.span), height],
     () => {
