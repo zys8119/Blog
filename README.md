@@ -2441,3 +2441,81 @@ done
 echo_green "所有项目同步完成"
 
 ```
+
+### Node.js 中搭建一个 MQTT 服务端
+
+> 推荐使用 Aedes 轻量级 MQTT Broker
+
+1. 安装依赖
+
+```bash
+npm install aedes ws
+```
+2. 创建 Broker 服务（支持 WebSocket 端口）
+```js
+// server.js
+const aedes = require('aedes')();
+const http = require('http');
+const ws = require('ws');
+
+const server = http.createServer();
+const wss = new ws.Server({ server });
+
+wss.on('connection', function connection(wsStream) {
+  const duplex = ws.createWebSocketStream(wsStream);
+  aedes.handle(duplex);
+});
+
+const PORT = 8888;
+
+server.listen(PORT, function () {
+  console.log(`MQTT broker started on ws://localhost:${PORT}`);
+});
+
+```
+// 如果你需要原生 TCP 协议（不是 ws），可使用 net.createServer()。
+
+#### 作为 MQTT 客户端（连接其他 Broker）
+
+> 推荐使用 mqtt.js
+
+1. 安装依赖
+
+```bash
+npm install mqtt
+```
+1. 连接并发布/订阅
+
+```js
+// client.js
+const mqtt = require('mqtt');
+
+const client = mqtt.connect('ws://localhost:8888'); // 或 mqtt://localhost:1883
+
+client.on('connect', () => {
+  console.log('Connected to MQTT broker');
+
+  // 订阅主题
+  client.subscribe('test/topic', (err) => {
+    if (!err) {
+      console.log('Subscribed to test/topic');
+      // 发布消息
+      client.publish('test/topic', 'Hello from Node.js');
+    }
+  });
+});
+
+// 接收消息
+client.on('message', (topic, message) => {
+  console.log(`Received on ${topic}: ${message.toString()}`);
+});
+
+```
+
+你可以使用 MQTT 客户端工具连接验证：
+
+* [MQTTX（推荐）](https://mqttx.app/)
+
+* MQTT Explorer
+
+* 浏览器端也可用 mqtt.js（需用 WebSocket）
