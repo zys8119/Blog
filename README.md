@@ -139,7 +139,11 @@ other
 
 ```typescript
 import { defineConfig } from 'unocss';
-
+import { default as less } from 'less';
+const tint = (color: string, amount: number) =>
+    less.functions?.functionRegistry
+        .get('tint')(new less.color(color.replace(/#/, '')), new less.dimension(amount, '%'))
+        .toRGB();
 export default defineConfig({
     // ...UnoCSS options
     shortcuts: {
@@ -215,6 +219,12 @@ export default defineConfig({
                     height: match[2],
                 };
             },
+        ],
+        [
+            /^bg-tint-(.+)$/,
+            ([, value]) => {
+                return { background: `linear-gradient(to right, ${value},${tint(value, 50)})` };
+            }
         ],
         [
             /^bg-(lg|rlg|rg|rrg|url)-(.{1,})$/,
