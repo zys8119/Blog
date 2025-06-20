@@ -2556,30 +2556,40 @@ export const AutoImportBusinessPreset = (presetArrs: PresetArrs = []) => {
     ).concat(presetArrs);
     const preset = defaultPresetArrs.reduce((pre: any, { cwd, prefix, suffix }) => {
         const presetAlias = sync('**/*.{vue,ts,jsx,tsx}', {
-            cwd: cwd
-        })
-            .map((e) => e.replace(/\..*$/, ''))
-            .reduce<string[]>((pre, cur: string) => {
-                const name = upperFirst(camelCase(cur));
-                let arr: any = [];
-                arr.push(name);
-                arr.push(lowerFirst(name));
-                if (typeof prefix === 'string') {
-                    new Array(3).fill(toLower(prefix)).forEach((p, k) => {
-                        p =
-                            {
-                                0: upperCase(p),
-                                1: upperFirst(p)
-                            }[k] || p;
-                        arr.push(`${p}${name}`);
-                    });
-                }
-                if (typeof suffix === 'string') {
-                    arr = arr.map((e: any) => `${e}${upperFirst(camelCase(suffix))}`);
-                }
-                return pre.concat(arr as any);
-            }, []);
-        pre[cwd.replace(/^src\//, '@/')] = presetAlias;
+            cwd: cwd,
+            absolute: true
+        }).reduce<string[]>((pre, cur: string) => {
+            const filePath = cur;
+            cur = filePath.replace(process.cwd() + '/' + cwd, '').replace(/\..*$/, '');
+            const name = upperFirst(camelCase(cur));
+            let arr: any = [];
+            arr.push(name);
+            arr.push(lowerFirst(name));
+            if (typeof prefix === 'string') {
+                new Array(3).fill(toLower(prefix)).forEach((p, k) => {
+                    p =
+                        {
+                            0: upperCase(p),
+                            1: upperFirst(p)
+                        }[k] || p;
+                    arr.push(`${p}${name}`);
+                });
+            }
+            if (typeof suffix === 'string') {
+                arr = arr.map((e: any) => `${e}${upperFirst(camelCase(suffix))}`);
+            }
+            return pre.concat(
+                arr.map((e: string) => ({
+                    filePath,
+                    import: filePath.replace(process.cwd() + '/src', '@'),
+                    as: e,
+                    default: 'default'
+                })) as any
+            );
+        }, []);
+        presetAlias.forEach((e: any) => {
+            pre[e.import] = [...(pre[e.import] || []), [e.default, e.as]];
+        });
         return pre;
     }, {});
     return preset;
