@@ -2529,3 +2529,59 @@ client.on('message', (topic, message) => {
 * MQTT Explorer
 
 * 浏览器端也可用 mqtt.js（需用 WebSocket）
+
+### AutoImportPreset 预设
+
+```typescript
+import { camelCase, upperCase, upperFirst, lowerFirst, toLower } from 'lodash';
+import { sync } from 'glob';
+type PresetArrs = Array<{
+    cwd: string;
+    prefix?: string;
+    suffix?: string;
+    import?: string;
+}>;
+export const AutoImportBusinessPreset = (presetArrs: PresetArrs = []) => {
+    const defaultPresetArrs: PresetArrs = (
+        [
+            {
+                cwd: 'src/components/business',
+                prefix: 'bs'
+            },
+            {
+                cwd: 'src/hooks',
+                suffix: 'hooks'
+            }
+        ] as PresetArrs
+    ).concat(presetArrs);
+    const preset = defaultPresetArrs.reduce((pre: any, { cwd, prefix, suffix }) => {
+        const presetAlias = sync('**/*.{vue,ts,jsx,tsx}', {
+            cwd: cwd
+        })
+            .map((e) => e.replace(/\..*$/, ''))
+            .reduce<string[]>((pre, cur: string) => {
+                const name = upperFirst(camelCase(cur));
+                let arr: any = [];
+                arr.push(name);
+                arr.push(lowerFirst(name));
+                if (typeof prefix === 'string') {
+                    new Array(3).fill(toLower(prefix)).forEach((p, k) => {
+                        p =
+                            {
+                                0: upperCase(p),
+                                1: upperFirst(p)
+                            }[k] || p;
+                        arr.push(`${p}${name}`);
+                    });
+                }
+                if (typeof suffix === 'string') {
+                    arr = arr.map((e: any) => `${e}${upperFirst(camelCase(suffix))}`);
+                }
+                return pre.concat(arr as any);
+            }, []);
+        pre[cwd.replace(/^src\//, '@/')] = presetAlias;
+        return pre;
+    }, {});
+    return preset;
+};
+```
