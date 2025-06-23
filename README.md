@@ -2595,3 +2595,95 @@ export const AutoImportBusinessPreset = (presetArrs: PresetArrs = []) => {
     return preset;
 };
 ```
+
+抽离版本
+```typescript
+import { camelCase, upperCase, upperFirst, lowerFirst, toLower } from 'lodash';
+import { sync } from 'glob';
+import { readJSONSync, writeJSONSync } from 'fs-extra';
+import { resolve } from 'path';
+const oupoutFile = resolve(process.cwd(), 'auto-import-business-preset.json');
+type PresetArrs = Array<{
+    cwd: string;
+    prefix?: string;
+    suffix?: string;
+    import?: string;
+    preset?: any[];
+}>;
+export const AutoImportBusinessPreset = () => readJSONSync(oupoutFile);
+const presetArrsConfig = [
+    {
+        cwd: 'src/components/business',
+        prefix: 'bs'
+    },
+    {
+        cwd: 'src/hooks',
+        suffix: 'hooks'
+    },
+    {
+        cwd: 'src/utils/utils/index',
+        preset: [['asda']]
+    }
+] as PresetArrs;
+export const run = (presetArrs: PresetArrs = []) => {
+    const defaultPresetArrs: PresetArrs = presetArrsConfig.concat(presetArrs);
+    const syncCwd: PresetArrs = [];
+    const syncCwdPreset: PresetArrs = [];
+    defaultPresetArrs.forEach((e) => {
+        if (Array.isArray(e.preset)) {
+            syncCwdPreset.push(e);
+        } else {
+            syncCwd.push(e);
+        }
+    });
+    const presets = syncCwd.reduce((pre: any, { cwd, prefix, suffix }) => {
+        const presetAlias = sync('**/*.{vue,ts,jsx,tsx}', {
+            cwd: cwd,
+            absolute: true
+        }).reduce<string[]>((pre, cur: string) => {
+            const filePath = cur;
+            cur = filePath.replace(process.cwd() + '/' + cwd, '').replace(/\..*$/, '');
+            const name = upperFirst(camelCase(cur));
+            let arr: any = [];
+            arr.push(name);
+            arr.push(lowerFirst(name));
+            if (typeof prefix === 'string') {
+                new Array(3).fill(toLower(prefix)).forEach((p, k) => {
+                    p =
+                        {
+                            0: upperCase(p),
+                            1: upperFirst(p)
+                        }[k] || p;
+                    arr.push(`${p}${name}`);
+                });
+            }
+            if (typeof suffix === 'string') {
+                arr = arr.map((e: any) => `${e}${upperFirst(camelCase(suffix))}`);
+            }
+            return pre.concat(
+                arr.map((e: string) => ({
+                    filePath,
+                    import: filePath.replace(process.cwd() + '/src', '@'),
+                    as: e,
+                    default: 'default'
+                })) as any
+            );
+        }, []);
+        presetAlias.forEach((e: any) => {
+            pre[e.import] = [...(pre[e.import] || []), [e.default, e.as]];
+        });
+        return pre;
+    }, {});
+    syncCwdPreset.forEach(({ cwd, preset }) => {
+        const _import = cwd.replace(process.cwd() + '/src', '@').replace(/.*\/*src/, '@');
+        presets[_import] = preset || [];
+    });
+    writeJSONSync(oupoutFile, presets, { spaces: 2 });
+
+    return presets;
+};
+if (process.argv.includes('--run-preset')) {
+    run();
+}
+
+```
