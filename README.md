@@ -2945,3 +2945,45 @@ export default (async function () {
 } as Controller);
 
 ```
+### macos 配置pm2自启动服务
+
+// 加载
+launchctl load ~/Library/LaunchAgents/com.bob.baidu.serve.plist
+// 开始服务
+launchctl start com.bob.baidu.serve   
+// 卸载服务
+launchctl unload ~/Library/LaunchAgents/com.bob.baidu.serve.plist
+
+
+~/Library/LaunchAgents/com.bob.baidu.serve.plist 内容
+```
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" \
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+    <dict>
+        <key>EnvironmentVariables</key>
+        <dict>
+            <key>PATH</key>
+            <string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+        </dict>
+        <key>Label</key>
+        <string>com.bob.baidu.serve</string>
+
+        <key>ProgramArguments</key>
+        <array>
+            <string>/usr/local/bin/pm2</string>
+            <string>restart</string>
+            <string>all</string>
+        </array>
+
+        <key>RunAtLoad</key>
+        <true /> <!-- 开机或登录时自动运行 -->
+
+        <key>StandardOutPath</key>
+        <string>/tmp/com.bob.baidu.serve.log</string>
+        <key>StandardErrorPath</key>
+        <string>/tmp/com.bob.baidu.serve.err</string>
+    </dict>
+</plist>
+```
