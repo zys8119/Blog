@@ -2841,9 +2841,11 @@ const translating = async (
         emitter.on("message", (data) => {
           const parsedData = data ? JSON.parse(data) : {};
           if (
-            ["GetKeywordsSucceed", "GetDictSucceed"].includes(
-              parsedData.data?.event
-            )
+            [
+              "GetKeywordsSucceed",
+              "GetDictSucceed",
+              "TranslationSucceed",
+            ].includes(parsedData.data?.event)
           ) {
             translatingMap.words =
               (
@@ -2868,7 +2870,7 @@ const translating = async (
 
         const translatingSuccess = () => {
           const { words, content } = translatingMap;
-          if (words && content) {
+          if (typeof words === "string" && typeof content === "string") {
             resolve(`${content}\n${words}`);
           }
         };
