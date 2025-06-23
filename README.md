@@ -2927,7 +2927,13 @@ export default (async function () {
   this.$send(
     JSON.stringify({
       code: 0,
-      translateResult: [result],
+      translateResult: [
+        [
+          {
+            tgt: result,
+          },
+        ],
+      ],
       type: "zh-CHS2en",
     }),
     {
@@ -2937,4 +2943,5 @@ export default (async function () {
     }
   );
 } as Controller);
+
 ```
