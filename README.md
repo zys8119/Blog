@@ -2597,6 +2597,12 @@ export const AutoImportBusinessPreset = (presetArrs: PresetArrs = []) => {
 ```
 
 抽离版本
+
+// 需要替换scripts脚本 `build-pre`
+"dev": "npm run build-pre && vite",
+"build": "npm run build-pre && npm run lint && vite build && npm run compress:dist",
+"build-pre": "tsnd  -P ./src/utils/scripts/tsconfig-build.json src/utils/scripts/build-pre.ts --run-preset",
+        
 ```typescript
 import { camelCase, upperCase, upperFirst, lowerFirst, toLower } from 'lodash';
 import { sync } from 'glob';
