@@ -2807,3 +2807,134 @@ const translating = async (
 })();
 
 ```
+
+node-serve版本
+
+```typescript
+import { Controller } from "@wisdom-serve/serve";
+import axios from "axios";
+import { merge, get } from "lodash";
+import { EventEmitter } from "events";
+const translating = async (
+  options: Partial<{
+    data: Partial<{
+      query: string;
+      from: string;
+      to: string;
+    }>;
+  }> = {}
+) => {
+  const config = merge(
+    {
+      data: {},
+    },
+    options
+  );
+  return new Promise((resolve, reject) => {
+    (async () => {
+      try {
+        const emitter = new EventEmitter();
+        const translatingMap = {
+          content: null,
+          words: null,
+        };
+        emitter.on("message", (data) => {
+          const parsedData = data ? JSON.parse(data) : {};
+          if (
+            ["GetKeywordsSucceed", "GetDictSucceed"].includes(
+              parsedData.data?.event
+            )
+          ) {
+            translatingMap.words =
+              (
+                get(
+                  parsedData,
+                  "data.dictResult.simple_means.word_means",
+                  []
+                ) || []
+              ).join("") +
+              get(parsedData, "data.keywords", [])
+                .map((e) => `【${e.word}】${e.means.join(" ; ")}`)
+                .join("\n");
+            translatingSuccess();
+          }
+          if (parsedData.data?.event === "Translating") {
+            translatingMap.content = parsedData.data.list
+              .map((e) => e.dst)
+              .join("\n");
+            translatingSuccess();
+          }
+        });
+
+        const translatingSuccess = () => {
+          const { words, content } = translatingMap;
+          if (words && content) {
+            resolve(`${content}\n${words}`);
+          }
+        };
+        const translating = (data: string) => {
+          let event = null;
+          let eventData = null;
+          data
+            .split("\n")
+            .filter((e) => e)
+            .forEach((e) => {
+              if (event && eventData) {
+                emitter.emit(event, eventData);
+                eventData = null;
+                event = null;
+              }
+              if (e.startsWith("event: ")) {
+                event = e.slice(7);
+              }
+              if (e.startsWith("data: ")) {
+                eventData = e.slice(6);
+              }
+            });
+        };
+        const res = await axios({
+          url: "https://fanyi.baidu.com/ait/text/translate",
+          method: "POST",
+          data: merge(
+            {
+              query: "Demo of a customer service ",
+              from: "en",
+              to: "zh",
+              reference: "",
+              corpusIds: [],
+              needPhonetic: false,
+              domain: "common",
+              milliTimestamp: 1750648654142,
+            },
+            config.data
+          ),
+        });
+        translating(res.data);
+      } catch (error) {
+        reject(error);
+      }
+    })();
+  });
+};
+export default (async function () {
+  const result = await translating({
+    data: {
+      query: this.$body.text,
+      from: this.$body.source_lang.toLowerCase(),
+      to: this.$body.target_lang.toLowerCase(),
+    },
+  });
+  this.$send(
+    JSON.stringify({
+      code: 0,
+      translateResult: [result],
+      type: "zh-CHS2en",
+    }),
+    {
+      headers: {
+        "Content-Type": "application/json; charset=utf-8",
+      },
+    }
+  );
+} as Controller);
+```
