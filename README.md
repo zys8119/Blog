@@ -2866,6 +2866,9 @@ const translating = async (
               .join("\n");
             translatingSuccess();
           }
+          if (parsedData.errno !== 0) {
+            throw Error(parsedData.errmsg);
+          }
         });
 
         const translatingSuccess = () => {
@@ -2877,26 +2880,33 @@ const translating = async (
         const translating = (data: string) => {
           let event = null;
           let eventData = null;
+          const emit = () => {
+            if (eventData) {
+              emitter.emit(event || "message", eventData);
+              eventData = null;
+              event = null;
+            }
+          };
           data
             .split("\n")
             .filter((e) => e)
             .forEach((e) => {
-              if (event && eventData) {
-                emitter.emit(event, eventData);
-                eventData = null;
-                event = null;
-              }
               if (e.startsWith("event: ")) {
                 event = e.slice(7);
+                emit();
               }
               if (e.startsWith("data: ")) {
                 eventData = e.slice(6);
+                emit();
               }
             });
         };
         const res = await axios({
           url: "https://fanyi.baidu.com/ait/text/translate",
           method: "POST",
+          headers: {
+            Cookie: ''
+          },
           data: merge(
             {
               query: "Demo of a customer service ",
@@ -2919,31 +2929,52 @@ const translating = async (
   });
 };
 export default (async function () {
-  const result = await translating({
-    data: {
-      query: this.$body.text,
-      from: this.$body.source_lang.toLowerCase(),
-      to: this.$body.target_lang.toLowerCase(),
-    },
-  });
-  this.$send(
-    JSON.stringify({
-      code: 0,
-      translateResult: [
-        [
-          {
-            tgt: result,
-          },
-        ],
-      ],
-      type: "zh-CHS2en",
-    }),
-    {
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
+  try {
+    const result = await translating({
+      data: {
+        query: this.$body.text,
+        from: this.$body.source_lang.toLowerCase(),
+        to: this.$body.target_lang.toLowerCase(),
       },
-    }
-  );
+    });
+    this.$send(
+      JSON.stringify({
+        code: 0,
+        translateResult: [
+          [
+            {
+              tgt: result,
+            },
+          ],
+        ],
+        type: "zh-CHS2en",
+      }),
+      {
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+        },
+      }
+    );
+  } catch (error) {
+    this.$send(
+      JSON.stringify({
+        code: 0,
+        translateResult: [
+          [
+            {
+              tgt: error.message,
+            },
+          ],
+        ],
+        type: "zh-CHS2en",
+      }),
+      {
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+        },
+      }
+    );
+  }
 } as Controller);
 
 ```
