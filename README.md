@@ -249,7 +249,7 @@ export default defineConfig({
             if (m) {
                 return {
                     matcher: m[2],
-                    selector: (s) => `${s}:hover`,
+                    selector: (s) => `.${m[1]}:hover ${s}`,
                 };
             }
         },
