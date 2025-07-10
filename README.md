@@ -243,6 +243,17 @@ export default defineConfig({
             },
         ],
     ],
+    variants: [
+        (matcher) => {
+            const m = matcher.match(/^(.{1,})-hover:(.{1,})$/);
+            if (m) {
+                return {
+                    matcher: m[2],
+                    selector: (s) => `${s}:hover`,
+                };
+            }
+        },
+    ],
 });
 
 
