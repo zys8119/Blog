@@ -274,7 +274,7 @@ export default defineConfig({
                 return {
                     matcher: m[4] || m[2],
                     selector: () => {
-                    return `.${matcherReplace(matcher)} ${matcherReplace(m[1])}${
+                    return `.${matcherReplace(matcher)} ${m[1]}${
                         m[3] ? `:${m[3]}` : ""
                     }`;
                     },
