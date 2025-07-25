@@ -253,6 +253,35 @@ export default defineConfig({
                 };
             }
         },
+        (matcher) => {
+            const matcherReplace = (matcher) =>
+                matcher.replace(/(\.|:|\[|\]|#)/g, "\\$1");
+            if (/^[^-]+-hover-self-/.test(matcher)) {
+                const m = matcher.match(/^([^-]+)-hover-(self-.*)/);
+                const mm = m[2].match(/^self-([^\:]+):((?=:*([^:]+):(.*))|(.*))/);
+                return {
+                matcher: mm[4] || mm[2],
+                selector: () => {
+                    return `.${matcherReplace(m[1])}${
+                    mm[3] ? `:${mm[3]}` : ""
+                    } .${matcherReplace(matcher)} ${mm[1]}`;
+                },
+                };
+            }
+            if (/^self/.test(matcher)) {
+                const m = matcher.match(/^self-([^\:]+):((?=:*([^:]+):(.*))|(.*))/);
+                if (m) {
+                return {
+                    matcher: m[4] || m[2],
+                    selector: () => {
+                    return `.${matcherReplace(matcher)} ${matcherReplace(m[1])}${
+                        m[3] ? `:${m[3]}` : ""
+                    }`;
+                    },
+                };
+                }
+            }
+        },
     ],
 });
 
