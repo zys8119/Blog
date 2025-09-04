@@ -3108,3 +3108,20 @@ module.exports = {
 };
 
 ```
+
+### VueDevTools 选项launchEditor动态配置
+
+```js
+(function detectEditor() {
+    const envstr = JSON.stringify(process.env);
+    if (envstr.match(/trae/)) {
+        return 'trae';
+    } else if (envstr.match(/cursor/)) {
+        return 'code';
+    } else if (envstr.match(/vscode/)) {
+        return 'code';
+    } else {
+        return 'code';
+    }
+})()
+```
