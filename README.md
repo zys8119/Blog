@@ -732,7 +732,22 @@ window.FontInspector = {
   })
 })()
 ```
-
+# puppeteer 禁止debugger
+```ts
+await page.evaluateOnNewDocument(() => {
+    // 重写 Function.prototype.constructor，过滤含 debugger 的代码
+    const _constructor = Function.prototype.constructor;
+    Function.prototype.constructor = function (...args) {
+      if (
+        args.some((arg) => typeof arg === "string" && arg.includes("debugger"))
+      ) {
+        console.log("[Bypass] debugger removed:", args);
+        args = args.map((arg) => arg.replace(/debugger;?/g, ""));
+      }
+      return _constructor.apply(this, args);
+    };
+  });
+```
 # 拖拽悬浮球
 ```vue
 <template>
