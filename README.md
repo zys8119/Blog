@@ -748,6 +748,12 @@ await page.evaluateOnNewDocument(() => {
     };
   });
 ```
+# puppeteer 删除自动化标识,即关闭 navigator.webdriver
+```
+args: [
+      "--disable-blink-features=AutomationControlled" // 去掉 automation 标记
+    ]
+```
 # 拖拽悬浮球
 ```vue
 <template>
