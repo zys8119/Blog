@@ -3146,3 +3146,83 @@ module.exports = {
     }
 })()
 ```
+
+### vue3 创建api弹出层
+
+```ts
+import { NDrawer, DrawerProps } from 'naive-ui';
+const apps: any[] = [];
+function show(
+    content: any,
+    options: {
+        drawerProps?: DrawerProps;
+        props?: Record<string, any>;
+        children?: any;
+    } = {}
+) {
+    const { drawerProps = {}, props = {}, children } = options;
+    const el = document.createElement('div');
+    const show = ref(false);
+    const app = createApp(
+        defineComponent(() => {
+            onMounted(() => {
+                show.value = true;
+            });
+            return () =>
+                h(
+                    NDrawer,
+                    {
+                        show: show.value,
+                        closable: true,
+                        onMaskClick: () => {
+                            hide();
+                        },
+                        ...drawerProps,
+                    },
+                    () =>
+                        typeof content === 'string'
+                            ? content
+                            : h(content, props, children)
+                );
+        })
+    );
+    app.mount(el);
+    document.body.appendChild(el);
+    apps.push({
+        app,
+        el,
+        show,
+    });
+    return {
+        app,
+        hide,
+    };
+}
+async function hide() {
+    const info = apps.shift();
+    if (info) {
+        info.show.value = false;
+        setTimeout(() => {
+            info.app.unmount();
+            info.el.remove();
+        }, 200);
+    }
+}
+function hideAll() {
+    while (apps.length) {
+        hide();
+    }
+}
+const { Escape } = useMagicKeys();
+watch(Escape, (val) => {
+    if (val) {
+        hide();
+    }
+});
+export default {
+    show,
+    hide,
+    hideAll,
+};
+
+```
