@@ -3177,6 +3177,7 @@ function show(
                         onMaskClick: () => {
                             hide();
                         },
+                        to: el,
                         ...drawerProps,
                     },
                     () =>
