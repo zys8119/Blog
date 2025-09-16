@@ -253,32 +253,43 @@ export default defineConfig({
                 };
             }
         },
-        (matcher) => {
+        (matcher, { rawSelector }) => {
+            const important = /^!|!$/.test(rawSelector) ? '!' : '';
+            const importantStart = /^!/.test(rawSelector) ? important : '';
+            const importantEnd = /!$/.test(rawSelector) ? important : '';
             const matcherReplace = (matcher) =>
-                matcher.replace(/(\.|:|\[|\]|#)/g, "\\$1");
+                matcher.replace(/(\.|:|\[|\]|#|&|!|>)/g, '\\$1');
             if (/^[^-]+-hover-self-/.test(matcher)) {
                 const m = matcher.match(/^([^-]+)-hover-(self-.*)/);
-                const mm = m[2].match(/^self-([^\:]+):((?=:*([^:]+):(.*))|(.*))/);
+                const mm = m[2].match(
+                    /^self-([^\:]+):((?=:*([^:]+):(.*))|(.*))/
+                );
                 return {
-                matcher: mm[4] || mm[2],
-                selector: () => {
-                    return `.${matcherReplace(m[1])}${
-                    mm[3] ? `:${mm[3]}` : ""
-                    } .${matcherReplace(matcher)} ${mm[1]}`;
-                },
+                    matcher: `${mm[4] || mm[2]}`,
+                    selector: () => {
+                        return `.${matcherReplace(
+                            `${importantStart}${
+                                m[1] === '&' ? matcher : m[1]
+                            }${importantEnd}`
+                        )}:hover ${mm[3] ? `:${mm[3]}` : ''} ${
+                            m[1] === '&' ? '' : `.${matcherReplace(matcher)}`
+                        } ${mm[1]}`;
+                    },
                 };
             }
             if (/^self/.test(matcher)) {
-                const m = matcher.match(/^self-([^\:]+):((?=:*([^:]+):(.*))|(.*))/);
+                const m = matcher.match(
+                    /^self-([^\:]+):((?=:*(.*):(.*))|(.*))/
+                );
                 if (m) {
-                return {
-                    matcher: m[4] || m[2],
-                    selector: () => {
-                    return `.${matcherReplace(matcher)} ${m[1]}${
-                        m[3] ? `:${m[3]}` : ""
-                    }`;
-                    },
-                };
+                    return {
+                        matcher: `${m[4] || m[2]}`,
+                        selector: () => {
+                            return `.${matcherReplace(
+                                `${importantStart}${matcher}${importantEnd}`
+                            )} ${m[1]}${m[3] ? `:${m[3]}` : ''}`;
+                        },
+                    };
                 }
             }
         },
