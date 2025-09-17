@@ -258,7 +258,7 @@ export default defineConfig({
             const importantStart = /^!/.test(rawSelector) ? important : '';
             const importantEnd = /!$/.test(rawSelector) ? important : '';
             const matcherReplace = (matcher) =>
-                matcher.replace(/(\.|:|\[|\]|#|&|!|>)/g, '\\$1');
+                matcher.replace(/(\.|:|\[|\]|#|&|!|>|\+|~)/g, '\\$1');
             if (/^[^-]+-hover-self-/.test(matcher)) {
                 const m = matcher.match(/^([^-]+)-hover-(self-.*)/);
                 const mm = m[2].match(
@@ -290,6 +290,16 @@ export default defineConfig({
                             )} ${m[1]}${m[3] ? `:${m[3]}` : ''}`;
                         },
                     };
+                } else {
+                  const m = matcher.match(/^self(.*):((?=:*(.+)?:(.*))|(.*))/);
+                  return {
+                    matcher: `${m[4] || m[2]}`,
+                    selector: () => {
+                      return `.${matcherReplace(
+                        `${importantStart}${matcher}${importantEnd}`
+                      )} ${m[1]}${m[3] ? `:${m[3]}` : ""}`;
+                    },
+                  };
                 }
             }
         },
