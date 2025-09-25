@@ -3527,3 +3527,69 @@ export const useRecorder = (options?: Partial<typeof defaultOptions>) => {
 export default useRecorder;
 
 ```
+
+### uni-app 导出xlsx文件,兼容鸿蒙
+
+```ts
+import * as XLSX from 'xlsx';
+async function exportExcel() {
+    try {
+        const workbook = XLSX.utils.book_new(); // 创建新的工作簿
+        const worksheet = XLSX.utils.json_to_sheet(data); // 将数据转换为工作表
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Sheet1"); // 将工作表添加到工作簿
+
+        const base64 = XLSX.write(workbook, { bookType: 'xlsx', type: 'base64' }); // 将工作簿写入为数组格式
+        // const fileUrl = `data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,${base64}`
+        // console.log(fileUrl)
+        const filename = `${Date.now()}.xlsx`
+		const dir = plus.io.convertLocalFileSystemURL("_doc/")
+        const filePath = `${dir}${filename}`;
+        console.log("dir:",dir)
+        console.log("filePath:",filePath)
+		await new Promise<void>(r=>{
+			uni.getFileSystemManager().access({
+				path:dir,
+				success(res){
+					// 目录已存在
+					console.log(res,1)
+				},
+				fail(res){
+					// 目录不存在
+					console.log(res,2)
+					// 递归创建文件
+					uni.getFileSystemManager().mkdirSync(dir, true)
+				},
+				complete(){
+					// 结束文件存在判断
+					r()
+				}
+			})
+		})
+		console.log("目录已创建")
+		// 写入临时文件
+        uni.getFileSystemManager().writeFileSync(filePath, base64, 'base64');
+        console.log("临时文件写入成功")
+		// 保存文件
+		const saveUrl = uni.getFileSystemManager().saveFileSync(filePath)
+		console.log(saveUrl)
+		uni.showToast({
+			title:`文件保存在:${saveUrl}`	
+		})
+		console.log("正在打开文件")
+		uni.openDocument({
+			filePath:saveUrl,
+			fileType:'xlsx',
+			success(){
+				console.log("文件打开成功")
+			},
+			fail(err){
+				console.log("文件打开失败:",err)
+			}
+		})
+		
+    } catch (error) {
+         console.log(error,333)
+    }
+	
+}
+```
