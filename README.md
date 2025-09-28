@@ -3656,3 +3656,22 @@ export LC_ALL=zh_CN.UTF-8
 
 source /etc/locale.conf
 ```
+### liunx sudo 保持zsh
+
+方法 1：sudo 保留 shell 环境
+
+```
+sudo -E zsh  
+```
+
+方法 2：切换到 root 时直接用 zsh
+
+```
+sudo chsh -s $(which zsh) root
+
+
+# 切换到 root：
+sudo su -
+# 或
+su - root
+```
