@@ -3606,4 +3606,44 @@ sudo nmap -sS -p 7890 --open 192.168.110.0/24
 ```
 可利用交互命令fzf 进行选择
 
+### liunx 一键设置系统语言为中文
 
+set-chinese.sh
+
+```
+#!/usr/bin/env bash
+set -e
+
+echo "检测系统类型..."
+if [ -f /etc/debian_version ]; then
+    OS="debian"
+elif [ -f /etc/redhat-release ]; then
+    OS="centos"
+else
+    echo "暂不支持该系统，请手动配置"
+    exit 1
+fi
+
+echo "安装中文语言包..."
+if [ "$OS" = "debian" ]; then
+    sudo apt update
+    sudo apt install -y language-pack-zh-hans locales
+    sudo locale-gen zh_CN.UTF-8
+elif [ "$OS" = "centos" ]; then
+    sudo yum install -y kde-l10n-Chinese glibc-langpack-zh
+fi
+
+echo "设置系统默认语言为中文..."
+if [ -f /etc/locale.conf ]; then
+    sudo bash -c 'echo -e "LANG=zh_CN.UTF-8\nLC_ALL=zh_CN.UTF-8" > /etc/locale.conf'
+elif [ -f /etc/default/locale ]; then
+    sudo bash -c 'echo -e "LANG=zh_CN.UTF-8\nLC_ALL=zh_CN.UTF-8" > /etc/default/locale'
+else
+    echo "未找到 locale 配置文件，请手动设置 LANG=zh_CN.UTF-8"
+fi
+
+echo "切换成功！请重新登录或执行以下命令应用："
+echo "  source /etc/locale.conf  # 如果存在"
+echo "  或重新启动系统"
+
+```
