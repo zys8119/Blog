@@ -3593,3 +3593,14 @@ async function exportExcel() {
 	
 }
 ```
+
+### nmap 扫描局域网开放端口
+
+非root权限
+```
+nmap -Pn -p 7890 --open 192.168.110.0/24  
+```
+需要root权限
+```
+sudo nmap -sS -p 7890 --open 192.168.110.0/24  
+```
