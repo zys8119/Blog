@@ -3647,3 +3647,12 @@ echo "  source /etc/locale.conf  # 如果存在"
 echo "  或重新启动系统"
 
 ```
+
+如何还是不是中文,请讲以下命令添加到 编辑 ~/.bashrc 或 ~/.zshrc，加入：
+
+```
+export LANG=zh_CN.UTF-8
+export LC_ALL=zh_CN.UTF-8
+
+source /etc/locale.conf
+```
