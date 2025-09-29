@@ -3171,7 +3171,13 @@ module.exports = {
 ### vue3 创建api弹出层
 
 ```ts
-import { NDrawer, DrawerProps } from 'naive-ui';
+import {
+    NDrawer,
+    DrawerProps,
+    NConfigProvider,
+    zhCN,
+    dateZhCN,
+} from 'naive-ui';
 const apps: any[] = [];
 function show(
     content: any,
@@ -3183,31 +3189,53 @@ function show(
 ) {
     const { drawerProps = {}, props = {}, children } = options;
     const el = document.createElement('div');
+    el.className = 'n-drawer--bottom-placement-customize';
     const show = ref(false);
     const app = createApp(
         defineComponent(() => {
             onMounted(() => {
                 show.value = true;
             });
+            const contentChildren =
+                typeof content === 'string'
+                    ? content
+                    : h(
+                          toString.call(content) === '[object Promise]'
+                              ? defineAsyncComponent({
+                                    loader: () => content,
+                                })
+                              : content,
+                          props,
+                          children
+                      );
             return () =>
                 h(
-                    NDrawer,
+                    NConfigProvider,
                     {
-                        show: show.value,
-                        closable: true,
-                        onMaskClick: () => {
-                            hide();
-                        },
-                        to: el,
-                        ...drawerProps,
+                        locale: zhCN,
+                        dateLocale: dateZhCN,
                     },
-                    () =>
-                        typeof content === 'string'
-                            ? content
-                            : h(content, props, children)
+                    {
+                        default: () =>
+                            h(
+                                NDrawer,
+                                {
+                                    show: show.value,
+                                    closable: true,
+                                    onMaskClick: () => {
+                                        hide();
+                                    },
+                                    to: el,
+                                    ...drawerProps,
+                                },
+                                () => contentChildren
+                            ),
+                    }
                 );
         })
     );
+    useSetupComprehensive(app);
+    useSetupComponents(app);
     app.mount(el);
     document.body.appendChild(el);
     apps.push({
