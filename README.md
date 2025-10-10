@@ -753,6 +753,87 @@ window.FontInspector = {
   })
 })()
 ```
+# 防止vue路由防卫入侵监测
+
+需要替换你真实的beforeEachHook如代码:
+
+```
+const beforeEachHook = (to, form, next) => {
+	// 你的路由防卫...
+}
+router.beforeEach(beforeEachHook);
+```
+
+```js
+const useCheckRouterHooks = (fn) => {
+  function isNative(fn) {
+    return (
+      typeof fn === "function" &&
+      /\{\s*\[native code\]\s*\}/.test(Function.prototype.toString.call(fn))
+    );
+  }
+
+  const checkIsNative = (fn) => {
+    if (typeof fn === "function") {
+      if (isNative(Function.prototype.toString) && isNative(fn)) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  };
+  (function checkRouterHooksRun() {
+    fn?.();
+    if (checkIsNative(requestAnimationFrame)) {
+      requestAnimationFrame(checkRouterHooksRun);
+    } else {
+      if (checkIsNative(setTimeout)) {
+        setTimeout(checkRouterHooksRun);
+      } else {
+        setInterval(checkRouterHooksRun);
+      }
+    }
+  })();
+};
+const errorHooks = () => {
+  // 重新注册路由守卫
+  router.beforeEach(beforeEachHook);
+  // 提示用户并刷新页面
+  document.body.innerHTML = "";
+  const div = document.createElement("div");
+  div.innerHTML = "检测到浏览器环境非法入侵,禁止访问!";
+  div.style.color = "red";
+  div.style.fontSize = "20px";
+  document.body.appendChild(div);
+  alert(div.innerHTML);
+  // 关闭页面程序
+  location.replace("about:blank");
+  throw new Error(div.innerHTML);
+};
+useCheckRouterHooks(() => {
+  const isExistHooks = []
+    .concat(router.afterEach)
+    .concat(router.beforeHooks)
+    .includes(beforeEachHook);
+  if (!isExistHooks) {
+    errorHooks();
+  }
+});
+// 禁止浏览器debugger
+(function _debuggerInit() {
+  const start = Date.now();
+  new Function(`debugger;`)();
+  const end = Date.now();
+  if (Date.now() - start > 100) {
+    errorHooks();
+  }
+  setTimeout(() => {
+    _debuggerInit();
+  });
+})();
+```
 # puppeteer 禁止debugger
 ```ts
 await page.evaluateOnNewDocument(() => {
