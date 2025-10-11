@@ -3784,3 +3784,121 @@ sudo su -
 # 或
 su - root
 ```
+
+# 浏览器+vite插件:代码行数跳转
+
+gva-position
+
+```js
+export default function GvaPosition() {
+  return {
+    name: "gva-position",
+    apply: "serve",
+    transform(code, id) {
+      const index = id.lastIndexOf(".");
+      const ext = id.substr(index + 1);
+      if (ext.toLowerCase() === "vue") {
+        return codeLineTrack(code, id);
+      }
+    },
+  };
+}
+
+const codeLineTrack = (code, id) => {
+  const lineList = code.split("\n");
+  const newList = [];
+  lineList.forEach((item, index) => {
+    newList.push(addLineAttr(item, index + 1, id)); // 添加位置属性，index+1为具体的代码行号
+  });
+  return newList.join("\n");
+};
+
+const addLineAttr = (lineStr, line, id) => {
+  if (!/^\s+</.test(lineStr)) {
+    return lineStr;
+  }
+
+  const reg = /((((^(\s)+\<))|(^\<))[\w-]+)|(<\/template)/g;
+  let leftTagList = lineStr.match(reg);
+  if (leftTagList) {
+    leftTagList = Array.from(new Set(leftTagList));
+    leftTagList.forEach((item) => {
+      const skip = [
+        "KeepAlive",
+        "template",
+        "keep-alive",
+        "transition",
+        "el-",
+        "El",
+        "router-view",
+      ];
+      if (item && !skip.some((i) => item.indexOf(i) > -1)) {
+        const reg = new RegExp(`${item}`);
+        const location = `${item} code-location="${id}:${line}"`;
+        lineStr = lineStr.replace(reg, location);
+      }
+    });
+  }
+  return lineStr;
+};
+
+```
+
+gva-position-server
+
+```js
+const child_process = require('child_process')
+import * as dotenv from 'dotenv'
+import * as fs from 'fs'
+
+const NODE_ENV = process.env.NODE_ENV || 'development'
+const envFiles = [`.env.${NODE_ENV}`]
+for (const file of envFiles) {
+  const envConfig = dotenv.parse(fs.readFileSync(file))
+  for (const k in envConfig) {
+    process.env[k] = envConfig[k]
+  }
+}
+
+export default function GvaPositionServer() {
+  return {
+    name: 'gva-position-server',
+    apply: 'serve',
+    configureServer(server) {
+      server.middlewares.use((req, _, next) => {
+        if (req._parsedUrl.pathname === '/gvaPositionCode') {
+          const path =
+            req._parsedUrl.query && req._parsedUrl.query.split('=')[1]
+          if (path && path !== 'null') {
+            if (process.env.VITE_EDITOR === 'webstorm') {
+              const linePath = path.split(':')[1]
+              const filePath = path.split(':')[0]
+              const platform = os()
+              if (platform === 'win32') {
+                child_process.exec(
+                  `webstorm64.exe  --line ${linePath} ${filePath}`
+                )
+              } else {
+                child_process.exec(
+                  `webstorm --line ${linePath} ${filePath}`
+                )
+              }
+            } else {
+              child_process.exec('code -r -g ' + path)
+            }
+          }
+        }
+        next()
+      })
+    },
+  }
+}
+
+function os() {
+  'use strict'
+  const os = require('os')
+  const platform = os.platform()
+  return platform
+}
+
+```
