@@ -3249,6 +3249,24 @@ module.exports = {
 })()
 ```
 
+
+打开多余的标签解决方法：
+
+在项目根目录中创建一个包含以下内容的 cursorgoto.sh 文件：
+```
+#!/bin/bash
+cursor --goto "$1:$2:$3"
+```
+将其设置为可执行 chmod +x cursorgoto.sh
+
+在您的 vite 配置中替换它：
+```
+export default defineConfig({
+    plugins: [
+        vueDevtools({ launchEditor: './cursorgoto.sh' }),
+    ]
+});
+```
 ### vue3 创建api弹出层
 
 ```ts
