@@ -3972,6 +3972,7 @@ const finished = ref(false)
 const loadingRef = ref<HTMLDivElement>() as Ref<HTMLElement>
 const targetIsVisible = ref<boolean>(false)
 const el = useCurrentElement() as Ref<HTMLElement>
+provide('pdfListPageRef', el)
 const { stop } = useIntersectionObserver(
     loadingRef,
     ([entry], observerElement) => {
@@ -4041,6 +4042,51 @@ defineExpose({
 </script>
 <style scoped lang="less">
 .pdf-list-page {}
+</style>
+```
+
+pdf-list-page-item.vue
+监听元素在可视区域中在渲染默认插槽内容,不再科室区域则不渲染,这在默认插槽是重组件的情况下,对于垃圾回收很有帮助,代码如下:
+```vue
+<template>
+    <div class='pdf-list-page-item h-$height'>
+        <div ref="loadingRef">
+            <slot v-if="targetIsVisible"></slot>
+        </div>
+    </div>
+</template>
+<script setup lang="ts">
+const pdfListPageRef = inject('pdfListPageRef') as Ref<HTMLElement>
+const loadingRef = ref<HTMLDivElement>() as Ref<HTMLElement>
+const targetIsVisible = ref<boolean>(false)
+const currentHeight = ref<number>(0)
+const { height } = useElementSize(loadingRef)
+watchEffect(() => {
+    if (height.value > 0) {
+        currentHeight.value = height.value
+    }
+})
+useCssVars(() => ({
+    height: currentHeight.value > 0 ? `${currentHeight.value}px` : '',
+}))
+const { stop } = useIntersectionObserver(
+    loadingRef,
+    ([entry], observerElement) => {
+        const visible = entry?.isIntersecting || false
+        targetIsVisible.value = visible
+    },
+    {
+        root: pdfListPageRef,
+        threshold: 0,
+        rootMargin: "100% 100% 100% 100%"
+    }
+)
+onUnmounted(() => {
+    stop()
+})
+</script>
+<style scoped lang="less">
+.pdf-list-page-item {}
 </style>
 ```
 
