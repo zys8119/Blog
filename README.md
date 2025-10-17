@@ -4000,7 +4000,7 @@ const init = async () => {
         } else {
             await nextTick()
             loadingRef.value.scrollTop;
-            if (noPage.value) {
+            if (currentParams.value.noPage) {
                 return finished.value = true
             }
             if (targetIsVisible.value) {
