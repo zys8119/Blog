@@ -4043,3 +4043,30 @@ defineExpose({
 .pdf-list-page {}
 </style>
 ```
+
+### vue布局底部固定
+
+```vue
+<template>
+    <div class='footer-fixed flex flex-col'>
+        <div class="flex-1 w-100% of-hidden">
+            <slot></slot>
+        </div>
+        <div class="h-$height w-100">
+            <div ref="footerRef" class="fixed bottom-0 left-0 w-100%">
+                <slot name="footer"></slot>
+            </div>
+        </div>
+    </div>
+</template>
+<script setup lang="ts">
+const footerRef = ref();
+const { height } = useElementSize(footerRef);
+useCssVars(() => ({
+    height: `${height.value}px`,
+}));
+</script>
+<style scoped lang="less">
+.footer-fixed {}
+</style>
+```
