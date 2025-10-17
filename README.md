@@ -3926,7 +3926,6 @@ function os() {
 ```
 <template>
     <div class='pdf-list-page of-x-hidden h-100%'>
-        <div class="abs-content flex-center fixed pointer-events-none">{{ targetIsVisible }}</div>
         <slot :list="list"></slot>
         <div ref="loadingRef" class="flex-center text-#999 text-30px">
             <template v-if="finished">
