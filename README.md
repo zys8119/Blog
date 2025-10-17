@@ -3949,7 +3949,7 @@ const props = withDefaults(defineProps<{
     loadingText?: string
 }>(), {
     apiPath: () => Promise.resolve({ data: [], total: 0 }),
-    params: () => ({}),
+    params: () => ({}) as Record<string, any>,
     dataField: 'data',
     totalField: 'total',
     finishedText: '我是有底线的',
@@ -3957,14 +3957,14 @@ const props = withDefaults(defineProps<{
 })
 const emit = defineEmits(['update:params', 'update:apiPath'])
 const { apiPath, params } = useVModels(props, emit)
-const page = ref(0)
+const page = ref(-1)
 const pageSize = ref(10)
 const noPage = ref(false)
 const currentParams = computed(() => ({
-    page: page.value,
     pageSize: pageSize.value,
     noPage: noPage.value,
-    ...params.value
+    ...params.value,
+    page: page.value,
 }))
 const list = ref<any[]>([])
 const loading = ref(false)
@@ -3990,6 +3990,7 @@ const init = async () => {
         isLoading.value = true
         loading.value = true
         finished.value = false
+        page.value += 1
         const res = await apiPath.value(currentParams.value)
         const total = res.data[props.totalField] || 0
         list.value = list.value.concat(res.data[props.dataField] || [])
@@ -4004,7 +4005,6 @@ const init = async () => {
                 return finished.value = true
             }
             if (targetIsVisible.value) {
-                page.value += 1
                 await init()
             }
         }
@@ -4019,7 +4019,7 @@ const stopWatch = watch(targetIsVisible, async (visible) => {
     }
 })
 const reset = async () => {
-    page.value = 0
+    page.value = -1
     list.value = []
     finished.value = false
     loading.value = false
