@@ -3803,9 +3803,9 @@ sudo su -
 su - root
 ```
 
-# 浏览器+vite插件:代码行数跳转
+### 浏览器+vite插件:代码行数跳转
 
-gva-position
+#### gva-position
 
 ```js
 export default function GvaPosition() {
@@ -3862,7 +3862,7 @@ const addLineAttr = (lineStr, line, id) => {
 
 ```
 
-gva-position-server
+#### gva-position-server
 
 ```js
 const child_process = require('child_process')
@@ -3923,7 +3923,7 @@ function os() {
 
 ### h5上拉刷新分页加载
 
-```
+```vue
 <template>
     <div class='pdf-list-page of-x-hidden h-100%'>
         <slot :list="list"></slot>
