@@ -3920,3 +3920,127 @@ function os() {
 }
 
 ```
+
+### h5上拉刷新分页加载
+
+```
+<template>
+    <div class='pdf-list-page of-x-hidden h-100%'>
+        <div class="abs-content flex-center fixed pointer-events-none">{{ targetIsVisible }}</div>
+        <slot :list="list"></slot>
+        <div ref="loadingRef" class="flex-center text-#999 text-30px">
+            <template v-if="finished">
+                <div class="flex-center w-full gap-30px">
+                    <div class="flex-1 b-t-1px b-solid b-#eee"></div>
+                    <div>{{ finishedText }}</div>
+                    <div class="flex-1 b-t-1px b-solid b-#eee"></div>
+                </div>
+            </template>
+            <template v-else>{{ loadingText }}</template>
+        </div>
+    </div>
+</template>
+<script setup lang="ts">
+const props = withDefaults(defineProps<{
+    apiPath?: any
+    params?: any
+    dataField?: any
+    totalField?: any
+    finishedText?: string
+    loadingText?: string
+}>(), {
+    apiPath: () => Promise.resolve({ data: [], total: 0 }),
+    params: () => ({}),
+    dataField: 'data',
+    totalField: 'total',
+    finishedText: '我是有底线的',
+    loadingText: '加载中...',
+})
+const emit = defineEmits(['update:params', 'update:apiPath'])
+const { apiPath, params } = useVModels(props, emit)
+const page = ref(0)
+const pageSize = ref(10)
+const noPage = ref(false)
+const currentParams = computed(() => ({
+    page: page.value,
+    pageSize: pageSize.value,
+    noPage: noPage.value,
+    ...params.value
+}))
+const list = ref<any[]>([])
+const loading = ref(false)
+const finished = ref(false)
+const loadingRef = ref<HTMLDivElement>() as Ref<HTMLElement>
+const targetIsVisible = ref<boolean>(false)
+const el = useCurrentElement() as Ref<HTMLElement>
+const { stop } = useIntersectionObserver(
+    loadingRef,
+    ([entry], observerElement) => {
+        targetIsVisible.value = entry?.isIntersecting || false
+    },
+    {
+        root: el
+    }
+)
+const isLoading = ref(false)
+const init = async () => {
+    if (isLoading.value || finished.value) {
+        return
+    }
+    try {
+        isLoading.value = true
+        loading.value = true
+        finished.value = false
+        const res = await apiPath.value(currentParams.value)
+        const total = res.data[props.totalField] || 0
+        list.value = list.value.concat(res.data[props.dataField] || [])
+        isLoading.value = false
+        loading.value = false
+        if (list.value.length >= total) {
+            finished.value = true
+        } else {
+            await nextTick()
+            loadingRef.value.scrollTop;
+            if (noPage.value) {
+                return finished.value = true
+            }
+            if (targetIsVisible.value) {
+                page.value += 1
+                await init()
+            }
+        }
+    } catch (error) {
+        isLoading.value = false
+        loading.value = false
+    }
+}
+const stopWatch = watch(targetIsVisible, async (visible) => {
+    if (visible && !isLoading.value && !loading.value && !finished.value) {
+        await init()
+    }
+})
+const reset = async () => {
+    page.value = 0
+    list.value = []
+    finished.value = false
+    loading.value = false
+    isLoading.value = false
+    targetIsVisible.value = false
+}
+onMounted(async () => {
+    await reset()
+})
+onUnmounted(() => {
+    loading.value = false
+    finished.value = false
+    stop()
+    stopWatch()
+})
+defineExpose({
+    reset,
+})
+</script>
+<style scoped lang="less">
+.pdf-list-page {}
+</style>
+```
