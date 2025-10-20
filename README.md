@@ -4121,7 +4121,7 @@ useCssVars(() => ({
 
 suspension.ts
 
-```
+```ts
 import { Directive, DirectiveBinding } from 'vue';
 
 export interface SuspensionOptions {
@@ -4439,7 +4439,7 @@ export const vSuspension: Directive<HTMLElement, SuspensionOptions> = {
 
 ### 移动端元素缩放
 
-```
+```ts
 import type { Directive } from 'vue';
 import Hammer from 'hammerjs';
 /**
