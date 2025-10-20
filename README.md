@@ -4460,7 +4460,7 @@ const pinchZoomDirective: Directive<
 > = {
     mounted(el, binding) {
         // 支持布尔值或对象
-        let opts: PinchZoomOptions =
+        const opts: PinchZoomOptions =
             typeof binding.value === 'object'
                 ? binding.value
                 : { disabled: binding.value === false };
