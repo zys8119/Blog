@@ -4116,3 +4116,510 @@ useCssVars(() => ({
 .footer-fixed {}
 </style>
 ```
+
+### 悬浮球指令 
+
+suspension.ts
+
+```
+import { Directive, DirectiveBinding } from 'vue';
+
+export interface SuspensionOptions {
+    container?: HTMLElement | string; // 容器
+    edge?: boolean; // 是否启用吸边，默认 true
+    autoEdge?: boolean; // 是否在元素初始化渲染完成后自动吸附，默认 false
+    edgeMode?: 'all' | 'x' | 'y'; // 吸边方向
+    edgeDelay?: number; // 停止拖动多久触发吸边
+    edgeDuration?: number; // 吸边动画时长
+    onEdge?: () => void; // 吸边完成回调
+    onClick?: (ev: MouseEvent) => void; // 点击事件
+}
+
+export interface SuspensionModifiers {
+    x?: boolean;
+    y?: boolean;
+    mouse?: boolean;
+    touch?: boolean;
+    edge?: boolean;
+}
+
+export interface SuspensionBinding extends DirectiveBinding<SuspensionOptions> {
+    modifiers: any;
+}
+
+export class SuspensionInit {
+    el: HTMLElement;
+    binding: SuspensionBinding;
+    vnode: any;
+    oldVnode: any;
+    touchesTap: { clientX?: number; clientY?: number } = {};
+    matrix: number[] = [1, 0, 0, 1, 0, 0];
+    matrixOld: number[] = [1, 0, 0, 1, 0, 0];
+    startRect: DOMRect | null = null;
+    axis: 'x' | 'y' | 'both' = 'both';
+
+    private moveHandler: any;
+    private endHandler: any;
+
+    private enableMouse = true;
+    private enableTouch = true;
+    private container: HTMLElement | Window = window;
+
+    private autoEdgeTimeout: any = null;
+    private autoEdgeEnabled = false; // 初始化自动吸附开关
+    private edgeEnabled = true;
+    private edgeDelay = 3000;
+    private edgeDuration = 300;
+    private edgeMode: 'all' | 'x' | 'y' = 'all';
+    private onEdge?: () => void;
+
+    private isDragging = false;
+    private dragThreshold = 5;
+    private onClick = (ev: MouseEvent) => ev.stopImmediatePropagation();
+
+    constructor(
+        el: HTMLElement,
+        binding: SuspensionBinding,
+        vnode: any,
+        oldVnode: any
+    ) {
+        this.el = el;
+        this.binding = binding;
+        this.vnode = vnode;
+        this.oldVnode = oldVnode;
+
+        this.updateOptions(binding);
+        this.init();
+    }
+
+    /** 更新配置实时生效 */
+    updateOptions(binding: SuspensionBinding) {
+        const value = binding.value || {};
+        this.binding = binding;
+
+        // 拖动方向
+        if (binding.modifiers.x) this.axis = 'x';
+        else if (binding.modifiers.y) this.axis = 'y';
+        else this.axis = 'both';
+
+        // 输入方式
+        if (binding.modifiers.mouse) {
+            this.enableMouse = true;
+            this.enableTouch = false;
+        } else if (binding.modifiers.touch) {
+            this.enableMouse = false;
+            this.enableTouch = true;
+        } else {
+            this.enableMouse = true;
+            this.enableTouch = true;
+        }
+
+        // 容器
+        if (value.container) {
+            if (typeof value.container === 'string') {
+                const node = document.querySelector(value.container);
+                if (node instanceof HTMLElement) this.container = node;
+            } else if (value.container instanceof HTMLElement) {
+                this.container = value.container;
+            }
+        } else {
+            this.container = window;
+        }
+
+        // 吸边配置
+        this.edgeEnabled = !!((binding.modifiers.edge || value.edge) ?? false);
+        this.autoEdgeEnabled = !!(value.autoEdge ?? false);
+        this.edgeMode = value.edgeMode || 'all';
+        this.edgeDelay = value.edgeDelay ?? 3000;
+        this.edgeDuration = value.edgeDuration ?? 300;
+        this.onEdge =
+            typeof value.onEdge === 'function' ? value.onEdge : undefined;
+        this.onClick =
+            typeof value.onClick === 'function'
+                ? value.onClick
+                : (ev: MouseEvent) => ev;
+    }
+
+    private parseMatrix(transform: string | null) {
+        if (!transform || transform === 'none') return [1, 0, 0, 1, 0, 0];
+        const m = transform
+            .replace(/^matrix\(|\)$/g, '')
+            .split(',')
+            .map((s) => parseFloat(s.trim()));
+        return m.length === 6 ? m : [1, 0, 0, 1, 0, 0];
+    }
+
+    private getContainerRect() {
+        if (this.container instanceof HTMLElement)
+            return this.container.getBoundingClientRect();
+        return {
+            left: 0,
+            top: 0,
+            width: window.innerWidth,
+            height: window.innerHeight,
+        };
+    }
+
+    private startDrag(clientX: number, clientY: number) {
+        this.clearAutoEdgeTimer();
+        this.touchesTap.clientX = clientX;
+        this.touchesTap.clientY = clientY;
+        this.matrix = this.parseMatrix(getComputedStyle(this.el).transform);
+        this.matrixOld = [...this.matrix];
+        this.startRect = this.el.getBoundingClientRect();
+        this.isDragging = false;
+    }
+
+    private doDrag(clientX: number, clientY: number) {
+        if (!this.startRect) return;
+        const dx = clientX - (this.touchesTap.clientX || 0);
+        const dy = clientY - (this.touchesTap.clientY || 0);
+
+        if (
+            !this.isDragging &&
+            Math.sqrt(dx * dx + dy * dy) < this.dragThreshold
+        )
+            return;
+        this.isDragging = true;
+
+        let proposedLeft = this.startRect.left + (this.axis === 'y' ? 0 : dx);
+        let proposedTop = this.startRect.top + (this.axis === 'x' ? 0 : dy);
+
+        const containerRect = this.getContainerRect();
+        const elW = this.startRect.width;
+        const elH = this.startRect.height;
+
+        const minLeft = containerRect.left;
+        const maxLeft = containerRect.left + containerRect.width - elW;
+        const minTop = containerRect.top;
+        const maxTop = containerRect.top + containerRect.height - elH;
+
+        if (proposedLeft < minLeft) proposedLeft = minLeft;
+        if (proposedLeft > maxLeft) proposedLeft = maxLeft;
+        if (proposedTop < minTop) proposedTop = minTop;
+        if (proposedTop > maxTop) proposedTop = maxTop;
+
+        const dxClamped = proposedLeft - this.startRect.left;
+        const dyClamped = proposedTop - this.startRect.top;
+
+        if (this.axis !== 'y') this.matrix[4] = this.matrixOld[4] + dxClamped;
+        if (this.axis !== 'x') this.matrix[5] = this.matrixOld[5] + dyClamped;
+
+        this.el.style.transform = `matrix(${this.matrix.join(',')})`;
+    }
+
+    private endDrag(ev: any) {
+        if (!this.isDragging) this.onClick?.(ev);
+        this.matrixOld = [...this.matrix];
+        this.startRect = null;
+        this.startAutoEdgeTimer();
+    }
+
+    private startAutoEdgeTimer() {
+        if (!this.edgeEnabled) return; // 禁用吸边
+        this.clearAutoEdgeTimer();
+        this.autoEdgeTimeout = setTimeout(
+            () => this.autoEdge(),
+            this.edgeDelay
+        );
+    }
+
+    private clearAutoEdgeTimer() {
+        if (this.autoEdgeTimeout) {
+            clearTimeout(this.autoEdgeTimeout);
+            this.autoEdgeTimeout = null;
+        }
+    }
+
+    private autoEdge() {
+        if (!this.edgeEnabled) return;
+
+        const containerRect = this.getContainerRect();
+        const elRect = this.el.getBoundingClientRect();
+
+        const elLeft = elRect.left - containerRect.left;
+        const elTop = elRect.top - containerRect.top;
+        const elRight = containerRect.width - (elLeft + elRect.width);
+        const elBottom = containerRect.height - (elTop + elRect.height);
+
+        let targetX = this.matrix[4];
+        let targetY = this.matrix[5];
+
+        if (this.edgeMode === 'x' || this.edgeMode === 'all')
+            targetX += elLeft < elRight ? -elLeft : elRight;
+        if (this.edgeMode === 'y' || this.edgeMode === 'all')
+            targetY += elTop < elBottom ? -elTop : elBottom;
+
+        this.el.style.transition = `transform ${this.edgeDuration}ms`;
+        this.el.style.transform = `matrix(${this.matrix[0]},${this.matrix[1]},${this.matrix[2]},${this.matrix[3]},${targetX},${targetY})`;
+        this.matrix = [
+            this.matrix[0],
+            this.matrix[1],
+            this.matrix[2],
+            this.matrix[3],
+            targetX,
+            targetY,
+        ];
+        this.matrixOld = [...this.matrix];
+
+        setTimeout(() => {
+            this.el.style.transition = '';
+            this.onEdge?.();
+        }, this.edgeDuration);
+    }
+
+    init() {
+        if (this.enableTouch) {
+            this.el.addEventListener(
+                'touchstart',
+                (ev) =>
+                    this.startDrag(
+                        ev.touches[0].clientX,
+                        ev.touches[0].clientY
+                    ),
+                { passive: true }
+            );
+            this.el.addEventListener(
+                'touchmove',
+                (ev) =>
+                    this.doDrag(ev.touches[0].clientX, ev.touches[0].clientY),
+                { passive: true }
+            );
+            this.el.addEventListener('touchend', (ev: any) => this.endDrag(ev));
+            this.el.addEventListener('touchcancel', (ev: any) =>
+                this.endDrag(ev)
+            );
+        }
+
+        if (this.enableMouse) {
+            this.el.addEventListener('mousedown', (ev) => {
+                ev.preventDefault();
+                this.startDrag(ev.clientX, ev.clientY);
+
+                this.moveHandler = (moveEv: MouseEvent) =>
+                    this.doDrag(moveEv.clientX, moveEv.clientY);
+                this.endHandler = (ev: any) => {
+                    this.endDrag(ev);
+                    document.removeEventListener('mousemove', this.moveHandler);
+                    document.removeEventListener('mouseup', this.endHandler);
+                };
+
+                document.addEventListener('mousemove', this.moveHandler);
+                document.addEventListener('mouseup', this.endHandler);
+            });
+        }
+        // 初始吸边（元素渲染完成后）
+        if (this.edgeEnabled && this.autoEdgeEnabled) {
+            // 使用 requestAnimationFrame 确保元素渲染完成
+            requestAnimationFrame(() => {
+                this.autoEdge();
+            });
+        }
+    }
+
+    destroy() {
+        this.clearAutoEdgeTimer();
+    }
+}
+
+export const vSuspension: Directive<HTMLElement, SuspensionOptions> = {
+    mounted(el: any, binding: SuspensionBinding, vnode, oldVnode) {
+        el._suspension = new SuspensionInit(el, binding, vnode, oldVnode);
+    },
+    updated(el: any, binding: SuspensionBinding) {
+        el._suspension?.updateOptions(binding);
+    },
+    unmounted(el: any) {
+        el._suspension?.destroy();
+        delete el._suspension;
+    },
+};
+
+```
+
+### 移动端元素缩放
+
+```
+import type { Directive } from 'vue';
+import Hammer from 'hammerjs';
+/**
+ 兼容两种绑定格式：
+v-pinch-zoom="false" → 禁用缩放
+
+v-pinch-zoom="{ disabled: false, minScale: 1, maxScale: 5 }" → 高级配置
+ */
+interface PinchZoomOptions {
+    disabled?: boolean;
+    minScale?: number;
+    maxScale?: number;
+}
+
+const pinchZoomDirective: Directive<
+    HTMLElement,
+    boolean | PinchZoomOptions | undefined
+> = {
+    mounted(el, binding) {
+        // 支持布尔值或对象
+        let opts: PinchZoomOptions =
+            typeof binding.value === 'object'
+                ? binding.value
+                : { disabled: binding.value === false };
+
+        let enabled = !opts.disabled;
+        let MIN_SCALE = opts.minScale ?? 1;
+        let MAX_SCALE = opts.maxScale ?? 3;
+
+        let currentScale = 1;
+        let initialScale = 1;
+        let currentX = 0;
+        let currentY = 0;
+        let lastX = 0;
+        let lastY = 0;
+
+        let mc: HammerManager | null = null;
+
+        const clamp = (v: number, a: number, b: number) =>
+            Math.min(Math.max(v, a), b);
+
+        function applyTransform() {
+            el.style.transform = `translate(${currentX}px, ${currentY}px) scale(${currentScale})`;
+        }
+
+        function limitPan() {
+            const parent = el.parentElement?.getBoundingClientRect();
+            if (!parent) return;
+            const rect = el.getBoundingClientRect();
+            const maxX = (rect.width * currentScale - parent.width) / 2;
+            const maxY = (rect.height * currentScale - parent.height) / 2;
+            if (maxX > 0) currentX = clamp(currentX, -maxX, maxX);
+            if (maxY > 0) currentY = clamp(currentY, -maxY, maxY);
+        }
+
+        function initHammer() {
+            if (mc) return; // 不重复初始化
+
+            mc = new Hammer.Manager(el, { touchAction: 'auto' });
+            const pinch = new Hammer.Pinch();
+            const pan = new Hammer.Pan({ threshold: 0 });
+            const doubleTap = new Hammer.Tap({ event: 'doubletap', taps: 2 });
+            mc.add([pinch, pan, doubleTap]);
+            pinch.recognizeWith(pan);
+
+            // === 缩放 ===
+            mc.on('pinchstart', (ev) => {
+                if (!enabled || ev.pointers.length < 2) return;
+                initialScale = currentScale;
+                el.style.touchAction = 'none';
+            });
+
+            mc.on('pinchmove', (ev) => {
+                if (!enabled || ev.pointers.length < 2) return;
+                const newScale = clamp(
+                    initialScale * ev.scale,
+                    MIN_SCALE,
+                    MAX_SCALE
+                );
+                currentScale = newScale;
+                limitPan();
+                applyTransform();
+            });
+
+            mc.on('pinchend pinchcancel', () => {
+                currentScale = clamp(currentScale, MIN_SCALE, MAX_SCALE);
+                el.style.touchAction = currentScale === 1 ? 'auto' : 'none';
+                limitPan();
+                applyTransform();
+            });
+
+            // === 平移 ===
+            mc.on('panstart', (ev) => {
+                if (!enabled || currentScale <= 1 || ev.pointers.length > 1)
+                    return;
+                lastX = currentX;
+                lastY = currentY;
+            });
+
+            mc.on('panmove', (ev) => {
+                if (!enabled || currentScale <= 1 || ev.pointers.length > 1)
+                    return;
+                currentX = lastX + ev.deltaX;
+                currentY = lastY + ev.deltaY;
+                limitPan();
+                applyTransform();
+            });
+
+            mc.on('panend pancancel', () => {
+                if (currentScale <= 1) return;
+                limitPan();
+                applyTransform();
+            });
+
+            // === 双击重置 ===
+            mc.on('doubletap', () => {
+                if (!enabled) return;
+                currentScale = 1;
+                currentX = 0;
+                currentY = 0;
+                el.style.touchAction = 'auto';
+                applyTransform();
+            });
+
+            applyTransform();
+        }
+
+        // 保留状态，只停用交互
+        function setEnabled(state: boolean) {
+            enabled = state;
+            if (enabled) {
+                el.style.touchAction = currentScale === 1 ? 'auto' : 'none';
+            } else {
+                el.style.touchAction = 'auto'; // 禁用交互但保持缩放
+            }
+        }
+
+        // 彻底销毁（卸载时）
+        function destroyHammer() {
+            if (mc) {
+                mc.destroy();
+                mc = null;
+                el.style.touchAction = 'auto';
+            }
+        }
+
+        // 初始化
+        initHammer();
+        setEnabled(enabled);
+
+        // 外部控制接口
+        (el as any).__pinchZoomUpdate__ = (
+            newVal: boolean | PinchZoomOptions
+        ) => {
+            const newOpts =
+                typeof newVal === 'object'
+                    ? newVal
+                    : { disabled: newVal === false };
+            enabled = !newOpts.disabled;
+            MIN_SCALE = newOpts.minScale ?? MIN_SCALE;
+            MAX_SCALE = newOpts.maxScale ?? MAX_SCALE;
+            setEnabled(enabled);
+        };
+
+        (el as any).__pinchZoomDestroy__ = destroyHammer;
+    },
+
+    updated(el, binding) {
+        const updateFn = (el as any).__pinchZoomUpdate__;
+        if (updateFn) updateFn(binding.value);
+    },
+
+    unmounted(el) {
+        const destroyFn = (el as any).__pinchZoomDestroy__;
+        if (destroyFn) destroyFn();
+        delete (el as any).__pinchZoomUpdate__;
+        delete (el as any).__pinchZoomDestroy__;
+    },
+};
+
+export default pinchZoomDirective;
+
+```
