@@ -2,6 +2,103 @@
 
 个人爱好，知识积累，点滴成石
 
+###  nodejs 轻量命令定义
+
+```ts
+const cmds = {
+  async "--get"(parames, help) {
+    await help();
+  },
+  test: {
+    message: "Asda",
+    aa: {
+      message: "asda阿萨德卡拉斯",
+      bb() {
+        console.log(111);
+      },
+    },
+  },
+};
+(async function run([cmd, ...parames], cmds: Record<string, any>) {
+  const initHelp = {
+    message: "查看帮助",
+    callback({ help }) {
+      help();
+    },
+  };
+  cmds = {
+    ...cmds,
+    "--help": initHelp,
+    "-h": initHelp,
+  };
+  const keys = Object.keys(cmds).map((e) => e.trim());
+  const currentCmd = keys.find((e) => e === cmd);
+  const currentCmdInfo = cmds[currentCmd];
+  const help = async (isHelp = false) => {
+    if (!isHelp && currentCmdInfo) {
+      return;
+    } else {
+      const max = keys.reduce((a: number, b: string) => {
+        return a > b.length ? a : b.length;
+      }, 0);
+      const helpInfo = [[], []];
+      keys.map((k) => {
+        if (["message", "callback"].includes(k)) {
+          return;
+        }
+        const message = cmds[k]?.message ?? "";
+        const log = `${k.padEnd(max, " ")}${"----"
+          .padStart(10, " ")
+          .padEnd(14, " ")}${message}`.trim();
+        if (k.trim().startsWith("-")) {
+          helpInfo[1].push(log);
+        } else {
+          helpInfo[0].push(log);
+        }
+      });
+      console.log(
+        `
+        命令帮助:
+        Command:
+          ${helpInfo[0].map((e) => `\\n${e}`).join("\n")}
+        Options:
+          ${helpInfo[1].map((e) => `\\n${e}`).join("\n")}
+      `
+          .split("\n")
+          .filter(Boolean)
+          .map((e) => {
+            return e.trim().replace(/^\\n(?=\s*)/, "  ");
+          })
+          .join("\n")
+      );
+    }
+  };
+  if (currentCmdInfo) {
+    const callback =
+      typeof currentCmdInfo === "function"
+        ? currentCmdInfo
+        : typeof currentCmdInfo?.callback === "function"
+        ? currentCmdInfo?.callback
+        : null;
+    if (callback) {
+      return await callback({
+        parames,
+        help: async () => {
+          await help(true);
+        },
+      });
+    } else if (typeof currentCmdInfo === "object") {
+      return await run(parames, currentCmdInfo || {});
+    } else {
+      return await help();
+    }
+  } else {
+    return await help();
+  }
+})(process.argv.slice(2), cmds);
+
+```
+
 ### zsh 命令代码补全
 
 ```sh
