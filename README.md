@@ -2,6 +2,35 @@
 
 个人爱好，知识积累，点滴成石
 
+### zsh 搜索bolg.md
+
+```bash
+#!/bin/bash
+
+# 下载 blog.md（如果不存在）
+if [[ ! -f 'blog.md' ]]; then
+    curl -o blog.md https://raw.githubusercontent.com/zys8119/Blog/refs/heads/master/README.md
+fi
+
+file="blog.md"
+
+# 1️⃣ 用 fzf 选择标题
+title=$(grep -E '^#{1,6} ' "$file" | fzf --prompt="选择标题 > ")
+[ -z "$title" ] && exit 0
+
+# 2️⃣ Node 安全提取该标题下的内容
+node - "$file" "$title" <<'EOF'
+const fs=require("fs");
+const input= fs.readFileSync(process.argv[2],`utf8`);
+const a = process.argv[3];
+const reg = new RegExp(`^${a}(.|\n)*?#|^${a}.*(.|\n)*`, "img")
+console.log(input.match(reg)?.[0]
+    ?.replace(new RegExp(`#$|^${a}`, `img`), ``)
+);
+EOF
+
+```
+
 ###  nodejs 轻量cli命令定义
 
 ```ts
