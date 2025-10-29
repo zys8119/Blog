@@ -5,15 +5,24 @@
 ###  nodejs 轻量cli命令定义
 
 ```ts
-const cmds = {
+const cmds: CMDS = {
   "--md": {
     message: "解析Md",
-  },
-  md: {
-    message: "解析Md",
+    callback({}) {},
   },
 };
-(async function run([cmd, ...parames], cmds: Record<string, any>) {
+type CMDCALLBACKARGS = {
+  help(): ReturnType<CMDCALLBACK>;
+  parames: any[];
+};
+type CMDCALLBACK = (options: CMDCALLBACKARGS) => any | Promise<any>;
+type CMD = Partial<{
+  [key: string]: CMDS | string | CMDCALLBACK;
+  message: string;
+  callback: CMDCALLBACK;
+}>;
+type CMDS = Record<string, CMD>;
+(async function run([cmd, ...parames], cmds: CMDS) {
   const initHelp = {
     message: "查看帮助",
     callback({ help }) {
@@ -82,7 +91,7 @@ const cmds = {
         },
       });
     } else if (typeof currentCmdInfo === "object") {
-      return await run(parames, currentCmdInfo || {});
+      return await run(parames, currentCmdInfo || ({} as any));
     } else {
       return await help();
     }
