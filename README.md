@@ -2,21 +2,15 @@
 
 个人爱好，知识积累，点滴成石
 
-###  nodejs 轻量命令定义
+###  nodejs 轻量cli命令定义
 
 ```ts
 const cmds = {
-  async "--get"(parames, help) {
-    await help();
+  "--md": {
+    message: "解析Md",
   },
-  test: {
-    message: "Asda",
-    aa: {
-      message: "asda阿萨德卡拉斯",
-      bb() {
-        console.log(111);
-      },
-    },
+  md: {
+    message: "解析Md",
   },
 };
 (async function run([cmd, ...parames], cmds: Record<string, any>) {
@@ -58,14 +52,14 @@ const cmds = {
       });
       console.log(
         `
-        命令帮助:
-        Command:
+        命令帮助
+        ${helpInfo[0].length > 0 ? `Command:` : ""}
           ${helpInfo[0].map((e) => `\\n${e}`).join("\n")}
-        Options:
+        ${helpInfo[1].length > 0 ? `Options:` : ""}
           ${helpInfo[1].map((e) => `\\n${e}`).join("\n")}
       `
           .split("\n")
-          .filter(Boolean)
+          .filter((e) => Boolean(e.trim()))
           .map((e) => {
             return e.trim().replace(/^\\n(?=\s*)/, "  ");
           })
@@ -96,6 +90,7 @@ const cmds = {
     return await help();
   }
 })(process.argv.slice(2), cmds);
+
 
 ```
 
