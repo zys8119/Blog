@@ -2,6 +2,36 @@
 
 个人爱好，知识积累，点滴成石
 
+### zsh 命令代码补全
+
+```sh
+# _testA
+#  以下命令添加到 .zshrc 中即可完成补全
+# [[ -f _testA.sh ]] && . _testA.sh || true
+
+
+_testA() {
+  # 一级命令
+  case ${words[2]} in 
+    start)
+      local -a cmd1=("asd" "asdas")
+      _describe 'command' cmd1
+      ;;
+    -h)
+      local -a cmd1=("askdj" "aa啊谁来打卡老师sdas")
+      _describe 'command' cmd1
+      ;;
+    *)
+      local -a cmd1=("start:启动服务" "stop:停止服务" "restart:重启服务" "status:查看状态" "-h:帮助")
+      _describe 'command' cmd1
+      ;;
+  esac
+}
+
+# 绑定补全函数到 test.sh
+compdef _testA test1.sh
+```
+
 ## Web
 
 web端
