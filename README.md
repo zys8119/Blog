@@ -8,8 +8,36 @@
 const cmds: CMDS = {
   "--md": {
     message: "解析Md",
-    callback({}) {},
+    async callback({ parames }) {
+      const content = await getParames(parames);
+      console.log(content);
+    },
   },
+};
+/**
+ * 获取管道数据
+ * @param parames
+ * @returns
+ */
+const getParames = async (parames: string[] = []) => {
+  if (process.stdin.isTTY) {
+    return parames.join("");
+  } else {
+    return new Promise((r, err) => {
+      // 管道模式
+      process.stdin.setEncoding("utf8");
+      let input = "";
+      process.stdin.on("data", (chunk) => {
+        input += chunk;
+      });
+      process.stdin.on("end", async () => {
+        r(input || parames.join(""));
+      });
+      process.stdin.on("err", async (errMsg) => {
+        err(errMsg);
+      });
+    });
+  }
 };
 type CMDCALLBACKARGS = {
   help(): ReturnType<CMDCALLBACK>;
@@ -99,7 +127,6 @@ type CMDS = Record<string, CMD>;
     return await help();
   }
 })(process.argv.slice(2), cmds);
-
 
 ```
 
