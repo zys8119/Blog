@@ -3,6 +3,49 @@
 个人爱好，知识积累，点滴成石
 
 
+### myinput
+
+```vue
+<template>
+    <div class='myInput'>
+        <div class="abs-r b-1px b-solid b-#e8e8e8 b-rd-40px  abs-content transition-all p-4px" :class="{
+            // 'b-#7099ed!': focused
+        }">
+            <input ref="input" class="b-0! w-100% lh-40px b-rd-40px of-hidden outline-none focus:outline-none"
+                v-model="modelValue"></input>
+            <div class="abs-content flex-center-start  pointer-events-none text-#999 transition-all" :class="{
+                'tr-y--50%': focused || !isShowPlaceholder
+            }">
+                <span class="transition-all p-x-10px b-rd-5px " :class="{
+                    'bg-#e8e8e8 text-#7099ed bg-op-50 text-12px': focused || !isShowPlaceholder
+                }">{{ currentPlaceholder }}</span>
+            </div>
+            <div class="abs transition-all w-0 h-2px left-50% tr-x--50% bottom-0px b-rd-4px of-hidden bg-#f00 pointer-events-none"
+                :class="{
+                    'w-[calc(100%-28px)]!': focused
+                }"></div>
+        </div>
+    </div>
+</template>
+<script setup lang="ts">
+const props = withDefaults(defineProps<{
+    modelValue?: any
+    placeholder?: any
+}>(), {
+    modelValue: '',
+    placeholder: '请输入'
+})
+const emit = defineEmits(["update:modelValue"])
+const { modelValue } = useVModels(props, emit)
+const isShowPlaceholder = computed(() => !(modelValue.value?.length > 0))
+const input = ref()
+const { focused } = useFocus(input)
+const currentPlaceholder = computed(() => focused.value || !isShowPlaceholder.value ? (props.placeholder?.replace?.(/^(请*(输入|选择))(.*)/, '$3') || '请输入') : props.placeholder)
+</script>
+<style scoped lang="less">
+.myInput {}
+</style>
+```
 
 ### zsh 搜索bolg.md
 
