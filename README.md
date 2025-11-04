@@ -2,6 +2,106 @@
 
 个人爱好，知识积累，点滴成石
 
+### 百度翻译sse
+
+```ts
+import { createRoute } from "@wisdom-serve/serve";
+import { get } from "lodash";
+import { launch } from "puppeteer";
+import d from "data-preprocessor";
+console.clear();
+const sseParser = async (data) => {
+  return data
+    .split(/\n\n/)
+    .filter(Boolean)
+    .map((item) => {
+      const lines = item.split("\n");
+      const event = lines?.[0]?.match?.(/event: (.*)/)?.[1];
+      const data = lines?.[1]?.match?.(/data: (.*)/)?.[1];
+      return { event, data: JSON.parse(data || "{}") };
+    });
+};
+export default createRoute({
+  routes: [
+    {
+      path: "/test",
+      async controller() {
+        await d.get("内容不能为空", this.$body, "query");
+        await d.get("源语言不能为空", this.$body, "from", "en");
+        await d.get("目标语言不能为空", this.$body, "to", "zh");
+        const browser = await launch({
+          timeout: 0,
+        });
+        const page = await browser.newPage();
+        try {
+          const url = `https://fanyi.baidu.com/mtpe-individual/transText?query=${encodeURIComponent(
+            this.$body.query
+          )}&lang=${this.$body.from}2${this.$body.to}#/`;
+          const data = await new Promise((resolve, reject) => {
+            page.on("error", async (error) => {
+              await page.close();
+              await browser.close();
+              reject(error);
+            });
+            page.on("response", async (response) => {
+              if (response.url().includes("translate")) {
+                const data = await response.buffer();
+                await page.close();
+                await browser.close();
+                resolve(data);
+              }
+            });
+            page.goto(url);
+          });
+          const sseData = await sseParser(data.toString());
+          const sseDataObject = sseData
+            .filter((e) => e.data.errno === 0)
+            .map((item) => item.data.data)
+            .reduce((prev, cur) => {
+              switch (cur.event) {
+                case "GetDictSucceed":
+                  prev.dict = cur.dictResult;
+                  break;
+                case "GetPhoneticSucceed":
+                  prev.phonetic = cur.phonetic;
+                  break;
+                case "Translating":
+                  prev.translating = cur.list;
+                  break;
+                case "GetSentSucceed":
+                  prev.sent = cur.sentResult;
+                  break;
+                case "GetKeywordsSucceed":
+                  prev.keywords = cur.keywords;
+                  break;
+                default:
+                  // console.log(cur);
+                  break;
+              }
+              return prev;
+            }, {});
+          this.$success({
+            pinyin: get(sseDataObject, "phonetic", [])
+              .map((item) => item.items)
+              .reduce((prev, cur) => prev.concat(cur), []),
+            dst: `${get(sseDataObject, "translating", [])
+              .map((item) => item.dst)
+              .join("")}`,
+            keywords: get(sseDataObject, "keywords", []),
+          });
+        } catch (error) {
+          await page.close();
+          await browser.close();
+          this.$error({
+            message: error.message,
+          });
+        }
+      },
+    },
+  ],
+});
+
+```
 
 
 ### myinput
