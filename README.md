@@ -9,7 +9,6 @@ import { createRoute } from "@wisdom-serve/serve";
 import { get } from "lodash";
 import { launch } from "puppeteer";
 import d from "data-preprocessor";
-console.clear();
 const sseParser = async (data) => {
   return data
     .split(/\n\n/)
@@ -21,6 +20,11 @@ const sseParser = async (data) => {
       return { event, data: JSON.parse(data || "{}") };
     });
 };
+const browserLaunch = launch({
+  timeout: 0,
+  headless: "new",
+  args: ["--no-sandbox", "--disable-setuid-sandbox"],
+});
 export default createRoute({
   routes: [
     {
@@ -29,10 +33,7 @@ export default createRoute({
         await d.get("内容不能为空", this.$body, "query");
         await d.get("源语言不能为空", this.$body, "from", "en");
         await d.get("目标语言不能为空", this.$body, "to", "zh");
-        const browser = await launch({
-          timeout: 0,
-          headless: "new",
-        });
+        const browser = await browserLaunch;
         const page = await browser.newPage();
         try {
           const url = `https://fanyi.baidu.com/mtpe-individual/transText?query=${encodeURIComponent(
@@ -41,15 +42,33 @@ export default createRoute({
           const data = await new Promise((resolve, reject) => {
             page.on("error", async (error) => {
               await page.close();
-              await browser.close();
               reject(error);
             });
             page.on("response", async (response) => {
-              if (/\/translate$/.test(response.url())) {
-                const data = await response.buffer();
-                await page.close();
-                await browser.close();
-                resolve(data);
+              if (/\/translate/.test(response.url())) {
+                try {
+                  const data = await response.buffer();
+                  await page.close();
+                  resolve(data);
+                } catch (error) {
+                  const request = response.request();
+                  await page.evaluate(
+                    ({ url, method, headers, body }) => {
+                      fetch(url, {
+                        method,
+                        headers,
+                        body,
+                      });
+                    },
+                    {
+                      url: request.url(),
+                      method: request.method(),
+                      headers: request.headers(),
+                      body: request.postData(),
+                    }
+                  );
+                  console.log(error.message, 333);
+                }
               }
             });
             page.goto(url);
@@ -92,7 +111,6 @@ export default createRoute({
           });
         } catch (error) {
           await page.close();
-          await browser.close();
           this.$error({
             message: error.message,
           });
