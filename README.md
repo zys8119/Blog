@@ -44,7 +44,7 @@ export default createRoute({
               reject(error);
             });
             page.on("response", async (response) => {
-              if (response.url().includes("translate")) {
+              if (/\/translate$/.test(response.url())) {
                 const data = await response.buffer();
                 await page.close();
                 await browser.close();
