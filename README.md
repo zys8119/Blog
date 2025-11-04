@@ -6,9 +6,17 @@
 
 ```ts
 import { createRoute } from "@wisdom-serve/serve";
+import { controller as ControllerType } from "@wisdom-serve/serve/types/type";
 import { get } from "lodash";
 import { launch } from "puppeteer";
 import d from "data-preprocessor";
+process.on("unhandledRejection", (reason, p) => {
+  console.warn("⚠️ 未捕获的 Promise 拒绝:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("💥 未捕获异常:", err);
+});
 const sseParser = async (data) => {
   return data
     .split(/\n\n/)
@@ -20,102 +28,95 @@ const sseParser = async (data) => {
       return { event, data: JSON.parse(data || "{}") };
     });
 };
-const browserLaunch = launch({
-  timeout: 0,
-  headless: "new",
-  args: ["--no-sandbox", "--disable-setuid-sandbox"],
-});
+const controller = async function (...arg) {
+  await d.get("内容不能为空", this.$body, "query");
+  await d.get("源语言不能为空", this.$body, "from", "en");
+  await d.get("目标语言不能为空", this.$body, "to", "zh");
+  const browser = await launch({
+    timeout: 0,
+    headless: "new",
+  });
+  const page = await browser.newPage();
+  try {
+    const url = `https://fanyi.baidu.com/mtpe-individual/transText?query=${encodeURIComponent(
+      this.$body.query
+    )}&lang=${this.$body.from}2${this.$body.to}#/`;
+    const data = await new Promise((resolve, reject) => {
+      page.on("error", async (error) => {
+        await page.close();
+        await browser.close();
+        reject(error);
+      });
+      page.on("response", async (response) => {
+        if (/\/translate/.test(response.url())) {
+          try {
+            const data = await response.buffer();
+            await page.close();
+            await browser.close();
+            resolve(data);
+          } catch (error) {
+            console.log(error.message, 333);
+            resolve(true);
+          }
+        }
+      });
+      page.goto(url);
+    });
+    if (data === true) {
+      await page.close();
+      await browser.close();
+      await (controller as any).call(this, ...arg);
+      return;
+    }
+    const sseData = await sseParser(data.toString());
+    const sseDataObject = sseData
+      .filter((e) => e.data.errno === 0)
+      .map((item) => item.data.data)
+      .reduce((prev, cur) => {
+        console.log(cur);
+        switch (cur.event) {
+          case "GetDictSucceed":
+            prev.dict = cur.dictResult;
+            break;
+          case "GetPhoneticSucceed":
+            prev.phonetic = cur.phonetic;
+            break;
+          case "Translating":
+            prev.translating = cur.list;
+            break;
+          case "GetSentSucceed":
+            prev.sent = cur.sentResult;
+            break;
+          case "GetKeywordsSucceed":
+            prev.keywords = cur.keywords;
+            break;
+          default:
+            break;
+        }
+        return prev;
+      }, {});
+    this.$success({
+      pinyin: get(sseDataObject, "phonetic", [])
+        .map((item) => item.items)
+        .reduce((prev, cur) => prev.concat(cur), []),
+      dst: `${get(sseDataObject, "translating", [])
+        .map((item) => item.dst)
+        .join("")}`,
+      keywords: get(sseDataObject, "keywords", []),
+    });
+  } catch (error) {
+    await page.close();
+    await browser.close();
+    this.$error({
+      message: error.message,
+    });
+  }
+} as ControllerType;
 export default createRoute({
   routes: [
     {
       path: "/test",
-      async controller() {
-        await d.get("内容不能为空", this.$body, "query");
-        await d.get("源语言不能为空", this.$body, "from", "en");
-        await d.get("目标语言不能为空", this.$body, "to", "zh");
-        const browser = await browserLaunch;
-        const page = await browser.newPage();
-        try {
-          const url = `https://fanyi.baidu.com/mtpe-individual/transText?query=${encodeURIComponent(
-            this.$body.query
-          )}&lang=${this.$body.from}2${this.$body.to}#/`;
-          const data = await new Promise((resolve, reject) => {
-            page.on("error", async (error) => {
-              await page.close();
-              reject(error);
-            });
-            page.on("response", async (response) => {
-              if (/\/translate/.test(response.url())) {
-                try {
-                  const data = await response.buffer();
-                  await page.close();
-                  resolve(data);
-                } catch (error) {
-                  const request = response.request();
-                  await page.evaluate(
-                    ({ url, method, headers, body }) => {
-                      fetch(url, {
-                        method,
-                        headers,
-                        body,
-                      });
-                    },
-                    {
-                      url: request.url(),
-                      method: request.method(),
-                      headers: request.headers(),
-                      body: request.postData(),
-                    }
-                  );
-                  console.log(error.message, 333);
-                }
-              }
-            });
-            page.goto(url);
-          });
-          const sseData = await sseParser(data.toString());
-          const sseDataObject = sseData
-            .filter((e) => e.data.errno === 0)
-            .map((item) => item.data.data)
-            .reduce((prev, cur) => {
-              switch (cur.event) {
-                case "GetDictSucceed":
-                  prev.dict = cur.dictResult;
-                  break;
-                case "GetPhoneticSucceed":
-                  prev.phonetic = cur.phonetic;
-                  break;
-                case "Translating":
-                  prev.translating = cur.list;
-                  break;
-                case "GetSentSucceed":
-                  prev.sent = cur.sentResult;
-                  break;
-                case "GetKeywordsSucceed":
-                  prev.keywords = cur.keywords;
-                  break;
-                default:
-                  // console.log(cur);
-                  break;
-              }
-              return prev;
-            }, {});
-          this.$success({
-            pinyin: get(sseDataObject, "phonetic", [])
-              .map((item) => item.items)
-              .reduce((prev, cur) => prev.concat(cur), []),
-            dst: `${get(sseDataObject, "translating", [])
-              .map((item) => item.dst)
-              .join("")}`,
-            keywords: get(sseDataObject, "keywords", []),
-          });
-        } catch (error) {
-          await page.close();
-          this.$error({
-            message: error.message,
-          });
-        }
-      },
+      controller,
     },
   ],
 });
