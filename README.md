@@ -31,6 +31,7 @@ export default createRoute({
         await d.get("目标语言不能为空", this.$body, "to", "zh");
         const browser = await launch({
           timeout: 0,
+          headless: "new",
         });
         const page = await browser.newPage();
         try {
