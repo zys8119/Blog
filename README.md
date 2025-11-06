@@ -2,6 +2,39 @@
 
 个人爱好，知识积累，点滴成石
 
+### 百度翻译api翻译
+
+```ts
+import axios from "axios";
+import crypto from "crypto";
+(async () => {
+  const appid = "";
+  const key = "";
+  const query = `hello
+  `;
+  const salt = Date.now();
+  const sign = crypto
+    .createHash("md5")
+    .update(`${appid}${query}${salt}${key}`)
+    .digest("hex");
+  console.log(
+    (
+      await axios.get("https://fanyi-api.baidu.com/api/trans/vip/translate", {
+        params: {
+          q: query,
+          from: "en",
+          to: "zh",
+          appid,
+          salt,
+          sign,
+        },
+      })
+    ).data
+  );
+})();
+
+```
+
 ### 百度翻译sse
 
 ```ts
