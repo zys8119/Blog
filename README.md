@@ -2,6 +2,48 @@
 
 个人爱好，知识积累，点滴成石
 
+### gitlab 导出所有项目
+
+```ts
+import axios from "axios";
+import { writeFileSync } from "fs";
+(async function run(results = [], page = 1, per_page = 100) {
+  console.log(page);
+  const { data } = await axios({
+    baseURL: process.env.BASE_URL,
+    headers: {
+      "Content-Type": "application/json",
+      "PRIVATE-TOKEN": process.env.PRIVATE_TOKEN,
+    },
+    url: "/projects",
+    method: "GET",
+    params: {
+      page,
+      per_page,
+    },
+  });
+  const projects = data.map((e) => ({
+    name: e.name,
+    id: e.id,
+    http_url_to_repo: e.http_url_to_repo,
+    description: e.description,
+    path_with_namespace: e.path_with_namespace,
+  }));
+  console.log(
+    `page: ${page}, projects.length: ${projects.length} results.length: ${results.length}`
+  );
+  results.push(...projects);
+  if (projects.length === per_page) {
+    return await run(results, page + 1);
+  } else {
+    writeFileSync("./projects.json", JSON.stringify(results, null, 2));
+    console.log(`Downloaded  Total: ${results.length}`);
+    return results;
+  }
+})();
+
+```
+
 ### clash 扩展脚本
 
 ```
