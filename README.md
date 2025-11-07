@@ -8,7 +8,7 @@
 // Define main function (script entry)
 
 function main(config, profileName) {
-  config.rules = config.rules.concat(["DOMAIN-KEYWORD,v.qq.com,🔰 节点选择"])
+  config.rules = ["DOMAIN-KEYWORD,jira.zhijiasoft.com,🔰 节点选择"].concat(config.rules)
   return config;
 }
 
