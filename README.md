@@ -2,6 +2,18 @@
 
 个人爱好，知识积累，点滴成石
 
+### clash 扩展脚本
+
+```
+// Define main function (script entry)
+
+function main(config, profileName) {
+  config.rules = config.rules.concat(["DOMAIN-KEYWORD,v.qq.com,🔰 节点选择"])
+  return config;
+}
+
+```
+
 ### 百度翻译api翻译
 
 ```ts
