@@ -11,6 +11,11 @@ import cliProgress from "cli-progress";
 import colors from "ansi-colors";
 import d from "data-preprocessor";
 import { minimatch } from "minimatch";
+import pLimit from "p-limit";
+import os from "os";
+const cpus = os.cpus().length;
+console.log(`当前系统CPUS:核(${colors.blue(cpus as unknown as string)})\n\n`);
+const limit = pLimit(cpus);
 const headers = {
   "Content-Type": "application/json",
   "PRIVATE-TOKEN": process.env.PRIVATE_TOKEN,
@@ -20,40 +25,46 @@ const axios = Axios.create({
   headers: headers,
 });
 async function run(results = [], page = 1, per_page = 100) {
-  console.log(page);
-  const { data } = await axios({
-    url: "/projects",
-    method: "GET",
-    params: {
-      page,
-      per_page,
-    },
-  });
-  const projects = data.map((e) => ({
-    name: e.name,
-    id: e.id,
-    http_url_to_repo: e.http_url_to_repo,
-    description: e.description,
-    path_with_namespace: e.path_with_namespace,
-  }));
-  console.log(
-    `page: ${page}, projects.length: ${projects.length} results.length: ${results.length}`
+  const res = await Promise.all<any>(
+    new Array(cpus).fill(0).map(async (_, k) => {
+      return limit(async () => {
+        const _page = page + k;
+        const { data } = await axios({
+          url: "/projects",
+          method: "GET",
+          params: {
+            page: _page,
+            per_page,
+          },
+        });
+        const projects = data.map((e) => ({
+          name: e.name,
+          id: e.id,
+          http_url_to_repo: e.http_url_to_repo,
+          description: e.description,
+          path_with_namespace: e.path_with_namespace,
+        }));
+        results.push(...projects);
+        console.log(
+          `线程(${k}) 当前页(${_page})  当前项目数量(${projects.length})  总数: (${results.length})`
+        );
+        return projects;
+      });
+    })
   );
-  results.push(...projects);
-  if (projects.length === per_page) {
-    return await run(results, page + 1);
-  } else {
+  const isEmpty = res.find((e) => e.length === 0);
+  if (isEmpty) {
     writeFileSync("./projects.json", JSON.stringify(results, null, 2));
     console.log(`Downloaded  Total: ${results.length}`);
     return results;
+  } else {
+    return await run(results, page + cpus, per_page);
   }
 }
 const cmds: CMDS = {
   "--getProjects": {
     message: "获取所有项目",
     async callback({ parames }) {
-      // const content = await getParames(parames);
-      // console.log(content);
       await run();
     },
   },
@@ -62,6 +73,10 @@ const cmds: CMDS = {
     async callback({ parames }) {
       const content = d.get("搜索内容参数必填", parames, "[0]");
       const path = d.get("搜索路径", parames, "[1]", "**");
+      const run = d.get(parames, "[3]");
+      if (["--run", "-r"].includes(run) || !existsSync("./projects.json")) {
+        await run();
+      }
       const search = new RegExp(content, "img");
       const cachePath = "./cache.json";
       if (!existsSync(cachePath)) {
