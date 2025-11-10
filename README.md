@@ -24,7 +24,7 @@ const axios = Axios.create({
   baseURL: process.env.BASE_URL,
   headers: headers,
 });
-async function run(results = [], page = 1, per_page = 100) {
+async function runGetProjects(results = [], page = 1, per_page = 100) {
   const res = await Promise.all<any>(
     new Array(cpus).fill(0).map(async (_, k) => {
       return limit(async () => {
@@ -58,14 +58,14 @@ async function run(results = [], page = 1, per_page = 100) {
     console.log(`Downloaded  Total: ${results.length}`);
     return results;
   } else {
-    return await run(results, page + cpus, per_page);
+    return await runGetProjects(results, page + cpus, per_page);
   }
 }
 const cmds: CMDS = {
   "--getProjects": {
     message: "获取所有项目",
-    async callback({ parames }) {
-      await run();
+    async callback() {
+      await runGetProjects();
     },
   },
   "--getFileContent": {
@@ -75,15 +75,9 @@ const cmds: CMDS = {
       const path = d.get("搜索路径", parames, "[1]", "**");
       const run = d.get(parames, "[3]");
       if (["--run", "-r"].includes(run) || !existsSync("./projects.json")) {
-        await run();
+        await runGetProjects();
       }
       const search = new RegExp(content, "img");
-      const cachePath = "./cache.json";
-      if (!existsSync(cachePath)) {
-        writeFileSync(cachePath, JSON.stringify({}, null, 2));
-      }
-      const cache = await import(cachePath);
-      const cacheObj = cache.default;
       const projects = (await import("./projects.json")).default;
       const projectsNum = projects.length;
       const b1 = new cliProgress.SingleBar({
@@ -96,95 +90,111 @@ const cmds: CMDS = {
         clearOnComplete: true,
       });
       b1.start(projectsNum, 0);
-      while (projects.length > 0) {
-        const project = projects.shift();
-        const projectId = project.id;
-        b1.increment();
-        const { data: branches } = await axios({
-          url: `/projects/${projectId}/repository/branches`,
-          method: "GET",
-        });
-        const b2 = new cliProgress.SingleBar({
-          format:
-            "分支进度(" +
-            colors.cyan("{branchName}") +
-            " )|" +
-            colors.yellow("{bar}") +
-            "| {percentage}% || {value}/{total} 仓库数 \n",
-          clearOnComplete: true,
-        });
-        b2.start(branches.length, 0);
-        while (branches.length > 0) {
-          const branch = branches.shift();
-          const branchName = branch.name;
-          b2.increment({
-            branchName,
-          });
-          let page = 1;
-          while (true) {
-            const { data: tree } = await axios({
-              url: `/projects/${projectId}/repository/tree`,
+      const limit2 = pLimit(cpus);
+      await Promise.all(
+        projects.map(async (project) => {
+          return limit2(async () => {
+            const projectId = project.id;
+            b1.increment();
+            const { data: branches } = await axios({
+              url: `/projects/${projectId}/repository/branches`,
               method: "GET",
-              params: {
-                recursive: true,
-                ref: branchName,
-                per_page: 100,
-                page,
-              },
             });
-            await Promise.all(
-              tree
-                .filter((e) => {
-                  return e.type === "blob" && minimatch(e.path, path);
-                })
-                .map(async (e) => {
-                  const { data } = await axios({
-                    url: `/projects/${projectId}/repository/files/${encodeURIComponent(
-                      e.path
-                    )}`,
-                    method: "GET",
-                    params: {
-                      ref: branchName,
-                    },
+            const b2 = new cliProgress.SingleBar({
+              format:
+                "分支进度(" +
+                colors.cyan("{branchName}") +
+                " )|" +
+                colors.yellow("{bar}") +
+                "| {percentage}% || {value}/{total} 仓库数 \n",
+              clearOnComplete: true,
+            });
+            b2.start(branches.length, 0);
+            const limit3 = pLimit(cpus);
+            Promise.all(
+              branches.map(async (branch) => {
+                return limit3(async () => {
+                  const branchName = branch.name;
+                  b2.increment({
+                    branchName,
                   });
-                  const content = Buffer.from(
-                    data.content,
-                    data.encoding
-                  ).toString();
-                  if (search.test(content)) {
-                    console.log(
-                      `=======[${project.name}](${
-                        project.description || "暂无!"
-                      })===>> [${colors.bgBlue(
-                        project.http_url_to_repo
-                      )}] <<=======`
-                    );
-                    console.log(
-                      colors.green(
-                        `\n
+                  const limit4 = pLimit(cpus);
+                  await (async function run(page = 1, per_page = 100) {
+                    const res = await Promise.all(
+                      new Array(cpus).fill(0).map(async (_, k) => {
+                        const _page = page + k;
+                        return limit4(async () => {
+                          const { data: tree } = await axios({
+                            url: `/projects/${projectId}/repository/tree`,
+                            method: "GET",
+                            params: {
+                              recursive: true,
+                              ref: branchName,
+                              per_page,
+                              page: _page,
+                            },
+                          });
+                          await Promise.all(
+                            tree
+                              .filter((e) => {
+                                return (
+                                  e.type === "blob" && minimatch(e.path, path)
+                                );
+                              })
+                              .map(async (e) => {
+                                const { data } = await axios({
+                                  url: `/projects/${projectId}/repository/files/${encodeURIComponent(
+                                    e.path
+                                  )}`,
+                                  method: "GET",
+                                  params: {
+                                    ref: branchName,
+                                  },
+                                });
+                                const content = Buffer.from(
+                                  data.content,
+                                  data.encoding
+                                ).toString();
+                                if (search.test(content)) {
+                                  console.log(
+                                    `=======[${project.name}](${
+                                      project.description || "暂无!"
+                                    })===>> [${colors.bgBlue(
+                                      project.http_url_to_repo
+                                    )}] <<=======`
+                                  );
+                                  console.log(
+                                    colors.green(
+                                      `\n
                        项目名称: ${project.name}
                        项目描述: ${project.description || "-"}
                        项目地址: ${project.http_url_to_repo}
                        分支: ${branchName}
                        文件: ${e.path}
                        \n`
-                          .split("\n")
-                          .map((e) => e.trim())
-                          .join("\n")
-                      )
+                                        .split("\n")
+                                        .map((e) => e.trim())
+                                        .join("\n")
+                                    )
+                                  );
+                                  console.log(colors.yellow("=============="));
+                                }
+                              })
+                          );
+                          return tree;
+                        });
+                      })
                     );
-                    console.log(colors.yellow("=============="));
-                  }
-                })
+                    if (!res.find((e) => e.length === 0)) {
+                      return await run(page + cpus, per_page);
+                    }
+                  })();
+                });
+              })
             );
-            page++;
-            if (tree.length === 0) {
-              break;
-            }
-          }
-        }
-        // 扫描缓存
-      }
+          });
+        })
+      );
     },
   },
 };
@@ -301,6 +311,7 @@ type CMDS = Record<string, CMD>;
     return await help();
   }
 })(process.argv.slice(2), cmds);
+
 
 ```
 
