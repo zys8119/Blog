@@ -2,6 +2,293 @@
 
 个人爱好，知识积累，点滴成石
 
+### gitlab 仓库扫描搜索
+
+```ts
+import Axios from "axios";
+import { writeFileSync, existsSync } from "fs";
+import cliProgress from "cli-progress";
+import colors from "ansi-colors";
+import d from "data-preprocessor";
+import { minimatch } from "minimatch";
+const headers = {
+  "Content-Type": "application/json",
+  "PRIVATE-TOKEN": process.env.PRIVATE_TOKEN,
+};
+const axios = Axios.create({
+  baseURL: process.env.BASE_URL,
+  headers: headers,
+});
+async function run(results = [], page = 1, per_page = 100) {
+  console.log(page);
+  const { data } = await axios({
+    url: "/projects",
+    method: "GET",
+    params: {
+      page,
+      per_page,
+    },
+  });
+  const projects = data.map((e) => ({
+    name: e.name,
+    id: e.id,
+    http_url_to_repo: e.http_url_to_repo,
+    description: e.description,
+    path_with_namespace: e.path_with_namespace,
+  }));
+  console.log(
+    `page: ${page}, projects.length: ${projects.length} results.length: ${results.length}`
+  );
+  results.push(...projects);
+  if (projects.length === per_page) {
+    return await run(results, page + 1);
+  } else {
+    writeFileSync("./projects.json", JSON.stringify(results, null, 2));
+    console.log(`Downloaded  Total: ${results.length}`);
+    return results;
+  }
+}
+const cmds: CMDS = {
+  "--getProjects": {
+    message: "获取所有项目",
+    async callback({ parames }) {
+      // const content = await getParames(parames);
+      // console.log(content);
+      await run();
+    },
+  },
+  "--getFileContent": {
+    message: "获取项目下的文件内容",
+    async callback({ parames }) {
+      const content = d.get("搜索内容参数必填", parames, "[0]");
+      const path = d.get("搜索路径", parames, "[1]", "**");
+      const search = new RegExp(content, "img");
+      const cachePath = "./cache.json";
+      if (!existsSync(cachePath)) {
+        writeFileSync(cachePath, JSON.stringify({}, null, 2));
+      }
+      const cache = await import(cachePath);
+      const cacheObj = cache.default;
+      const projects = (await import("./projects.json")).default;
+      const projectsNum = projects.length;
+      const b1 = new cliProgress.SingleBar({
+        format:
+          "总进度 |" +
+          colors.cyan("{bar}") +
+          "| {percentage}% || {value}/{total} 仓库数 \n",
+        barCompleteChar: "\u2588",
+        barIncompleteChar: "\u2591",
+        clearOnComplete: true,
+      });
+      b1.start(projectsNum, 0);
+      while (projects.length > 0) {
+        const project = projects.shift();
+        const projectId = project.id;
+        b1.increment();
+        const { data: branches } = await axios({
+          url: `/projects/${projectId}/repository/branches`,
+          method: "GET",
+        });
+        const b2 = new cliProgress.SingleBar({
+          format:
+            "分支进度(" +
+            colors.cyan("{branchName}") +
+            " )|" +
+            colors.yellow("{bar}") +
+            "| {percentage}% || {value}/{total} 仓库数 \n",
+          clearOnComplete: true,
+        });
+        b2.start(branches.length, 0);
+        while (branches.length > 0) {
+          const branch = branches.shift();
+          const branchName = branch.name;
+          b2.increment({
+            branchName,
+          });
+          let page = 1;
+          while (true) {
+            const { data: tree } = await axios({
+              url: `/projects/${projectId}/repository/tree`,
+              method: "GET",
+              params: {
+                recursive: true,
+                ref: branchName,
+                per_page: 100,
+                page,
+              },
+            });
+            await Promise.all(
+              tree
+                .filter((e) => {
+                  return e.type === "blob" && minimatch(e.path, path);
+                })
+                .map(async (e) => {
+                  const { data } = await axios({
+                    url: `/projects/${projectId}/repository/files/${encodeURIComponent(
+                      e.path
+                    )}`,
+                    method: "GET",
+                    params: {
+                      ref: branchName,
+                    },
+                  });
+                  const content = Buffer.from(
+                    data.content,
+                    data.encoding
+                  ).toString();
+                  if (search.test(content)) {
+                    console.log(
+                      `=======[${project.name}](${
+                        project.description || "暂无!"
+                      })===>> [${colors.bgBlue(
+                        project.http_url_to_repo
+                      )}] <<=======`
+                    );
+                    console.log(
+                      colors.green(
+                        `\n
+                       项目名称: ${project.name}
+                       项目描述: ${project.description || "-"}
+                       项目地址: ${project.http_url_to_repo}
+                       分支: ${branchName}
+                       文件: ${e.path}
+                       \n`
+                          .split("\n")
+                          .map((e) => e.trim())
+                          .join("\n")
+                      )
+                    );
+                    console.log(colors.yellow("=============="));
+                  }
+                })
+            );
+            page++;
+            if (tree.length === 0) {
+              break;
+            }
+          }
+        }
+        // 扫描缓存
+      }
+    },
+  },
+};
+/**
+ * 获取管道数据
+ * @param parames
+ * @returns
+ */
+const getParames = async (parames: string[] = []) => {
+  if (process.stdin.isTTY) {
+    return parames.join("");
+  } else {
+    return new Promise((r, err) => {
+      // 管道模式
+      process.stdin.setEncoding("utf8");
+      let input = "";
+      process.stdin.on("data", (chunk) => {
+        input += chunk;
+      });
+      process.stdin.on("end", async () => {
+        r(input || parames.join(""));
+      });
+      process.stdin.on("err", async (errMsg) => {
+        err(errMsg);
+      });
+    });
+  }
+};
+type CMDCALLBACKARGS = {
+  help(): ReturnType<CMDCALLBACK>;
+  parames: any[];
+};
+type CMDCALLBACK = (options: CMDCALLBACKARGS) => any | Promise<any>;
+type CMD = Partial<{
+  [key: string]: CMDS | string | CMDCALLBACK;
+  message: string;
+  callback: CMDCALLBACK;
+}>;
+type CMDS = Record<string, CMD>;
+(async function run([cmd, ...parames], cmds: CMDS) {
+  const initHelp = {
+    message: "查看帮助",
+    callback({ help }) {
+      help();
+    },
+  };
+  cmds = {
+    ...cmds,
+    "--help": initHelp,
+    "-h": initHelp,
+  };
+  const keys = Object.keys(cmds).map((e) => e.trim());
+  const currentCmd = keys.find((e) => e === cmd);
+  const currentCmdInfo = cmds[currentCmd];
+  const help = async (isHelp = false) => {
+    if (!isHelp && currentCmdInfo) {
+      return;
+    } else {
+      const max = keys.reduce((a: number, b: string) => {
+        return a > b.length ? a : b.length;
+      }, 0);
+      const helpInfo = [[], []];
+      keys.map((k) => {
+        if (["message", "callback"].includes(k)) {
+          return;
+        }
+        const message = cmds[k]?.message ?? "";
+        const log = `${k.padEnd(max, " ")}${"----"
+          .padStart(10, " ")
+          .padEnd(14, " ")}${message}`.trim();
+        if (k.trim().startsWith("-")) {
+          helpInfo[1].push(log);
+        } else {
+          helpInfo[0].push(log);
+        }
+      });
+      console.log(
+        `
+        命令帮助
+        ${helpInfo[0].length > 0 ? `Command:` : ""}
+          ${helpInfo[0].map((e) => `\n${e}`).join("")}
+        ${helpInfo[1].length > 0 ? `Options:` : ""}
+          ${helpInfo[1].map((e) => `\n${e}`).join("")}
+      `
+          .split("")
+          .filter((e) => Boolean(e.trim()))
+          .map((e) => {
+            return e.trim().replace(/^\n(?=\s*)/, "  ");
+          })
+          .join("")
+      );
+    }
+  };
+  if (currentCmdInfo) {
+    const callback =
+      typeof currentCmdInfo === "function"
+        ? currentCmdInfo
+        : typeof currentCmdInfo?.callback === "function"
+        ? currentCmdInfo?.callback
+        : null;
+    if (callback) {
+      return await callback({
+        parames,
+        help: async () => {
+          await help(true);
+        },
+      });
+    } else if (typeof currentCmdInfo === "object") {
+      return await run(parames, currentCmdInfo || ({} as any));
+    } else {
+      return await help();
+    }
+  } else {
+    return await help();
+  }
+})(process.argv.slice(2), cmds);
+
+```
+
 ### gitlab 导出所有项目
 
 ```ts
