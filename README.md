@@ -84,7 +84,9 @@ const cmds: CMDS = {
         await runGetProjects();
       }
       const search = new RegExp(content, "img");
-      const projects = (await import("./projects.json")).default;
+      const projects = (await import("./projects.json")).default.filter((e) =>
+        [420].includes(e.id)
+      );
       const projectsNum = projects.length;
       const b1 = new cliProgress.SingleBar({
         format:
@@ -104,6 +106,9 @@ const cmds: CMDS = {
             const { data: branches } = await axios({
               url: `/projects/${projectId}/repository/branches`,
               method: "GET",
+              params: {
+                per_page: 100,
+              },
             });
             const b2 = new cliProgress.SingleBar({
               format:
@@ -111,7 +116,7 @@ const cmds: CMDS = {
                 colors.cyan("{branchName}") +
                 " )|" +
                 colors.yellow("{bar}") +
-                "| {percentage}% || {value}/{total} 仓库数 \n",
+                "| {percentage}% || {value}/{total} 分支数 \n",
               clearOnComplete: true,
             });
             b2.start(branches.length, 0);
@@ -129,64 +134,70 @@ const cmds: CMDS = {
                       new Array(cpus).fill(0).map(async (_, k) => {
                         const _page = page + k;
                         return limit4(async () => {
-                          const { data: tree } = await axios({
-                            url: `/projects/${projectId}/repository/tree`,
-                            method: "GET",
-                            params: {
-                              recursive: true,
-                              ref: branchName,
-                              per_page,
-                              page: _page,
-                            },
-                          });
-                          await Promise.all(
-                            tree
-                              .filter((e) => {
-                                return (
-                                  e.type === "blob" && minimatch(e.path, path)
-                                );
-                              })
-                              .map(async (e) => {
-                                const { data } = await axios({
-                                  url: `/projects/${projectId}/repository/files/${encodeURIComponent(
-                                    e.path
-                                  )}`,
-                                  method: "GET",
-                                  params: {
-                                    ref: branchName,
-                                  },
-                                });
-                                const content = Buffer.from(
-                                  data.content,
-                                  data.encoding
-                                ).toString();
-                                if (search.test(content)) {
-                                  console.log(
-                                    `=======[${project.name}](${
-                                      project.description || "暂无!"
-                                    })===>> [${colors.bgBlue(
-                                      project.http_url_to_repo
-                                    )}] <<=======`
+                          try {
+                            const { data: tree } = await axios({
+                              url: `/projects/${projectId}/repository/tree`,
+                              method: "GET",
+                              params: {
+                                recursive: true,
+                                ref: branchName,
+                                per_page,
+                                page: _page,
+                              },
+                            });
+                            await Promise.all(
+                              tree
+                                .filter((e) => {
+                                  return (
+                                    e.type === "blob" && minimatch(e.path, path)
                                   );
-                                  console.log(
-                                    colors.green(
-                                      `\n
+                                })
+                                .map(async (e) => {
+                                  const { data } = await axios({
+                                    url: `/projects/${projectId}/repository/files/${encodeURIComponent(
+                                      e.path
+                                    )}`,
+                                    method: "GET",
+                                    params: {
+                                      ref: branchName,
+                                    },
+                                  });
+                                  const content = Buffer.from(
+                                    data.content,
+                                    data.encoding
+                                  ).toString();
+                                  if (search.test(content)) {
+                                    console.log(
+                                      `=======[${project.name}](${
+                                        project.description || "暂无!"
+                                      })===>> [${colors.bgBlue(
+                                        project.http_url_to_repo
+                                      )}] <<=======`
+                                    );
+                                    console.log(
+                                      colors.green(
+                                        `\n
                        项目名称: ${project.name}
                        项目描述: ${project.description || "-"}
                        项目地址: ${project.http_url_to_repo}
                        分支: ${branchName}
                        文件: ${e.path}
                        \n`
-                                        .split("\n")
-                                        .map((e) => e.trim())
-                                        .join("\n")
-                                    )
-                                  );
-                                  console.log(colors.yellow("=============="));
-                                }
-                              })
-                          );
-                          return tree;
+                                          .split("\n")
+                                          .map((e) => e.trim())
+                                          .join("\n")
+                                      )
+                                    );
+                                    console.log(
+                                      colors.yellow("==============")
+                                    );
+                                  }
+                                })
+                            );
+                            return tree;
+                          } catch (error) {
+                            return [];
+                          }
                         });
                       })
                     );
@@ -321,6 +332,7 @@ type CMDS = Record<string, CMD>;
     return await help();
   }
 })(process.argv.slice(2), cmds);
+
 
 ```
 
