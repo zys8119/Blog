@@ -24,9 +24,14 @@ const axios = Axios.create({
   baseURL: process.env.BASE_URL,
   headers: headers,
 });
-async function runGetProjects(results = [], page = 1, per_page = 100) {
+async function runGetProjects(
+  results = [],
+  page = 1,
+  per_page = 100,
+  maxLimit = 12
+) {
   const res = await Promise.all<any>(
-    new Array(cpus).fill(0).map(async (_, k) => {
+    new Array(maxLimit).fill(0).map(async (_, k) => {
       return limit(async () => {
         const _page = page + k;
         const { data } = await axios({
@@ -58,6 +63,7 @@ async function runGetProjects(results = [], page = 1, per_page = 100) {
     console.log(`Downloaded  Total: ${results.length}`);
     return results;
   } else {
+    console.log(colors.blue("建议提高并发数"));
     return await runGetProjects(results, page + cpus, per_page);
   }
 }
@@ -90,12 +96,11 @@ const cmds: CMDS = {
         clearOnComplete: true,
       });
       b1.start(projectsNum, 0);
-      const limit2 = pLimit(cpus);
+      const limit2 = pLimit(40);
       await Promise.all(
         projects.map(async (project) => {
           return limit2(async () => {
             const projectId = project.id;
-            b1.increment();
             const { data: branches } = await axios({
               url: `/projects/${projectId}/repository/branches`,
               method: "GET",
@@ -110,15 +115,15 @@ const cmds: CMDS = {
               clearOnComplete: true,
             });
             b2.start(branches.length, 0);
-            const limit3 = pLimit(cpus);
-            Promise.all(
+            const limit3 =
+              branches.length > 1
+                ? pLimit(branches.length)
+                : async (fn) => await fn();
+            await Promise.all(
               branches.map(async (branch) => {
                 return limit3(async () => {
                   const branchName = branch.name;
-                  b2.increment({
-                    branchName,
-                  });
-                  const limit4 = pLimit(cpus);
+                  const limit4 = pLimit(5);
                   await (async function run(page = 1, per_page = 100) {
                     const res = await Promise.all(
                       new Array(cpus).fill(0).map(async (_, k) => {
@@ -189,9 +194,14 @@ const cmds: CMDS = {
                       return await run(page + cpus, per_page);
                     }
                   })();
+                  b2.increment({
+                    branchName,
+                  });
                 });
               })
             );
+
+            b1.increment();
           });
         })
       );
@@ -311,7 +321,6 @@ type CMDS = Record<string, CMD>;
     return await help();
   }
 })(process.argv.slice(2), cmds);
-
 
 ```
 
