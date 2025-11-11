@@ -2,6 +2,35 @@
 
 个人爱好，知识积累，点滴成石
 
+### gitlab 部署sh脚本
+
+```sh
+source ~/.zshrc
+clear
+url=$(git remote get-url origin)
+host=$(node -e "const a = '$url';console.log(a.replace(/^(http:\/\/[^\/]+)\/(.+)\.git$/g,'\$1'))")
+repo=$(node -e "const a = '$url';console.log(a.replace(/^(http:\/\/[^\/]+)\/(.+)\.git$/g,'\$2'))")
+json=$(cat package.json)
+releases=$( x gl repo release  ls --repo "$repo" -j)
+preRelease="$(node -e "const a =$releases; console.log(a[0].name)")"
+mkdir -p test
+cd test
+npm init  -y
+clear
+npm version "$preRelease"
+clear
+version=$(npm version patch)
+version=$(node -e "console.log(\"$version\".replace(/v/,''))")
+cd ..
+rm -rf test
+ref=$(glola | fzf | awk '{print $2}')
+description=$(cat updateChange.md)
+x gl repo release create -r "$repo" --ref $ref  --description $description  "$version"
+git push --tags
+
+
+```
+
 ### gitlab 仓库扫描搜索
 
 ```ts
