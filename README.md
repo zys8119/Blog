@@ -2,6 +2,47 @@
 
 个人爱好，知识积累，点滴成石
 
+### luckysheet 工作簿动态加载处理
+
+exportJson 数据为execl文件数据,通过xlsx库解析
+
+```ts
+window.luckysheet.create({
+	data: exportJson.sheets.map((e, k) => {
+		if(k === 0){
+			return {
+				...e,
+				status: 1
+			};
+		};
+		return { 
+			...e,
+			 celldata: [],
+			 status: 0
+		};
+	}),
+	hook: {
+		sheetActivate(index) {
+			const s = luckysheet.getluckysheetfile().find(x => String(x.index) === String(index));
+			console.log(index, s);
+			if (!s || s.isLoaded) return;
+			if (exportJson.sheets[s.order]) {
+				requestAnimationFrame(() => {
+					setTimeout(() => {
+						const data = JSON.parse(JSON.stringify(exportJson.sheets[s.order]));
+						data.celldata.forEach(e => {
+							luckysheet.setCellValue(e.r, e.c, e.v);
+						});
+						luckysheet.refresh();
+						luckysheet.refreshFormula();
+					});
+				});
+			};
+		}
+	}
+})
+```
+
 ### gitlab 部署sh脚本
 
 ```sh
