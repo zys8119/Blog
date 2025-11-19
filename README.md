@@ -2,6 +2,32 @@
 
 个人爱好，知识积累，点滴成石
 
+### nodejs 原生ssh 密码连接
+
+```ts
+import { spawnSync } from 'child_process';
+
+const user = 'root';
+const host = '127.0.0.1';
+const password = '123456,,';
+const command = 'ls -al /';
+
+spawnSync(
+    'expect',
+    [
+        '-c',
+        `
+spawn ssh ${user}@${host} "${command}"
+expect "password:"
+send "${password}\\r"
+interact
+`,
+    ],
+    { stdio: 'inherit' }
+);
+
+```
+
 ### shell脚本命令参数
 
 ```sh
