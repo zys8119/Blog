@@ -2,6 +2,26 @@
 
 个人爱好，知识积累，点滴成石
 
+### shell脚本命令参数
+
+```sh
+case "$1" in
+  zipdist)
+    shift
+    zys_zipdist "$@"
+    ;;
+  help|"")
+    echo "zys 工具箱"
+    echo "用法:"
+    echo "  zys zipdist [-p 路径] [-n 文件名]"
+    ;;
+  *)
+    echo "❌ 未知命令: $1"
+    echo "使用: zys help"
+    ;;
+esac
+```
+
 ### markdown解析成json,转treejson数据
 
 ```
