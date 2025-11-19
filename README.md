@@ -104,74 +104,78 @@ console.log(tokensTree);
 
 ```sh
 # 默认值
-PATH_TO_ZIP="./dist"
-ZIP_NAME="dist.zip"
+  PATH_TO_ZIP="./dist"
+  ZIP_NAME="dist.zip"
 
-# 读取参数
-while [[ $# -gt 0 ]]; do
-  case "$1" in
-	  -p)
-		  PATH_TO_ZIP="$2"
-		  shift 2
-		  ;;
-	  -n)
-		  ZIP_NAME="$2"
-		  shift 2
-		  ;;
-	  *)
-		  ZIP_NAME="$1"
-		  shift 1
-		  ;;
-  esac
-done
+  # 读取参数
+  while [[ $# -gt 0 ]]; do
+      case "$1" in
+          -p)
+              PATH_TO_ZIP="$2"
+              shift 2
+              ;;
+          -n)
+              ZIP_NAME="$2"
+              shift 2
+              ;;
+          *)
+              ZIP_NAME="$1"
+              shift 1
+              ;;
+      esac
+  done
 
-# 自动补 .zip 后缀
-if [[ "$ZIP_NAME" != *.zip ]]; then
-  ZIP_NAME="${ZIP_NAME}.zip"
-fi
+  # 自动补 .zip 后缀
+  if [[ "$ZIP_NAME" != *.zip ]]; then
+      ZIP_NAME="${ZIP_NAME}.zip"
+  fi
 
-# 检查目录
-if [ ! -d "$PATH_TO_ZIP" ]; then
-  echo "❌ 目录不存在: $PATH_TO_ZIP"
-  exit 1
-fi
+  # 检查目录
+  if [ ! -d "$PATH_TO_ZIP" ]; then
+      echo "❌ 目录不存在: $PATH_TO_ZIP"
+      exit 1
+  fi
 
-# 压缩包最终输出位置 → 在被压缩目录中
-OUTPUT_ZIP="$PATH_TO_ZIP/$ZIP_NAME"
+  # 压缩包最终输出位置 → 在被压缩目录中
+  OUTPUT_ZIP="$PATH_TO_ZIP/$ZIP_NAME"
 
-echo "🗑️  删除所有zip压缩包: $PATH_TO_ZIP/*.zip"
-find "$PATH_TO_ZIP" -maxdepth 1 -type f -name "*.zip" -exec rm {} \;
-# 如果存在上一轮压缩包，删除它（避免重复打包）
-if [ -f "$OUTPUT_ZIP" ]; then
-  echo "🗑️  删除旧的压缩包: $OUTPUT_ZIP"
-  rm "$OUTPUT_ZIP"
-fi
+    echo "🗑️  删除所有zip压缩包: $PATH_TO_ZIP/*.zip"
+    find "$PATH_TO_ZIP" -maxdepth 1 -type f -name "*.zip" -exec rm {} \;
+  # 如果存在上一轮压缩包，删除它（避免重复打包）
+  if [ -f "$OUTPUT_ZIP" ]; then
+      echo "🗑️  删除旧的压缩包: $OUTPUT_ZIP"
+      rm "$OUTPUT_ZIP"
+  fi
 
-echo "📦 开始压缩目录: $PATH_TO_ZIP"
-echo "📁 输出文件: $OUTPUT_ZIP"
+  echo "📦 开始压缩目录: $PATH_TO_ZIP"
+  echo "📁 输出文件: $OUTPUT_ZIP"
 
-# 进入父目录执行 zip，使排除路径更容易处理
-PARENT_DIR=$(dirname "$PATH_TO_ZIP")
-TARGET_NAME=$(basename "$PATH_TO_ZIP")
+  # 进入父目录执行 zip，使排除路径更容易处理
+  PARENT_DIR=$(dirname "$PATH_TO_ZIP")
+  TARGET_NAME=$(basename "$PATH_TO_ZIP")
 
-cd "$PARENT_DIR"
+  cd "$PARENT_DIR"
 
-# 压缩并排除旧的 zip 文件
-zip -r "$OUTPUT_ZIP" "$TARGET_NAME" -x "$TARGET_NAME/$ZIP_NAME" >/dev/null
+  # 压缩并排除旧的 zip 文件
+  zip -r "$OUTPUT_ZIP" "$TARGET_NAME" -x "$TARGET_NAME/$ZIP_NAME" >/dev/null
 
-if [ $? -ne 0 ]; then
-  echo "❌ 压缩失败"
-  exit 1
-fi
+  if [ $? -ne 0 ]; then
+      echo "❌ 压缩失败"
+      exit 1
+  fi
 
-# 返回原目录
-cd - >/dev/null
+  # 返回原目录
+  cd - >/dev/null
+  echo "📋 复制压缩包到剪切板: $OUTPUT_ZIP"
+  # 判断 OUTPUT_ZIP 是否为绝对路径
+    if [[ "$OUTPUT_ZIP" != /* ]]; then
+        # 不是绝对路径 → 转换成绝对路径
+        OUTPUT_ZIP=$(cd "$(dirname "$OUTPUT_ZIP")" && pwd)/"$(basename "$OUTPUT_ZIP")"
+    fi
+  osascript -e 'tell application "Finder" to set the clipboard to (POSIX file "'"$OUTPUT_ZIP"'")'
 
-echo "📋 复制压缩包到剪切板: $OUTPUT_ZIP"
-osascript -e 'tell application "Finder" to set the clipboard to (POSIX file "'"$OUTPUT_ZIP"'")'
-
-echo "✅ 完成: 压缩包已生成并复制到剪贴板"
-echo "📁 文件位置: $OUTPUT_ZIP"
+  echo "✅ 完成: 压缩包已生成并复制到剪贴板"
+  echo "📁 文件位置: $OUTPUT_ZIP"
 ```
 
 
