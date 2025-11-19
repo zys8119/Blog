@@ -5895,3 +5895,66 @@ const pinchZoomDirective: Directive<
 export default pinchZoomDirective;
 
 ```
+
+### nodejs ssh 文件推送部署
+
+```js
+/* eslint-disable @typescript-eslint/no-var-requires */
+const { NodeSSH } = require('node-ssh');
+const fs = require('fs');
+const path = require('path');
+const dayjs = require('dayjs');
+
+const ZIP_FILE = 'dist_management.zip';
+const REMOTE_FILE = 'management';
+const USERNAME = 'root';
+const PASSWORD = ''
+
+const SERVER = process.argv[2];
+const REMOTE_DIR = process.argv[3];
+
+async function main() {
+    // 2. 连接服务器
+    const ssh = new NodeSSH();
+    await ssh.connect({
+        host: SERVER,
+        username: USERNAME,
+        // 推荐用密钥认证，或添加 password 字段
+        // privateKey: '/Users/xxx/.ssh/id_rsa',
+        password: PASSWORD
+    });
+
+    // 3. 上传压缩包
+    console.log(`🚀 正在上传到服务器 ${SERVER} ...`);
+    await ssh.putFile(ZIP_FILE, path.posix.join(REMOTE_DIR, ZIP_FILE));
+
+    // 4. 远程操作
+    console.log('🔄 正在执行部署操作...');
+    const backupTime = dayjs().format('YYYYMMDDHHmmss');
+    const backupName = `${REMOTE_FILE}_bak_${backupTime}`;
+    const remoteCommands = [
+        `cd '${REMOTE_DIR}' || exit 1`,
+        `[ -d '${REMOTE_FILE}' ] && mv -v '${REMOTE_FILE}' '${backupName}' || echo '无旧版本'`,
+        `unzip -o -q '${ZIP_FILE}' -d '${REMOTE_FILE}'`, // 修改这里：直接解压到目标目录
+        `rm -v '${ZIP_FILE}'`
+    ].join(' && ');
+
+    const result = await ssh.execCommand(remoteCommands, { cwd: REMOTE_DIR });
+    if (result.stderr) {
+        console.error('❌ 远程部署失败:', result.stderr);
+        process.exit(1);
+    }
+
+    // 5. 本地清理
+    fs.unlinkSync(ZIP_FILE);
+    console.log(`\n✅ 部署成功！新版文件位于：${REMOTE_DIR}/${REMOTE_FILE}`);
+
+    ssh.dispose();
+}
+
+main().catch((err) => {
+    console.error('❌ 部署失败:', err);
+    process.exit(1);
+});
+
+```
