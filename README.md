@@ -103,48 +103,48 @@ console.log(tokensTree);
 ### zipdist
 
 ```sh
-#!/bin/bash
-
 # 默认值
 PATH_TO_ZIP="./dist"
 ZIP_NAME="dist.zip"
 
 # 读取参数
 while [[ $# -gt 0 ]]; do
-    case "$1" in
-        -p)
-            PATH_TO_ZIP="$2"
-            shift 2
-            ;;
-        -n)
-            ZIP_NAME="$2"
-            shift 2
-            ;;
-        *)
-            ZIP_NAME="$1"
-            shift 1
-            ;;
-    esac
+  case "$1" in
+	  -p)
+		  PATH_TO_ZIP="$2"
+		  shift 2
+		  ;;
+	  -n)
+		  ZIP_NAME="$2"
+		  shift 2
+		  ;;
+	  *)
+		  ZIP_NAME="$1"
+		  shift 1
+		  ;;
+  esac
 done
 
 # 自动补 .zip 后缀
 if [[ "$ZIP_NAME" != *.zip ]]; then
-    ZIP_NAME="${ZIP_NAME}.zip"
+  ZIP_NAME="${ZIP_NAME}.zip"
 fi
 
 # 检查目录
 if [ ! -d "$PATH_TO_ZIP" ]; then
-    echo "❌ 目录不存在: $PATH_TO_ZIP"
-    exit 1
+  echo "❌ 目录不存在: $PATH_TO_ZIP"
+  exit 1
 fi
 
 # 压缩包最终输出位置 → 在被压缩目录中
 OUTPUT_ZIP="$PATH_TO_ZIP/$ZIP_NAME"
 
+echo "🗑️  删除所有zip压缩包: $PATH_TO_ZIP/*.zip"
+find "$PATH_TO_ZIP" -maxdepth 1 -type f -name "*.zip" -exec rm {} \;
 # 如果存在上一轮压缩包，删除它（避免重复打包）
 if [ -f "$OUTPUT_ZIP" ]; then
-    echo "🗑️  删除旧的压缩包: $OUTPUT_ZIP"
-    rm "$OUTPUT_ZIP"
+  echo "🗑️  删除旧的压缩包: $OUTPUT_ZIP"
+  rm "$OUTPUT_ZIP"
 fi
 
 echo "📦 开始压缩目录: $PATH_TO_ZIP"
@@ -160,8 +160,8 @@ cd "$PARENT_DIR"
 zip -r "$OUTPUT_ZIP" "$TARGET_NAME" -x "$TARGET_NAME/$ZIP_NAME" >/dev/null
 
 if [ $? -ne 0 ]; then
-    echo "❌ 压缩失败"
-    exit 1
+  echo "❌ 压缩失败"
+  exit 1
 fi
 
 # 返回原目录
@@ -172,7 +172,6 @@ osascript -e 'tell application "Finder" to set the clipboard to (POSIX file "'"$
 
 echo "✅ 完成: 压缩包已生成并复制到剪贴板"
 echo "📁 文件位置: $OUTPUT_ZIP"
-
 ```
 
 
