@@ -24,7 +24,7 @@ esac
 
 ### markdown解析成json,转treejson数据
 
-```
+```sh
 import { readFileSync } from "fs";
 import markdownIt from "markdown-it";
 const content = readFileSync("blog.md", "utf-8");
@@ -102,7 +102,7 @@ console.log(tokensTree);
 
 ### zipdist
 
-```
+```sh
 #!/bin/bash
 
 # 默认值
@@ -178,7 +178,7 @@ echo "📁 文件位置: $OUTPUT_ZIP"
 
 ### zip 快速压缩dist目录,并复制到剪切板
 
-```
+```sh
 zip dist/铁塔后台.zip dist/* -r -X "*.zip"  
 ```
 
@@ -186,7 +186,7 @@ zip dist/铁塔后台.zip dist/* -r -X "*.zip"
 
 ~/.zshrc
 
-```
+```sh
 copyfile() {
   osascript -e 'tell application "Finder" to set the clipboard to (POSIX file "'"$1"'")'
 }
