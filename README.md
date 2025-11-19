@@ -2,6 +2,23 @@
 
 个人爱好，知识积累，点滴成石
 
+### zip 快速压缩dist目录,并复制到剪切板
+
+```
+zip dist/铁塔后台.zip dist/* -r -X "*.zip"  
+```
+
+### macos 终端快速复制文件
+
+~/.zshrc
+
+```
+copyfile() {
+  osascript -e 'tell application "Finder" to set the clipboard to (POSIX file "'"$1"'")'
+}
+```
+
+
 ### luckysheet 工作簿动态加载处理
 
 exportJson 数据为execl文件数据,通过xlsx库解析
