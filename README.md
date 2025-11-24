@@ -2,6 +2,514 @@
 
 个人爱好，知识积累，点滴成石
 
+### 鸿蒙系统NFC读取数据,NFCV模式读取
+
+```ts
+import { AbilityConstant, ConfigurationConstant, UIAbility, Want,bundleManager} from '@kit.AbilityKit';
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import { window } from '@kit.ArkUI';
+import { tag } from '@kit.ConnectivityKit';
+import { BusinessError } from '@kit.BasicServicesKit';
+
+const DOMAIN = 0x0000;
+let nfcTagElementName: bundleManager.ElementName;
+let foregroundRegister: boolean;
+/**
+获取系统信息
+ */
+async function getSystemInfo(nfcv:tag.NfcVTag, uid:number[]) {
+  let cmd = [
+    0x22,  // flags
+    0x2B,  // Get System Info
+    ...uid
+  ];
+
+  let resp = await nfcv.transmit(cmd);
+  return resp;
+}
+interface NfcReadResult {
+  raw: number[];
+  blockSize: number;
+  blockCount: number;
+}
+/**
+ * 读取所有块
+ * @param tagInfo
+ * @returns
+ */
+export async function readAllBlocks(tagInfo: tag.TagInfo) {
+  try {
+    const nfcv = tag.getNfcV(tagInfo);
+
+    // -------- 必须倒序 UID --------
+    const uid = tagInfo.uid; // 关键点！！
+
+    // -------- Step 1: Get System Info (0x2B) --------
+    const sysCmd = [
+      0x22,      // flags（需要地址模式）
+      0x2B,      // Get System Info
+      ...uid
+    ];
+
+    const sys = await nfcv.transmit(sysCmd);
+
+    /**
+     * 系统信息格式（ISO15693）
+     * sys[0] = flags
+     * sys[1~8] = UID
+     * sys[9] = DSFID（可能有）
+     * sys[10] = AFI（可能有）
+     * sys[11] = Memory Info Flags
+     * sys[12] = block count - 1
+     * sys[13] = block size - 1
+     */
+
+    const memoryInfoIndex = 12; // 大部分标签从12开始是 Memory Info
+    const blockCount = sys[memoryInfoIndex] + 1;    // 块数量
+    const blockSize = sys[memoryInfoIndex + 1] + 1; // 每块字节数
+
+    hilog.info(0x0000, "readAllBlocks",
+      `BlockSize: ${blockSize}   BlockCount: ${blockCount}`
+    );
+
+    // ---------- Step 2: 分批读取所有块 ----------
+    const maxBlocksPerRead = 32; // 一次最多读 32 块（兼容大部分标签）
+    const allData = new Uint8Array(blockCount * blockSize);
+    let offsetBlock = 0;
+
+    while (offsetBlock < blockCount) {
+      const readCount = Math.min(maxBlocksPerRead, blockCount - offsetBlock);
+
+      const cmd = [
+        0x22,             // flags
+        0x23,             // Read Multiple Blocks
+        ...uid,
+        offsetBlock,      // first block
+        readCount - 1     // number of blocks - 1
+      ];
+
+      const resp = await nfcv.transmit(cmd);
+
+      // resp[0] = flags, resp[1..N] = 数据
+      const payload = resp.slice(1);
+
+      if (payload.length !== readCount * blockSize) {
+        hilog.error(0x0000, "readAllBlocks", `块长度异常，读取失败`);
+        return null;
+      }
+
+      allData.set(payload, offsetBlock * blockSize);
+      offsetBlock += readCount;
+    }
+
+    // ---------- Step 3: 返回完整数据 ----------
+    const result: NfcReadResult = {
+      raw: [...allData],
+      blockSize,
+      blockCount
+    };
+
+    return result;
+
+  } catch (error) {
+    hilog.error(
+      0x0000,
+      "readAllBlocks",
+      `读取失败: code=${error.code}, msg=${error.message}`
+    );
+    return null;
+  }
+}
+
+
+interface NfcVInfo {
+  manufacturer: string | null;          // 制造商
+  uid: string | null;                   // UID（16进制字符串）
+  totalCapacity: number | null;         // 存储容器容量（字节）
+  techList: string[] | null;            // 技术列表
+  systemFileLength: number | null;      // 系统文件长度（字节）
+  storageFormatID: number | null;       // DSFID
+  afi: number | null;                    // AFI
+  totalBlockCount: number | null;       // 总区块数
+  blockSize: number | null;             // 每个区块字节数
+  icReference: number | null;           // IC参考
+}
+/**
+ * 获取制造商
+ * @param uidArray
+ * @returns
+ */
+function getManufacturer(uidArray: number[]): string {
+  const manufacturerId = uidArray[1];
+
+  switch (manufacturerId) {
+    case 0x02:
+    case 0x07:
+      return 'STMicroelectronics';
+    case 0x04:
+      return 'Texas Instruments';
+    case 0xE0:
+      return 'NXP';
+    case 0x01:
+      return 'Motorola';
+    case 0x03:
+      return 'Hitachi';
+    default:
+      return 'Unknown';
+  }
+}
+/**
+ * 获取NFCV模式的所有信息
+ * @param tagInfo
+ * @returns
+ */
+export async function getNfcVTagInfo(tagInfo:tag.TagInfo): Promise<NfcVInfo> {
+  const nfcv = tag.getNfcV(tagInfo);
+
+  // 默认返回 null
+  const result: NfcVInfo = {
+    manufacturer: null,
+    uid: null,
+    totalCapacity: null,
+    techList: null,
+    systemFileLength: null,
+    storageFormatID: null,
+    afi: null,
+    totalBlockCount: null,
+    blockSize: null,
+    icReference: null,
+  };
+
+  try {
+    // UID
+    const uidArray: number[] = tagInfo.uid ?? [];
+    if (uidArray.length === 8) {
+      result.uid = uidArray.reverse().map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+      // 制造商
+      // UID[1] => manufacturer
+      result.manufacturer = getManufacturer(uidArray);
+    }
+
+    // 技术列表
+    result.techList = ['NFC-V'];
+
+    // Get System Info 指令
+    const cmd = [0x22, 0x2B, ...tagInfo.uid.reverse()];
+
+    const resp = await nfcv.transmit(cmd);
+
+    if (resp && resp.length >= 15) {
+      // DSFID
+      result.storageFormatID = resp[10] ?? null;
+      result.afi = resp[11] ?? null;
+      // Block Size & Count
+      const blockSize = (resp[12] ?? null) !== null ? resp[12] + 1 : null;
+      const blockCount = (resp[13] ?? null) !== null ? resp[13] + 1 : null;
+
+      result.blockSize = blockSize;
+      result.totalBlockCount = blockCount;
+      result.totalCapacity = blockSize && blockCount ? blockSize * blockCount : null;
+
+      // 系统文件长度（通常等于总容量）
+      result.systemFileLength = result.totalCapacity;
+
+      // IC Reference
+      result.icReference = resp[14] ?? null;
+    }
+  } catch (e) {
+    hilog.error(0x0000, 'testTag', '读取 NFC-V 系统信息失败: code:'+e.code+"message:"+e.message);
+  }
+  return result;
+}
+/**
+ * 连接NCFV
+ * @param tagInfo
+ * @returns
+ */
+async function connect( tagInfo : tag.TagInfo){
+  // 获取特定技术类型的NFC标签对象
+  if (tagInfo == null || tagInfo == undefined) {
+    hilog.error(0x0000, 'testTag', 'readerModeCb tagInfo is invalid');
+    return;
+  }
+  if (tagInfo.uid == null || tagInfo.uid == undefined) {
+    hilog.error(0x0000, 'testTag', 'readerModeCb uid is invalid');
+    return;
+  }
+  if (tagInfo.technology == null || tagInfo.technology == undefined || tagInfo.technology.length == 0) {
+    hilog.error(0x0000, 'testTag', 'readerModeCb technology is invalid');
+    return;
+  }
+
+  // 执行读写接口完成标签数据的读取或写入数据到标签
+  // use the IsoDep technology to access this nfc tag.
+  let isNfcv : tag.NfcVTag | null = null;
+  for (let i = 0; i < tagInfo.technology.length; i++) {
+    if (tagInfo.technology[i] == tag.NFC_V) {
+      try {
+        isNfcv = tag.getNfcV(tagInfo);
+      } catch (error) {
+        hilog.error(0x0000, 'testTag', 'readerModeCb getIsoDep errCode: ' + (error as BusinessError).code + ', errMessage: ' + (error as BusinessError).message);
+        return;
+      }
+    }
+    // use other technology to access this nfc tag if necessary.
+  }
+  if (isNfcv == undefined) {
+    hilog.error(0x0000, 'testTag', 'readerModeCb getIsoDep is invalid');
+    return;
+  }
+
+  // connect to this nfc tag using IsoDep technology.
+  try {
+    isNfcv.connect();
+  } catch (error) {
+    hilog.error(0x0000, 'testTag', 'readerModeCb isoDep.connect errCode: ' + (error as BusinessError).code + ', errMessage: ' + (error as BusinessError).message);
+    return;
+  }
+  if (!isNfcv.isConnected()) {
+    hilog.error(0x0000, 'testTag', 'readerModeCb isoDep.isConnected() false.');
+    return;
+  }
+  return isNfcv
+}
+/**
+ * 读取指定块
+ * @param tagInfo
+ * @param blockIndex
+ * @returns
+ */
+export async function readBlock(
+  tagInfo: tag.TagInfo,
+  blockIndex: number
+){
+  try {
+    const nfcv = tag.getNfcV(tagInfo);
+
+    // -------- UID 必须倒序 --------
+    const uid = tagInfo.uid;
+
+    // -------- 构造命令 0x20 Read Single Block --------
+    const cmd = [
+      0x22,       // flags（addressed）
+      0x20,       // Read Single Block
+      ...uid,
+      blockIndex  // 块下标
+    ];
+
+    const resp = await nfcv.transmit(cmd);
+
+    // resp[0] = flags，resp[1..N] = 数据
+    if (resp && resp.length > 1) {
+      return resp.slice(1); // 返回纯数据
+    } else {
+      hilog.error(0x0000, "readBlock", `读取块失败: resp=${resp}`);
+      return null;
+    }
+
+  } catch (error) {
+    hilog.error(
+      0x0000,
+      "readBlock",
+      `读取 NFC-V 块失败: code=${error.code}, msg=${error.message}`
+    );
+    return null;
+  }
+}
+/**
+ * 写入指定块
+ * @param tagInfo
+ * @param blockIndex
+ * @param data
+ * @returns
+ */
+async function writeBlock(tagInfo:tag.TagInfo, blockIndex: number, data: number[]) {
+  try {
+    const nfcv = tag.getNfcV(tagInfo);
+    const cmd = [0x22, 0x21, ...tagInfo.uid,blockIndex, ...data];
+    const resp = await nfcv.transmit(cmd);
+    if (resp && resp[0] === 0x00) {
+      return resp;
+    } else {
+      hilog.error(
+        0x0000,
+        'writeSingleBlock',
+        `写入失败: resp=${resp ? Array.from(resp).map(b => b.toString(16)) : 'null'}`
+      );
+      return null;
+    }
+  }catch (error) {
+    hilog.error(0x0000, 'testTag', '读取 NFC-V 系统信息失败: code:'+error.code+"message:"+error.message);
+    return
+  }
+}
+interface KVPair {
+  k: number;
+  v: (number|null)[];   // 根据实际类型改，比如 string/number/Uint8Array 等
+}
+/**
+ * 通过索引写入指定数据,可以批量连续写入
+ * @param tagInfo
+ * @param blockIndex
+ * @param data
+ */
+async function writeBlockAnyByIndex(tagInfo:tag.TagInfo, blockIndex: number, data: number[]) {
+  const info = await getNfcVTagInfo(tagInfo)
+  const map = new Map<number,number>();
+  data.forEach((v, k) => {
+    map.set(blockIndex + k, v);
+  });
+  const block = info.totalBlockCount || 0;
+  const maxBlock = info.totalCapacity || 0;
+  const arr = chunk(
+    new Array(maxBlock).fill(null).map((e:null, k) => map.get(k) || null),
+    block
+  )
+    .map((v, k):KVPair => {
+      return  {
+        k,
+        v,
+      }
+    })
+    .filter((e) => e.v.find((e) => e !== null));
+  await Promise.allSettled(arr.map(async (item)=>{
+    const newData = await readBlock(tagInfo, item.k) || [0,0,0,0]
+    item.v.forEach((it,k)=>{
+      if(it !== null){
+        newData[k] = it
+      }
+    })
+    await writeBlock(tagInfo,item.k, newData)
+  }))
+}
+/***
+ * 分快
+ */
+export function chunk<T>(array: T[], size: number): T[][] {
+  if (!Array.isArray(array) || size <= 0) return [];
+
+  const result: T[][] = [];
+  for (let i = 0; i < array.length; i += size) {
+    result.push(array.slice(i, i + size));
+  }
+  return result;
+}
+/**
+ * 读取NFCV回调
+ * @param error
+ * @param tagInfo
+ */
+async function readerModeCb(error : BusinessError, tagInfo : tag.TagInfo) {
+  if (!error) {
+    try {
+      await connect(tagInfo)
+      await writeBlockAnyByIndex(tagInfo,15, [0x33])
+      const blocks = await readAllBlocks(tagInfo)
+      const rows = blocks?.raw?.map(e=>e.toString(16).padStart(2,'0').toUpperCase())
+
+      hilog.info(0x0000, 'testTag', 'success');
+    }catch (error) {
+      hilog.error(0x0000, 'testTag', '读取 NFC-V 系统信息失败: code:'+error.code+"message:"+error.message);
+    }
+  } else {
+    hilog.info(0x0000, 'testTag', 'readerModeCb readerModeCb errCode: ' + error.code + ', errMessage: ' + error.message);
+  }
+}
+export default class EntryAbility extends UIAbility {
+  onCreate(want: Want, launchParam: AbilityConstant.LaunchParam): void {
+    try {
+      this.context.getApplicationContext().setColorMode(ConfigurationConstant.ColorMode.COLOR_MODE_NOT_SET);
+    } catch (err) {
+      hilog.error(DOMAIN, 'testTag', 'Failed to set colorMode. Cause: %{public}s', JSON.stringify(err));
+    }
+    hilog.info(0x0000, 'testTag', '%{public}s', 'Ability onCreate');
+
+    // 判断设备是否支持NFC能力
+    if (!canIUse("SystemCapability.Communication.NFC.Core")) {
+      hilog.error(0x0000, 'testTag', 'nfc unavailable.');
+      return;
+    }
+    let tagInfo : tag.TagInfo | null = null;
+    try {
+      tagInfo = tag.getTagInfo(want);
+    } catch (error) {
+      console.error("tag.getTagInfo catch error: " + error);
+    }
+    if (tagInfo == null) {
+      console.error("no TagInfo to be created, ignore it.");
+      return;
+    }
+    nfcTagElementName = {
+      bundleName: want.bundleName = '',
+      abilityName: want.abilityName = '',
+      moduleName: want.moduleName,
+    }
+  }
+
+  onDestroy(): void {
+    hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onDestroy');
+  }
+
+  onWindowStageCreate(windowStage: window.WindowStage): void {
+    // Main window is created, set main page for this ability
+    hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageCreate');
+
+    windowStage.loadContent('pages/Index', (err) => {
+      if (err.code) {
+        hilog.error(DOMAIN, 'testTag', 'Failed to load the content. Cause: %{public}s', JSON.stringify(err));
+        return;
+      }
+      hilog.info(DOMAIN, 'testTag', 'Succeeded in loading the content.');
+    });
+  }
+
+  onWindowStageDestroy(): void {
+    // Main window is destroyed, release UI related resources
+    hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onWindowStageDestroy');
+  }
+  onDidForeground(): void {
+
+    // Ability has brought to foreground
+
+    hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onForeground');
+    // Ability has brought to foreground
+    if (nfcTagElementName != undefined) {
+      // 调用tag模块中前台优先的接口，使能前台应用程序优先处理所发现的NFC标签功能
+      // let techList : number[] = [tag.NFC_A, tag.NFC_B, tag.NFC_F, tag.NFC_V];
+      let techList : number[] = [
+        tag.NFC_V,
+        // tag.NDEF_FORMATABLE,
+      ];
+      try {
+        tag.on('readerMode', {
+          bundleName: 'com.example.myapplication',
+          abilityName:  'EntryAbility',
+          moduleName: 'entry',
+        }, techList, readerModeCb);
+        foregroundRegister = true;
+      } catch (error) {
+        hilog.error(0x0000, 'testTag', 'on readerMode errCode: ' + (error as BusinessError).code + ', errMessage: ' + (error as BusinessError).message);
+      }
+    }
+  }
+
+  onBackground(): void {
+    // Ability has back to background
+    hilog.info(DOMAIN, 'testTag', '%{public}s', 'Ability onBackground');
+    // 退出应用程序NFC标签页面时，调用tag模块退出前台优先功能
+    if (foregroundRegister) {
+      foregroundRegister = false;
+      try {
+        tag.off('readerMode', nfcTagElementName);
+      } catch (error) {
+        hilog.error(0x0000, 'testTag', 'on readerMode errCode: ' + (error as BusinessError).code + ', errMessage: ' + (error as BusinessError).message);
+      }
+    }
+  }
+}
+
+```
+
 ### nodejs 原生ssh 密码连接
 
 ```ts
