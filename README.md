@@ -2,7 +2,7 @@
 
 个人爱好，知识积累，点滴成石
 
-### 鸿蒙系统NFC读取数据,NFCV模式读取
+### 鸿蒙(harmonyos)系统NFC读取数据,NFCV模式读取
 
 ```ts
 import { AbilityConstant, ConfigurationConstant, UIAbility, Want,bundleManager} from '@kit.AbilityKit';
