@@ -4,8 +4,39 @@
 
 ### uni-app鸿蒙(harmonyos)系统NFC读取数据,NFCV模式读取
 
+uni消息插件
 ```ts
-import { UniEntryAbilityDev } from "@dcloudio/uni-app-runtime";
+import { hilog } from '@kit.PerformanceAnalysisKit';
+import emitter from '@ohos.events.emitter'
+const hooks = {}
+export function on(type:string, fn:(data:any)=>void){
+	hooks[type] = hooks[type] || []
+	hooks[type].push(fn)
+}
+emitter.on('message', (data) => {
+  try{
+    hilog.info(0xff00, 'testTagSuccessMessage', JSON.stringify(data.data));
+	if(hooks['message']){
+		hooks['message'].forEach((fn:(data:any)=>void)=>{
+			fn(data)
+		})
+	}
+  }catch(err){
+    hilog.info(0xff00, 'testTagSuccessMessageErr', err.message);
+  }
+})
+export function emitterEevnt() {
+	return {
+		on
+	}
+}
+
+```
+
+uni-app 入口
+
+```ts
+import { UniEntryAbilityDev, NativeEmbedEvent } from "@dcloudio/uni-app-runtime";
 import { initUniModules } from "../uni_modules/index.generated";
 import BuildProfile from "BuildProfile";
 import * as hmr from '@uni_modules/hmr-for-uni-app'
@@ -14,13 +45,22 @@ import { AbilityConstant, ConfigurationConstant, UIAbility, Want,bundleManager} 
 import { hilog } from '@kit.PerformanceAnalysisKit';
 import { tag } from '@kit.ConnectivityKit';
 import { BusinessError } from '@kit.BasicServicesKit';
+import emitter from '@ohos.events.emitter'
+
 
 
 initUniModules();
 interface IHmr {
   init: Function
 }
-
+interface NotifyPagePayload {
+  action:string
+  data:number[] | null | undefined
+}
+// 发送消息给 uni-app 页面
+export function notifyPage(payload:NotifyPagePayload) {
+  emitter.emit('message', payload)
+}
 const DOMAIN = 0x0000;
 let nfcTagElementName: bundleManager.ElementName;
 let foregroundRegister: boolean;
@@ -417,7 +457,8 @@ async function readerModeCb(error : BusinessError, tagInfo : tag.TagInfo) {
       const blocks = await readAllBlocks(tagInfo)
       const rows = blocks?.raw?.map(e=>e.toString(16).padStart(2,'0').toUpperCase())
 
-      hilog.info(0x0000, 'testTag', 'success');
+      hilog.info(0xff00, 'testTagSuccess', JSON.stringify(rows));
+	    notifyPage({ action: "nfcData", data: blocks?.raw});
     }catch (error) {
       hilog.error(0x0000, 'testTag', '读取 NFC-V 系统信息失败: code:'+error.code+"message:"+error.message);
     }
