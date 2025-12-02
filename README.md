@@ -5,7 +5,7 @@
 ### 直播数据抓取
 
 ```sql 
-SELECT content->"$.payload.user.nickname" as content,  content->"$.payload.content" as content,content as data FROM chat LIMIT 100
+SELECT id, content->"$.payload.user.nickname" as user,  content->"$.payload.content" as content,content as data FROM chat ORDER BY `content` desc LIMIT 100 
 ```
 
 ```ts
