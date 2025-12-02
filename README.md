@@ -8,9 +8,12 @@
 import { launch } from "puppeteer";
 import { get, differenceBy } from "lodash";
 import query from "./mysql";
+import { timeout } from "async";
 (async () => {
   const browser = await launch({
     headless: "new",
+    // executablePath:
+    //   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     args: [
       "--autoplay-policy=no-user-gesture-required", // 🔥允许无操作自动播放
     ],
@@ -19,6 +22,7 @@ import query from "./mysql";
       width: 0,
       height: 0,
     },
+    protocolTimeout: 0,
   });
   const page = await browser.newPage();
   const chatCache = [];
@@ -39,84 +43,58 @@ import query from "./mysql";
   await page.goto(
     "直播地址"
   );
-  await page.evaluate(async function run() {
-    try {
-      const room = document.querySelector(".webcast-chatroom___list");
-      if (room) {
-        const roomkeys = Object.keys(room);
-        const roomchild = roomkeys.map(
-          (e) =>
-            room[e].memoizedProps &&
-            room[e].memoizedProps.children.props.children.props.children
-        );
-        roomchild.forEach((e) => {
-          if (e) {
-            console.log(e);
-          }
-        });
-        const data = Object.keys(room)
-          .map(
+  await page.evaluate(
+    async function run() {
+      try {
+        const room = document.querySelector(".webcast-chatroom___list");
+        if (room) {
+          const roomkeys = Object.keys(room);
+          const roomchild = roomkeys.map(
             (e) =>
               room[e].memoizedProps &&
               room[e].memoizedProps.children.props.children.props.children
-          )
-          .filter((e) => e)
-          .reduce((a, b) => a.concat(b), [])
-          .map(
-            (e) =>
-              e.props &&
-              e.props.children.props.children.props.children.props.message
-          )
-          .filter((e) => e);
-        window.emitEvaluateData(data);
+          );
+          roomchild.forEach((e) => {
+            if (e) {
+              console.log(e);
+            }
+          });
+          const data = Object.keys(room)
+            .map(
+              (e) =>
+                room[e].memoizedProps &&
+                room[e].memoizedProps.children.props.children.props.children
+            )
+            .filter((e) => e)
+            .reduce((a, b) => a.concat(b), [])
+            .map(
+              (e) =>
+                e.props &&
+                e.props.children.props.children.props.children.props.message
+            )
+            .filter((e) => e);
+          window.emitEvaluateData(data);
+        }
+      } catch (error) {
+        window.emitEvaluateData(null, error.message);
       }
-    } catch (error) {
-      window.emitEvaluateData(null, error.message);
-    }
-    await new Promise((r) => {
-      requestAnimationFrame(async () => {
-        await run();
-        r(true);
+      await new Promise((r) => {
+        requestAnimationFrame(async () => {
+          await run();
+          r(true);
+        });
       });
-    });
-  });
+    },
+    {
+      timeout: 0,
+    }
+  );
 })();
 declare global {
   interface Window {
     emitEvaluateData: (data: any, error?: string) => Promise<string>;
     lodashGget: typeof get;
   }
-}
-
-```
-
-### uni-app鸿蒙(harmonyos)系统NFC读取数据,NFCV模式读取
-
-uni消息插件
-```ts
-import { hilog } from '@kit.PerformanceAnalysisKit';
-import emitter from '@ohos.events.emitter'
-const hooks = {}
-export function on(type:string, fn:(data:any)=>void){
-	hooks[type] = hooks[type] || []
-	hooks[type].push(fn)
-}
-emitter.on('message', (data) => {
-  try{
-    hilog.info(0xff00, 'testTagSuccessMessage', JSON.stringify(data.data));
-	if(hooks['message']){
-		hooks['message'].forEach((fn:(data:any)=>void)=>{
-			fn(data)
-		})
-	}
-  }catch(err){
-    hilog.info(0xff00, 'testTagSuccessMessageErr', err.message);
-  }
-})
-export function emitterEevnt() {
-	return {
-		on
-	}
 }
 
 ```
