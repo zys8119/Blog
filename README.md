@@ -11,8 +11,6 @@ import query from "./mysql";
 (async () => {
   const browser = await launch({
     headless: "new",
-    // executablePath:
-    //   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
     args: [
       "--autoplay-policy=no-user-gesture-required", // 🔥允许无操作自动播放
     ],
