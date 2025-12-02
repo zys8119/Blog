@@ -2,6 +2,96 @@
 
 个人爱好，知识积累，点滴成石
 
+### 直播数据抓取
+
+```ts
+import { launch } from "puppeteer";
+import { get, differenceBy } from "lodash";
+import query from "./mysql";
+(async () => {
+  const browser = await launch({
+    headless: "new",
+    // executablePath:
+    //   "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    args: [
+      "--autoplay-policy=no-user-gesture-required", // 🔥允许无操作自动播放
+    ],
+    ignoreHTTPSErrors: true,
+    defaultViewport: {
+      width: 0,
+      height: 0,
+    },
+  });
+  const page = await browser.newPage();
+  const chatCache = [];
+  await page.exposeFunction(
+    "emitEvaluateData",
+    async (data, error?: string) => {
+      if (error) {
+        return console.log(error);
+      }
+      const newdata = differenceBy(data, chatCache, "msg_id");
+      chatCache.push(...newdata);
+      newdata.forEach((e) => {
+        query("INSERT INTO chat (content) VALUES (?)", [JSON.stringify(e)]);
+      });
+    }
+  );
+
+  await page.goto(
+    "直播地址"
+  );
+  await page.evaluate(async function run() {
+    try {
+      const room = document.querySelector(".webcast-chatroom___list");
+      if (room) {
+        const roomkeys = Object.keys(room);
+        const roomchild = roomkeys.map(
+          (e) =>
+            room[e].memoizedProps &&
+            room[e].memoizedProps.children.props.children.props.children
+        );
+        roomchild.forEach((e) => {
+          if (e) {
+            console.log(e);
+          }
+        });
+        const data = Object.keys(room)
+          .map(
+            (e) =>
+              room[e].memoizedProps &&
+              room[e].memoizedProps.children.props.children.props.children
+          )
+          .filter((e) => e)
+          .reduce((a, b) => a.concat(b), [])
+          .map(
+            (e) =>
+              e.props &&
+              e.props.children.props.children.props.children.props.message
+          )
+          .filter((e) => e);
+        window.emitEvaluateData(data);
+      }
+    } catch (error) {
+      window.emitEvaluateData(null, error.message);
+    }
+    await new Promise((r) => {
+      requestAnimationFrame(async () => {
+        await run();
+        r(true);
+      });
+    });
+  });
+})();
+declare global {
+  interface Window {
+    emitEvaluateData: (data: any, error?: string) => Promise<string>;
+    lodashGget: typeof get;
+  }
+}
+
+```
+
 ### uni-app鸿蒙(harmonyos)系统NFC读取数据,NFCV模式读取
 
 uni消息插件
