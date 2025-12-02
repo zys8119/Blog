@@ -4,7 +4,9 @@
 
 ### 直播数据抓取
 
-`sql SELECT content->"$.payload.user.nickname" as content,  content->"$.payload.content" as content,content as data FROM chat LIMIT 100`
+```sql 
+SELECT content->"$.payload.user.nickname" as content,  content->"$.payload.content" as content,content as data FROM chat LIMIT 100
+```
 
 ```ts
 import { launch } from "puppeteer";
