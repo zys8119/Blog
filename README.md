@@ -2,6 +2,50 @@
 
 个人爱好，知识积累，点滴成石
 
+
+### window 一键安装sshd
+
+```bash
+# 检查是否已安装 OpenSSH Server
+$ssh = Get-WindowsCapability -Online | Where-Object Name -like 'OpenSSH.Server*'
+
+if ($ssh.State -ne 'Installed') {
+    Write-Host "🔧 未安装 OpenSSH Server，开始安装..."
+    Add-WindowsCapability -Online -Name OpenSSH.Server~~~~0.0.1.0
+} else {
+    Write-Host "✅ OpenSSH Server 已安装"
+}
+
+# 确保 sshd 服务存在
+$service = Get-Service -Name sshd -ErrorAction SilentlyContinue
+if (-not $service) {
+    Write-Host "❌ 未找到 sshd 服务，可能安装失败，请重试或手动检查。" -ForegroundColor Red
+    exit
+}
+
+# 设置 sshd 服务为自动启动
+Set-Service -Name sshd -StartupType Automatic
+
+# 启动 sshd 服务
+Start-Service sshd
+
+# 防火墙放行 22 端口
+if (-not (Get-NetFirewallRule -DisplayName "OpenSSH-Server-In-TCP")) {
+    New-NetFirewallRule -Name "OpenSSH-Server-In-TCP" `
+        -DisplayName "OpenSSH-Server-In-TCP" `
+        -Enabled True `
+        -Direction Inbound `
+        -Protocol TCP `
+        -Action Allow `
+        -LocalPort 22
+}
+
+Write-Host "`n🎉 SSHD 已安装并成功启动！"
+Write-Host "👉 现在可以通过以下方式远程连接："
+Write-Host "   ssh <你的 Windows 用户名>@<Windows IP>"
+
+```
+
 ### 实时音频采集
 
 ```
