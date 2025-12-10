@@ -2,6 +2,37 @@
 
 个人爱好，知识积累，点滴成石
 
+### 实时音频采集
+
+```
+let audioCtx, source, processor, stream;
+stream = await navigator.mediaDevices.getUserMedia({
+	audio: {
+		// deviceId: deviceId ? { exact: deviceId } : undefined,
+		sampleRate: 16000,
+		channelCount: 1,
+		echoCancellation: false,
+		noiseSuppression: false,
+		autoGainControl: false
+	}
+});
+audioCtx = new AudioContext({ sampleRate: 16000 });
+source = audioCtx.createMediaStreamSource(stream);
+processor = audioCtx.createScriptProcessor(4096, 1, 1);
+processor.onaudioprocess = (e) => {
+	const data = e.inputBuffer.getChannelData(0);
+	const int16 = new Int16Array(data.length);
+	for (let i = 0; i < data.length; i++) {
+		const s = Math.max(-1, Math.min(1, data[i]));
+		int16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+	}
+	socket.emit('audio_chunk', int16.buffer);
+};
+source.connect(processor);
+processor.connect(audioCtx.destination);
+socket.emit('start_stream');
+```
+
 ### 直播数据抓取
 
 ```sql 
