@@ -2,6 +2,47 @@
 
 个人爱好，知识积累，点滴成石
 
+### 串口数据读写
+
+```ts
+import { SerialPort } from "serialport";
+(async () => {
+  const ports = await SerialPort.list();
+  // 串口数据
+  const info = ports.find((item) => item.path.includes("usb"));
+  // console.log(info, 777);
+  const port = new SerialPort({
+    path: info.path, // 改成你的串口
+    baudRate: 9600, // 波特率，一定要和设备一致
+  });
+  port.on("open", () => {
+    console.log("串口已打开");
+  });
+  port.on("data", (data: Buffer) => {
+    console.log("收到数据:", data.toJSON().data);
+  });
+
+  port.on("error", (err: any) => {
+    console.error("串口错误:", err.message);
+  });
+  port.on("close", () => {
+    console.log("串口已关闭");
+  });
+  const data = "01 01 0A 00 00 64 64 32 00 27 23";
+  const dataBuffer = Buffer.from(
+    data.split(/\s+/).map((item) => parseInt(item, 16))
+  );
+  console.log(dataBuffer.toString());
+  port.write(dataBuffer, (err) => {
+    if (err) {
+      console.error("写入数据失败:", err.message);
+    } else {
+      console.log("数据写入成功");
+    }
+  });
+})();
+
+```
 
 ### window 一键安装sshd
 
