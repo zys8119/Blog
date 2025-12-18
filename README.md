@@ -2,6 +2,142 @@
 
 个人爱好，知识积累，点滴成石
 
+### vscode代码片段
+
+```json
+{
+	// Place your 全局 snippets here. Each snippet is defined under a snippet name and has a scope, prefix, body and 
+	// description. Add comma separated ids of the languages where the snippet is applicable in the scope field. If scope 
+	// is left empty or omitted, the snippet gets applied to all languages. The prefix is what is 
+	// used to trigger the snippet and the body will be expanded and inserted. Possible variables are: 
+	// $1, $2 for tab stops, $0 for the final cursor position, and ${1:label}, ${2:another} for placeholders. 
+	// Placeholders with the same ids are connected.
+	// Example:
+	"vue setup for ts and less template": {
+		"prefix": "vue",
+		"body": [
+			"<template>",
+			"    <div class='$TM_FILENAME_BASE'>$1</div>",
+			"</template>",
+			"<script setup lang=\"ts\">",
+			"",
+			"</script>",
+			"<style scoped lang=\"less\">",
+			".$TM_FILENAME_BASE{}",
+			"</style>"
+		],
+		"description": "vue setup for ts and less template"
+	},
+	"弹框": {
+		"prefix": "alert",
+		"body": [
+			"<template class='$TM_FILENAME_BASE'>",
+			"    <AlertContent>",
+			"        <formValidate ref=\"form\" class=\"useFormDialog\" v-model=\"data\" :field=\"formFields\"",
+			"            :config=\"{ labelPlacement: 'left', showFeedback: false }\" :grid-props=\"{ yGap: 8 }\"> </formValidate>",
+			"        <template #footer>",
+			"            <n-space justify=\"center\">",
+			"                <n-button @click=\"close\">取消</n-button>",
+			"                <n-button type=\"primary\" @click=\"save\">保存</n-button>",
+			"            </n-space>",
+			"        </template>",
+			"    </AlertContent>",
+			"</template>",
+			"",
+			"<script setup lang=\"ts\">",
+			"const props = withDefaults(",
+			"    defineProps<{",
+			"        row?: any;",
+			"    }>(),",
+			"    {",
+			"    }",
+			");",
+			"const emit = defineEmits(['save']);",
+			"const form = ref()",
+			"const data = ref<Record<string, any>>({});",
+			"const formFields = ref<FormValidateField>([",
+			"    $1",
+			"]);",
+			"",
+			"onMounted(async () => {",
+			"    if (props.row) {",
+			"        data.value = { ...props.row };",
+			"    }",
+			"});",
+			"",
+			"const close = () => {",
+			"    \\$alert.dialog.close();",
+			"};",
+			"const save = async () => {",
+			"    await form.value.validate()",
+			"    // await \\$apis",
+			"    window.\\$message.success('保存成功');",
+			"    close();",
+			"    emit('save');",
+			"};",
+			"</script>",
+			"",
+			"<style scoped lang=\"less\">",
+			".$TM_FILENAME_BASE {}",
+			"</style>"
+		],
+		"description": "弹框"
+	},
+	"console.log": {
+		"prefix": ["l","lo","log",".l",".lo",".log","."],
+		"body": [
+			"console.log($1)",
+		],
+		"description": "console.log"
+	},
+	"useVModels helper": {
+		"prefix": ["vms","defineModel","useVModels"],
+		"body": [
+			"const props =$1 withDefaults(defineProps<{",
+			"    modelValue?: any",
+			"}>(), {",
+			"    modelValue: []",
+			"})",
+			"const emit = defineEmits([\"update:modelValue\"])",
+			"const { modelValue } = useVModels(props, emit)"
+		],
+		"description": "useVModels helper"
+	},
+	"表单": {
+		"prefix": ["f","fo","for","form","form","alert-form"],
+		"body": [
+			"<template>",
+			"  <div class='add'>",
+			"    <alert-form v-model=\"modelValue\" @save=\"$emit('save')\" :row=\"row\" :rules=\"rules\">",
+			"      <n-form-item label=\"标题\" path=\"title\">",
+			"        <n-input placeholder=\"请输入标题\" v-model:value=\"modelValue.title\" />",
+			"      </n-form-item>",
+			"    </alert-form>",
+			"  </div>",
+			"</template>",
+			"<script setup lang=\"ts\">",
+			"import { FormRules } from \"naive-ui\";",
+			"const props = withDefaults(defineProps<{",
+			"  row?: any",
+			"}>(), {",
+			"  row: null",
+			"})",
+			"const emit = defineEmits([\"save\"])",
+			"const { row } = useVModels(props, emit)",
+			"const modelValue = ref<Record<string, any>>({})",
+			"const rules = ref<FormRules>({",
+			"  title: [{ required: true, message: \"请输入标题\", trigger: [\"blur\"] }],",
+			"})",
+			"</script>",
+			"<style scoped lang=\"less\">",
+			".add {}",
+			"</style>"
+		],
+		"description": "表单"
+	}
+}
+```
+
 ### mockjsApi
 
 ```ts
