@@ -2,6 +2,30 @@
 
 个人爱好，知识积累，点滴成石
 
+### mockjsApi
+
+```ts
+export default {
+  list(data: any) {
+    return request({
+      url: "/mock",
+      method: "get",
+      data,
+    });
+  },
+  info(data: any, extraConfig: any) {
+    return request({
+      url: "/mockInfo",
+      method: "get",
+      data: {
+        ...data,
+        ...extraConfig,
+      },
+    });
+  },
+};
+```
+
 ### mockJS
 
 ```ts
