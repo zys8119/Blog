@@ -33,7 +33,7 @@
 		"body": [
 			"<template>",
 			"  <div class=\"$TM_FILENAME_BASE\">",
-			"    <search-table :add-form=\"Add\" :list-api=\"$apis.mock.list\" :del-api=\"$apis.mock.info\" :columns=\"columns\">",
+			"    <search-table :add-form=\"Add\" :list-api=\"\\$apis.mock.list\" :del-api=\"\\$apis.mock.info\" :columns=\"columns\">",
 			"    </search-table>",
 			"  </div>",
 			"</template>",
