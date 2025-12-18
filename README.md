@@ -28,6 +28,40 @@
 		],
 		"description": "vue setup for ts and less template"
 	},
+	"表格": {
+		"prefix": "vuetable",
+		"body": [
+			"<template>",
+			"  <div class=\"$TM_FILENAME_BASE\">",
+			"    <search-table :add-form=\"Add\" :list-api=\"$apis.mock.list\" :del-api=\"$apis.mock.info\" :columns=\"columns\">",
+			"    </search-table>",
+			"  </div>",
+			"</template>",
+			"<script setup lang=\"ts\" title=\"$TM_FILENAME_BASE\">",
+			"import type { DataTableColumns } from \"naive-ui\";",
+			"import Add from \"./alert/add.vue\";",
+			"const columns = ref<DataTableColumns>([",
+			"  {",
+			"    type: \"selection\",",
+			"  },",
+			"  {",
+			"    title: \"#\",",
+			"    key: \"key\",",
+			"    align: \"center\",",
+			"    render: (_: any, index: number) => {",
+			"      return `${index + 1}`;",
+			"    },",
+			"  },",
+			"  { title: \"数据项1\", key: \"s\" },",
+			"]);",
+			"</script>",
+			"<style scoped lang=\"less\">",
+			".$TM_FILENAME_BASE {}",
+			"</style>",
+			""
+		],
+		"description": "表格"
+	},
 	"弹框": {
 		"prefix": "alert",
 		"body": [
