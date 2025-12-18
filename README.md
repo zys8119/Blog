@@ -13,7 +13,7 @@ export default {
       data,
     });
   },
-  info(data: any, extraConfig: any) {
+  info(data: any, extraConfig?: any) {
     return request({
       url: "/mockInfo",
       method: "get",
@@ -24,6 +24,7 @@ export default {
     });
   },
 };
+
 ```
 
 ### mockJS
