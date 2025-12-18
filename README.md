@@ -2,6 +2,60 @@
 
 个人爱好，知识积累，点滴成石
 
+### mockJS
+
+```ts
+import { mock } from "mockjs";
+mock(new RegExp("/mockInfo"), (o) => {
+  return mock({
+    code: 0,
+    msg: "success",
+    data: Object.fromEntries(
+      Object.entries(JSON.parse(l_get(o, "body", "{}"))).map(
+        ([key, value]: any) => {
+          return [
+            key,
+            /^\/.*\/$/.test(value) ? new RegExp(value.slice(1, -1)) : value,
+          ];
+        },
+      ),
+    ),
+  });
+});
+mock(new RegExp("/mock"), (o) => {
+  return mock({
+    code: 0,
+    data: {
+      "data|10": [
+        l_merge(
+          {
+            a: /\d{4}-T\d{2}/,
+            "status|0-9": 0,
+            "b|1": true,
+            id: "@id",
+            s: "@cword(1, 30)",
+          },
+          Object.fromEntries(
+            Object.entries(JSON.parse(l_get(o, "body", "{}"))).map(
+              ([key, value]: any) => {
+                return [
+                  key,
+                  /^\/.*\/$/.test(value)
+                    ? new RegExp(value.slice(1, -1))
+                    : value,
+                ];
+              },
+            ),
+          ),
+        ),
+      ],
+      "total|1-100": 1,
+    },
+  });
+});
+
+```
+
 ### 串口数据读写
 
 ```ts
