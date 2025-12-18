@@ -6,14 +6,14 @@
 
 ```ts
 export default {
-  list(data: any) {
+  list(data?: any) {
     return request({
       url: "/mock",
       method: "get",
       data,
     });
   },
-  info(data: any, extraConfig?: any) {
+  info(data?: any, extraConfig?: any) {
     return request({
       url: "/mockInfo",
       method: "get",
