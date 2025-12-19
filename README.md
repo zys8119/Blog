@@ -141,7 +141,7 @@
 		"prefix": ["f","fo","for","form","form","alert-form"],
 		"body": [
 			"<template>",
-			"  <div class='add'>",
+			"  <div class='$TM_FILENAME_BASE'>",
 			"    <alert-form v-model=\"modelValue\" @save=\"$emit('save')\" :row=\"row\" :rules=\"rules\">",
 			"      <n-form-item label=\"标题\" path=\"title\">",
 			"        <n-input placeholder=\"请输入标题\" v-model:value=\"modelValue.title\" />",
@@ -164,7 +164,7 @@
 			"})",
 			"</script>",
 			"<style scoped lang=\"less\">",
-			".add {}",
+			".$TM_FILENAME_BASE {}",
 			"</style>"
 		],
 		"description": "表单"
