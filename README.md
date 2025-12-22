@@ -2979,6 +2979,7 @@ export default defineConfig({
                 };
             }
         },
+         // &-hover-self-.screen_bg:op-100!
         (matcher, { rawSelector }) => {
             const important = /^!|!$/.test(rawSelector) ? '!' : '';
             const importantStart = /^!/.test(rawSelector) ? important : '';
