@@ -2,6 +2,139 @@
 
 个人爱好，知识积累，点滴成石
 
+## ssh前端资源部署服务器自动化脚本
+
+README.md
+
+```md
+# 推送教程
+
+## 前置条件
+
+- 本地已安装 `zip` 工具
+- 远程主机已配置 SSH 公钥认证 `~/.ssh/authorized_keys`
+- 远程主机已安装 `unzip` 工具
+- 远程主机已安装 `tar` 工具
+- 远程主机已安装 `bash` 工具
+- 远程主机已安装 `rsync` 工具
+
+## 配置说明
+
+- 本地构建 / 打包配置
+  - `DIST_DIR`：构建输出目录（默认：`dist`）
+  - `DIST_ZIP_NAME`：压缩包文件名（默认：`dist.zip`）
+  - `LOCAL_ZIP_PATH`：本地压缩包路径（默认：`dist/dist.zip`）
+
+- 远程部署配置
+  - `DEPLOY_HOST`：部署主机 IP 或域名（默认：`1.94.182.204`）
+  - `DEPLOY_USER`：部署主机用户名（默认：`root`）
+  - `REMOTE_TMP_DIR`：远程临时目录（默认：`/tmp`）
+  - `REMOTE_ZIP_PATH`：远程压缩包路径（默认：`/tmp/dist.zip`）
+  - `BASE_DIR`：部署基础目录（默认：`/home/front-end`）
+  - `TARGET_DIR`：部署目标目录（默认：`lqt`）
+
+## 部署流程
+
+1. 本地构建 / 打包
+2. 上传压缩包到远程主机
+3. 远程部署（变量注入）
+
+
+## 技巧
+
+*  远程备份恢复脚本
+  
+\`\`\`sh
+cd /home/front-end
+
+# 1. 先备份当前版本（可选但强烈建议）
+mv lqt lqt_broken_$(date +"%Y%m%d_%H%M%S")
+
+# 2. 解压指定 .bak
+tar -xzf lqt_20251227_103012.bak
+
+# 3. 确认目录恢复
+ls -l lqt
+
+\`\`\`
+  
+```
+
+push.sh
+
+```sh
+#!/usr/bin/env bash
+set -e
+
+################################
+# 本地构建 / 打包配置
+################################
+DIST_DIR=dist
+DIST_ZIP_NAME=dist.zip
+LOCAL_ZIP_PATH="${DIST_DIR}/${DIST_ZIP_NAME}"
+
+################################
+# 远程部署配置
+################################
+DEPLOY_HOST=server_host
+DEPLOY_USER=user
+
+REMOTE_TMP_DIR=/tmp
+REMOTE_ZIP_PATH="${REMOTE_TMP_DIR}/${DIST_ZIP_NAME}"
+
+BASE_DIR=/home/front-end
+TARGET_DIR=lqt
+
+################################
+# 开始流程
+################################
+
+echo '开始构建'
+# pnpm build
+echo '构建完成'
+
+echo '开始打包'
+cd "${DIST_DIR}"
+zip -r "${DIST_ZIP_NAME}" . -x "*.zip"
+cd ..
+echo '打包完成'
+
+echo '开始部署'
+
+# 1️⃣ 上传压缩包
+rsync -av "${LOCAL_ZIP_PATH}" "${DEPLOY_USER}@${DEPLOY_HOST}:${REMOTE_ZIP_PATH}"
+
+# 2️⃣ 远程部署（变量注入）
+ssh "${DEPLOY_USER}@${DEPLOY_HOST}" bash -s << EOF
+set -e
+
+BASE_DIR="${BASE_DIR}"
+TARGET_DIR="${TARGET_DIR}"
+REMOTE_ZIP_PATH="${REMOTE_ZIP_PATH}"
+
+TIMESTAMP=\$(date +"%Y%m%d_%H%M%S")
+BACKUP_FILE="\${TARGET_DIR}_\${TIMESTAMP}.bak"
+
+cd "\${BASE_DIR}"
+
+# 1. 压缩备份旧版本
+if [ -d "\${TARGET_DIR}" ]; then
+  tar -czf "\${BACKUP_FILE}" "\${TARGET_DIR}"
+  rm -rf "\${TARGET_DIR}"
+fi
+
+# 2. 创建新目录
+mkdir -p "\${TARGET_DIR}"
+
+# 3. 解压新版本
+unzip -oq "\${REMOTE_ZIP_PATH}" -d "\${TARGET_DIR}"
+
+EOF
+
+echo "部署完成"
+
+```
+
 ## 幼儿园成长手册提示词
 
 帮我画 幼儿园成长画册排版图，主题冬季；尺寸A4大小，内容填充，排版简单、精美、好看
