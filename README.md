@@ -26,7 +26,7 @@ README.md
   - `LOCAL_ZIP_PATH`：本地压缩包路径（默认：`dist/dist.zip`）
 
 - 远程部署配置
-  - `DEPLOY_HOST`：部署主机 IP 或域名（默认：`1.94.182.204`）
+  - `DEPLOY_HOST`：部署主机 IP 或域名（默认：`127.0.0.1`）
   - `DEPLOY_USER`：部署主机用户名（默认：`root`）
   - `REMOTE_TMP_DIR`：远程临时目录（默认：`/tmp`）
   - `REMOTE_ZIP_PATH`：远程压缩包路径（默认：`/tmp/dist.zip`）
