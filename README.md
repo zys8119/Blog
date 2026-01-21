@@ -2,6 +2,14 @@
 
 个人爱好，知识积累，点滴成石
 
+## nodejs判断是否是启动文件
+
+```ts
+if (require.main === module) {
+//main();
+}
+```
+
 ## ssh前端资源部署服务器自动化脚本
 
 README.md
