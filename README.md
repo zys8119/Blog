@@ -2849,33 +2849,162 @@ function main(config, profileName) {
 ### 百度翻译api翻译
 
 ```ts
-import axios from "axios";
-import crypto from "crypto";
-(async () => {
-  const appid = "";
-  const key = "";
-  const query = `hello
-  `;
-  const salt = Date.now();
-  const sign = crypto
-    .createHash("md5")
-    .update(`${appid}${query}${salt}${key}`)
-    .digest("hex");
-  console.log(
-    (
-      await axios.get("https://fanyi-api.baidu.com/api/trans/vip/translate", {
-        params: {
-          q: query,
-          from: "en",
-          to: "zh",
-          appid,
-          salt,
-          sign,
-        },
-      })
-    ).data
+import { get } from "lodash";
+import Express from "express";
+import Puppeteer from "puppeteer";
+
+const browser = Puppeteer.launch({
+  headless: "shell",
+  args: [
+    "--window-size=1920,1080",
+    "--window-position=-1920,100", // 👈 副屏的坐标
+    "--start-fullscreen",
+  ],
+  userDataDir: "/Users/zhangyunshan/fanyi/.puppeteer",
+  defaultViewport: null,
+  devtools: true,
+});
+const getRes = async (text: string, lang?: string) => {
+  return new Promise<string>((resolve, reject) => {
+    try {
+      (async function () {
+        const page = await (await browser).newPage();
+        await page.goto(
+          `https://fanyi.baidu.com/mtpe-individual/transText?query=${encodeURIComponent(text)}&lang=${lang}`,
+        );
+        await page.exposeFunction("log", console.log);
+        await page.on("response", async (e) => {
+          if (e.url().includes("translate")) {
+            const req = await e.request();
+            const res = await fetch(e.url(), {
+              method: await req.method(),
+              headers: await req.headers(),
+              body: await req.fetchPostData(),
+            }).then((res) => res.text());
+            resolve(res);
+            await page.close();
+          }
+        });
+      })();
+    } catch (error) {
+      reject(error);
+      console.error(error);
+    }
+  });
+};
+
+const app = Express();
+app.use(Express.json());
+app.use(Express.urlencoded({ extended: true }));
+app.use("/", async (req, res) => {
+  const text = get(req, "body.text", get(req, "query.text", ""));
+  const target_lang = get(
+    req,
+    "body.target_lang",
+    get(req, "query.target_lang", ""),
   );
-})();
+  const source_lang = get(
+    req,
+    "body.source_lang",
+    get(req, "query.source_lang", ""),
+  );
+  if (!text) {
+    return res.status(400).send("No text provided");
+  }
+  const startTime = Date.now();
+  const endTime = Date.now();
+  const a: any = await getRes(text, `${source_lang}2${target_lang}`);
+
+  // Parse SSE data
+  const events = [];
+  const lines = a.split("\n");
+  let currentEvent = { event: "", data: "", id: "" };
+  for (const line of lines) {
+    if (line.startsWith("data:")) {
+      currentEvent.data += line.slice(5).trim();
+    } else if (line.startsWith("event:")) {
+      currentEvent.event = line.slice(6).trim();
+    } else if (line.startsWith("id:")) {
+      currentEvent.id = line.slice(3).trim();
+    } else if (line.trim() === "") {
+      // Empty line marks end of event
+      if (currentEvent.data) {
+        // Try to parse data as JSON
+        try {
+          currentEvent.data = JSON.parse(currentEvent.data);
+        } catch (e) {
+          // Keep as string if not valid JSON
+        }
+        events.push({ ...currentEvent });
+        currentEvent = { event: "", data: "", id: "" };
+      }
+    }
+  }
+  // Handle last event if no trailing newline
+  if (currentEvent.data) {
+    try {
+      currentEvent.data = JSON.parse(currentEvent.data);
+    } catch (e) {
+      // Keep as string if not valid JSON
+    }
+    events.push(currentEvent);
+  }
+  console.log("Parsed SSE events:", events);
+  // Extract dst fields from translation results
+  const translations = events
+    .map((e: any) => e.data)
+    .filter((data) => data && data.data && data.data.list)
+    .flatMap((data) => data.data.list.map((item: any) => item.dst));
+  console.log("Translations (dst fields):", translations);
+  console.log("Combined translation:", translations.join(" "));
+  const sseDataObject = events
+    .filter((e: any) => e.data.errno === 0)
+    .map((item: any) => item.data.data)
+    .reduce((prev, cur) => {
+      switch (cur.event) {
+        case "GetDictSucceed":
+          prev.dict = cur.dictResult;
+          break;
+        case "GetPhoneticSucceed":
+          prev.phonetic = cur.phonetic;
+          break;
+        case "Translating":
+          prev.translating = cur.list;
+          break;
+        case "GetSentSucceed":
+          prev.sent = cur.sentResult;
+          break;
+        case "GetKeywordsSucceed":
+          prev.keywords = cur.keywords;
+          break;
+        default:
+          break;
+      }
+      return prev;
+    }, {});
+  res.json({
+    code: 0,
+    translateResult: [
+      [
+        {
+          src: text,
+          srcPronounce: get(sseDataObject, "phonetic", [])
+            .map((item: any) => item.items)
+            .reduce((prev: any, cur: any) => prev.concat(cur), []),
+          tgt: `${get(sseDataObject, "translating", [])
+            .map((item: any) => item.dst)
+            .join("")}`,
+          keywords: get(sseDataObject, "keywords", []),
+        },
+      ],
+    ],
+    type: "zh-CHS2en",
+  });
+});
+const port = 3000;
+app.listen(port, () => {
+  console.log(`Server listening at http://localhost:${port}`);
+});
 
 ```
 
