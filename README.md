@@ -2,6 +2,39 @@
 
 个人爱好，知识积累，点滴成石
 
+## 复制文件 copyfile 
+
+```sh
+copyfile() {
+  # 参数校验
+  if [ -z "$1" ]; then
+    echo "Usage: copyfile <file>"
+    return 1
+  fi
+
+  # 转绝对路径（兼容相对/绝对）
+  local file
+  file=$(realpath "$1" 2>/dev/null)
+
+  # macOS 没有 realpath 时 fallback
+  if [ -z "$file" ]; then
+    file=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
+  fi
+
+  # 检查文件是否存在
+  if [ ! -e "$file" ]; then
+    echo "File not found: $1"
+    return 1
+  fi
+
+  echo "$file"
+
+  # 写入剪切板（Finder 可粘贴）
+  osascript -e "set the clipboard to (POSIX file \"$file\")"
+}
+
+```
+
 ## nodejs判断是否是启动文件
 
 ```ts
