@@ -2,6 +2,299 @@
 
 个人爱好，知识积累，点滴成石
 
+## flutter环境搭建
+
+```md
+环境要求
+当前使用 flutter版本 3.24.5
+当前使用 android sdk版本 34
+当前使用 dart版本 3.5.4
+
+环境配置
+~/.zshrc
+export PATH="$PATH":"$HOME/.pub-cache/bin"
+alias flutter="fvm flutter"
+alias dart="fvm dart"
+export PATH="$HOME/.jenv/bin:$PATH"
+export STUDIO_JDK=$JAVA_HOME
+eval "$(jenv init -)"
+
+
+
+flutter 版本管理工具 fvm, java版本管理工具jenv
+
+flutter 修改jdk-dir flutter config --jdk-dir="path/to/jdk" 修改为java17 flutter config --jdk-dir="/Users/zys/.jenv/versions/17"
+
+java下载指定版本： brew install temurin@17
+
+fvm安装
+✅ 正确安装 FVM（Flutter 版本管理）
+FVM 是一个 Dart 工具，不是 brew 工具
+👉 正确方式是用 dart pub 安装
+
+🚀 方法一（推荐）：用 Dart 安装
+dart pub global activate fvm
+
+🔧 配置 PATH（必须！）
+export PATH="$HOME/.pub-cache/bin:$PATH"
+👉 写入 ~/.zshrc：
+echo 'export PATH="$HOME/.pub-cache/bin:$PATH"' >> ~/.zshrc
+source ~/.zshrc
+
+✅ 验证
+fvm --version
+
+🚀 方法二（可选）：用 Git 安装（备用方案）
+git clone https://github.com/leoafarias/fvm.git ~/.fvm
+然后：
+export PATH="$HOME/.fvm/bin:$PATH"
+👉 不如 Dart 方式简单，不推荐
+jenv 安装
+一、安装 jenv
+✅ macOS（推荐用 Homebrew）
+brew install jenv
+
+✅ Linux（通用方式）
+git clone https://github.com/jenv/jenv.git ~/.jenv
+
+二、配置环境变量（关键）
+根据你用的 shell（你之前用 zsh），编辑：
+vim ~/.zshrc
+添加：
+export PATH="$HOME/.jenv/bin:$PATH"
+eval "$(jenv init -)"
+然后刷新：
+source ~/.zshrc
+
+三、验证安装
+jenv --version
+如果正常，会输出版本号 ✅
+
+四、添加 Java 版本
+👉 先查看你本机已有 Java：
+/usr/libexec/java_home -V
+示例输出：
+/Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home
+👉 添加到 jenv：
+jenv add /Library/Java/JavaVirtualMachines/jdk-17.jdk/Contents/Home
+
+五、查看已管理的 Java
+jenv versions
+
+六、切换 Java 版本
+🌍 全局（推荐）
+jenv global 17
+📁 当前目录
+jenv local 17
+🔧 临时（当前 shell）
+jenv shell 17
+
+七、启用 jenv 管理（很重要）
+默认 jenv 不会接管 java 命令，必须执行：
+jenv enable-plugin export
+然后重启 shell：
+exec $SHELL
+
+八、验证是否生效
+java -version
+如果显示你设置的版本，说明 OK ✅
+
+```
+
+## flutter 无意义发生器
+
+```sh
+# 防止 alias 冲突
+unalias flutter 2>/dev/null
+flutter() {
+  # 拦截 --version
+  for arg in "$@"; do
+    if [ "$arg" = "--version" ]; then
+      echo "
+Can't load Kernel binary: Invalid kernel binary format version.
+FINE: Pub 3.5.4
+FINE: Package Config up to date.
+FINE: Package Config up to date.
+Flutter 3.41.0 • channel stable • https://github.com/flutter/flutter.git
+Framework • revision 44a626f4f0 (8 weeks ago) • 2026-02-10 10:16:12 -0800
+Engine • hash cc8e596aa65130a0678cc59613ed1c5125184db4 (revision 3452d735bd) (1 months ago) • 2026-02-09 22:03:17.000Z
+Tools • Dart 3.11.0 • DevTools 2.54.1
+IO  : Writing 6746 characters to text file /Users/zys/.pub-cache/log/pub_log.txt.
+MSG : Logs written to /Users/zys/.pub-cache/log/pub_log.txt."
+      return
+    fi
+    if [ "$arg" = "doctor" ]; then
+      echo "[✓] Flutter (Channel stable, 3.24.5, on macOS 26.0.1 25A362 darwin-arm64, locale zh-Hans-CN)
+    • Flutter version 3.24.5 on channel stable at /Users/zys/fvm/versions/3.24.5
+    • Upstream repository https://github.com/flutter/flutter.git
+    • Framework revision dec2ee5c1f (1 year, 5 months ago), 2024-11-13 11:13:06 -0800
+    • Engine revision a18df97ca5
+    • Dart version 3.5.4
+    • DevTools version 2.37.3
+
+[✓] Android toolchain - develop for Android devices (Android SDK version 36.1.0)
+    • Android SDK at /Users/zys/Library/Android/sdk
+    • Platform android-36, build-tools 36.1.0
+    • Java binary at: /Applications/Android Studio.app/Contents/jbr/Contents/Home/bin/java
+    • Java version OpenJDK Runtime Environment (build 21.0.10+-117844308-b1163.108)
+    • All Android licenses accepted.
+
+[✗] Xcode - develop for iOS and macOS
+    ✗ Xcode installation is incomplete; a full installation is necessary for iOS and macOS development.
+      Download at: https://developer.apple.com/xcode/
+      Or install Xcode via the App Store.
+      Once installed, run:
+        sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer
+        sudo xcodebuild -runFirstLaunch
+    ✗ CocoaPods not installed.
+        CocoaPods is a package manager for iOS or macOS platform code.
+        Without CocoaPods, plugins will not work on iOS or macOS.
+        For more info, see https://flutter.dev/to/platform-plugins
+      For installation instructions, see
+      https://guides.cocoapods.org/using/getting-started.html#installation
+
+[✓] Chrome - develop for the web
+    • Chrome at /Applications/Google Chrome.app/Contents/MacOS/Google Chrome
+
+[✓] Android Studio (version 2025.3)
+    • Android Studio at /Applications/Android Studio.app/Contents
+    • Flutter plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/9212-flutter
+    • Dart plugin can be installed from:
+      🔨 https://plugins.jetbrains.com/plugin/6351-dart
+    • Java version OpenJDK Runtime Environment (build 21.0.10+-117844308-b1163.108)
+
+[✓] IntelliJ IDEA Ultimate Edition (version 2026.1)
+    • IntelliJ at /Applications/IntelliJ IDEA.app
+    • Flutter plugin version 91.0.0
+    • Dart plugin version 504.0.0
+
+[✓] Connected device (4 available)
+    • PKK110 (mobile)              • UW8HNZR4E6BYAUHY • android-arm64  • Android 16 (API 36)
+    • sdk gphone16k arm64 (mobile) • emulator-5554    • android-arm64  • Android 17 (API 37) (emulator)
+    • macOS (desktop)              • macos            • darwin-arm64   • macOS 26.0.1 25A362 darwin-arm64
+    • Chrome (web)                 • chrome           • web-javascript • Google Chrome 146.0.7680.178
+
+[✓] Network resources
+    • All expected network resources are available.
+
+! Doctor found issues in 1 category."
+      return 
+    fi
+    if [ "$arg" = "run" ]; then
+     echo "Resolving dependencies... (18.4s)
+Downloading packages... 
+  async 2.11.0 (2.13.1 available)
+  boolean_selector 2.1.1 (2.1.2 available)
+< characters 1.3.0 (was 1.4.1) (1.4.1 available)
+< clock 1.1.1 (was 1.1.2) (1.1.2 available)
+< collection 1.18.0 (was 1.19.1) (1.19.1 available)
+  cross_file 0.3.4+2 (0.3.5+2 available)
+  cupertino_icons 1.0.8 (1.0.9 available)
+< fake_async 1.3.1 (was 1.3.3) (1.3.3 available)
+  ffi 2.1.3 (2.2.0 available)
+  flutter_blue_plus 1.35.5 (2.2.1 available)
+  flutter_blue_plus_android 4.0.5 (8.2.1 available)
+  flutter_blue_plus_darwin 4.0.1 (8.2.1 available)
+  flutter_blue_plus_linux 3.0.2 (8.2.1 available)
+  flutter_blue_plus_platform_interface 4.0.2 (8.2.1 available)
+  flutter_blue_plus_web 3.0.1 (8.2.1 available)
+  flutter_foreground_task 8.17.0 (9.2.2 available)
+  flutter_lints 4.0.0 (6.0.0 available)
+  flutter_plugin_android_lifecycle 2.0.26 (2.0.34 available)
+  flutter_svg 2.1.0 (2.2.4 available)
+  fluttertoast 8.2.14 (9.0.0 available)
+  http_parser 4.0.2 (4.1.2 available)
+  image_cropper 9.1.0 (12.2.0 available)
+  image_cropper_for_web 6.1.0 (7.0.0 available)
+  image_cropper_platform_interface 7.1.0 (8.0.0 available)
+  image_picker 0.8.6+4 (1.2.1 available)
+  image_picker_android 0.8.12+15 (0.8.13+16 available)
+  image_picker_for_web 2.1.12 (3.1.1 available)
+  image_picker_ios 0.8.12+2 (0.8.13+6 available)
+  image_picker_platform_interface 2.10.1 (2.11.1 available)
+  js 0.6.7 (0.7.2 available)
+< leak_tracker 10.0.5 (was 11.0.2) (11.0.2 available)
+< leak_tracker_flutter_testing 3.0.5 (was 3.0.10) (3.0.10 available)
+< leak_tracker_testing 3.0.1 (was 3.0.2) (3.0.2 available)
+  lints 4.0.0 (6.1.0 available)
+< matcher 0.12.16+1 (was 0.12.18) (0.12.19 available)
+< material_color_utilities 0.11.1 (was 0.13.0) (0.13.0 available)
+< meta 1.15.0 (was 1.17.0) (1.18.2 available)
+  mqtt_client 10.5.1 (10.11.10 available)
+< path 1.9.0 (was 1.9.1) (1.9.1 available)
+  petitparser 6.0.2 (7.0.2 available)
+  shared_preferences 2.5.3 (2.5.5 available)
+  shared_preferences_android 2.4.7 (2.4.23 available)
+  shared_preferences_foundation 2.5.4 (2.5.6 available)
+  shared_preferences_platform_interface 2.4.1 (2.4.2 available)
+> sky_engine 0.0.99 from sdk flutter (was 0.0.0 from sdk flutter)
+  source_span 1.10.0 (1.10.2 available)
+< stack_trace 1.11.1 (was 1.12.1) (1.12.1 available)
+< stream_channel 2.1.2 (was 2.1.4) (2.1.4 available)
+  string_scanner 1.2.0 (1.4.1 available)
+  term_glyph 1.2.1 (1.2.2 available)
+< test_api 0.7.2 (was 0.7.8) (0.7.11 available)
+  universal_html 2.2.4 (2.3.0 available)
+  universal_io 2.2.2 (2.3.1 available)
+  vector_graphics 1.1.18 (1.1.21 available)
+  vector_graphics_compiler 1.1.16 (1.2.0 available)
+< vector_math 2.1.4 (was 2.2.0) (2.3.0 available)
+  video_player 2.9.5 (2.11.1 available)
+  video_player_android 2.7.16 (2.9.5 available)
+  video_player_avfoundation 2.7.1 (2.9.4 available)
+  video_player_platform_interface 6.3.0 (6.6.0 available)
+  video_player_web 2.3.5 (2.4.0 available)
+  vm_service 14.2.5 (15.0.2 available)
+  xml 6.5.0 (6.6.1 available)
+Changed 16 dependencies!
+62 packages have newer versions incompatible with dependency constraints.
+"
+      genact -s 5 --exit-after-time "$((RANDOM % 9 + 2))min"
+      echo "Try `flutter pub outdated` for more information.
+Launching lib/main.dart on sdk gphone16k arm64 in debug mode...
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':gradle:compileGroovy'.
+> BUG! exception in phase 'semantic analysis' in source unit '/Users/zys/fvm/versions/3.24.5/packages/flutter_tools/gradle/src/main/groovy/app_plugin_loader.groovy' Unsupported class file major version 65
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+
+* Get more help at https://help.gradle.org
+
+BUILD FAILED in 5s
+Running Gradle task 'assembleDebug'...                              6.2s
+
+┌─ Flutter Fix ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ [!] Your project's Gradle version is incompatible with the Java version that Flutter is using for Gradle.                              │
+│                                                                                                                                        │
+│ If you recently upgraded Android Studio, consult the migration guide at https://flutter.dev/to/to/java-gradle-incompatibility.         │
+│                                                                                                                                        │
+│ Otherwise, to fix this issue, first, check the Java version used by Flutter by running `flutter doctor --verbose`.                     │
+│                                                                                                                                        │
+│ Then, update the Gradle version specified in /Users/zys/work/iron_tower_flutter/android/gradle/wrapper/gradle-wrapper.properties to be │
+│ compatible with that Java version. See the link below for more information on compatible Java/Gradle versions:                         │
+│ https://docs.gradle.org/current/userguide/compatibility.html#java                                                                      │
+│                                                                                                                                        │
+│                                                                                                                                        │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+Error: Gradle task assembleDebug failed with exit code 1"
+      return 1
+    fi
+  done
+
+  # 其他情况走真实 flutter
+  command flutter "$@"
+#   genact -m download -s 1000
+}
+
+```
+
 ## 复制文件 copyfile 
 
 ```sh
