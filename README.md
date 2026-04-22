@@ -2,6 +2,103 @@
 
 个人爱好，知识积累，点滴成石
 
+## 零宽字符串隐藏
+
+利用零宽字符串及字符串分割思路
+
+常见零宽字符
+Unicode	名称	转义	用途
+U+200B	零宽空格	\u200B	换行点
+U+200C	零宽非连接符	\u200C	防止连字
+U+200D	零宽连接符	\u200D	启用连字
+U+FEFF	零宽不换行空格/BOM	\uFEFF	字节顺序标记
+U+200E	左至右标记	\u200E	文本方向
+U+200F	右至左标记	\u200F	文本方向
+
+
+解密/加密
+
+```js
+// 将文本编码为零宽字符序列
+function encodeToZeroWidth(str) {
+  // 将每个字符转为二进制，用零宽字符表示
+  const zeroWidthChars = {
+    '0': '\u200B',  // 零宽空格
+    '1': '\u200C',  // 零宽非连接符
+    'separator': '\u200D'  // 分隔符
+  };
+  
+  let result = '';
+  for (let char of str) {
+    const binary = char.charCodeAt(0).toString(2);
+    for (let bit of binary) {
+      result += zeroWidthChars[bit];
+    }
+    result += zeroWidthChars.separator;
+  }
+  return result;
+}
+
+// 解码零宽字符
+function decodeFromZeroWidth(str) {
+  const zeroWidthChars = {
+    '\u200B': '0',
+    '\u200C': '1',
+    '\u200D': 'separator'
+  };
+  
+  let binary = '';
+  let result = '';
+  
+  for (let char of str) {
+    if (zeroWidthChars[char]) {
+      if (zeroWidthChars[char] === 'separator') {
+        result += String.fromCharCode(parseInt(binary, 2));
+        binary = '';
+      } else {
+        binary += zeroWidthChars[char];
+      }
+    }
+  }
+  return result;
+}
+
+// 使用示例
+const hidden = encodeToZeroWidth('Hello');
+console.log(hidden); // 看起来是空字符串
+console.log(hidden.length); // 有长度但不可见
+console.log(decodeFromZeroWidth(hidden)); // "Hello"
+
+// 嵌入正常文本中
+const normalText = '这是一段正常文本';
+const hiddenText = encodeToZeroWidth('secret code');
+const combined = normalText + hiddenText;
+console.log(combined); // 只显示"这是一段正常文本"
+console.log(decodeFromZeroWidth(combined)); // "secret code"
+```
+
+
+## .prettierrc 代码格式化
+
+```json
+{
+    "printWidth": 100,
+    "tabWidth": 4,
+    "useTabs": false,
+    "semi": false,
+    "singleQuote": true,
+    "jsxSingleQuote": false,
+    "trailingComma": "all",
+    "bracketSpacing": true,
+    "jsxBracketSameLine": false,
+    "arrowParens": "always",
+    "endOfLine": "lf",
+    "htmlWhitespaceSensitivity": "css",
+    "proseWrap": "preserve"
+}
+
+```
+
 ## flutter环境搭建
 
 ```md
