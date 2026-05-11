@@ -2,6 +2,291 @@
 
 个人爱好，知识积累，点滴成石
 
+## 实现ps内容识别，去图片水印效果
+```vue
+<template>
+    <div class='App'>
+        <canvas ref="canvas" class="abs-content"></canvas>
+    </div>
+</template>
+<script setup lang="ts">
+
+const canvas = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>;
+const loadImage = async (src: any) => {
+    const { resolve, reject, promise } = Promise.withResolvers();
+    const url = await src.then((res: any) => res.default);
+    const img = new Image();
+    img.src = url;
+    img.onload = () => {
+        resolve(img);
+    }
+    return promise as Promise<HTMLImageElement>;
+}
+function contentAwareFill(x: number, y: number, w: number, h: number) {
+    const ctx = canvas.value.getContext("2d") as CanvasRenderingContext2D;
+    const width = canvas.value.width;
+    const height = canvas.value.height;
+    const imageData = ctx.getImageData(0, 0, width, height);
+    const output = new Uint8ClampedArray(imageData.data);
+
+    const halfPatch = 4;
+    const patchArea = 81;
+    const searchMargin = 30;
+
+    const totalPixels = width * height;
+    const mask = new Uint8Array(totalPixels);
+    const filled = new Uint8Array(totalPixels);
+    const confidence = new Float32Array(totalPixels);
+
+    for (let py = y; py < y + h; py++) {
+        const row = py * width;
+        for (let px = x; px < x + w; px++) {
+            mask[row + px] = 1;
+        }
+    }
+    for (let i = 0; i < totalPixels; i++) {
+        if (!mask[i]) { filled[i] = 1; confidence[i] = 1; }
+    }
+
+    const sx0 = Math.max(0, x - searchMargin);
+    const sy0 = Math.max(0, y - searchMargin);
+    const sx1 = Math.min(width, x + w + searchMargin);
+    const sy1 = Math.min(height, y + h + searchMargin);
+
+    const borderArr: number[] = [];
+    const inBorder = new Uint8Array(totalPixels);
+    for (let py = y; py < y + h; py++) {
+        for (let px = x; px < x + w; px++) {
+            const key = py * width + px;
+            if (filled[key]) continue;
+            for (let dy = -1; dy <= 1; dy++) {
+                const ny = py + dy;
+                if (ny < 0 || ny >= height) continue;
+                for (let dx = -1; dx <= 1; dx++) {
+                    if (dx === 0 && dy === 0) continue;
+                    const nx = px + dx;
+                    if (nx >= 0 && nx < width && filled[ny * width + nx]) {
+                        borderArr.push(key);
+                        inBorder[key] = 1;
+                        dy = 2; break;
+                    }
+                }
+            }
+        }
+    }
+
+    // 预计算搜索候选列表（排除mask区域）
+    const candidates: number[] = [];
+    for (let cy = sy0; cy < sy1; cy += 2) {
+        for (let cx = sx0; cx < sx1; cx += 2) {
+            if (cx >= x && cx < x + w && cy >= y && cy < y + h) continue;
+            candidates.push(cy * width + cx);
+        }
+    }
+
+    let remaining = w * h;
+
+    while (remaining > 0 && borderArr.length > 0) {
+        // 找最高优先级边界像素
+        let maxP = -1, targetX = x, targetY = y, bestIdx = 0;
+
+        for (let bi = 0; bi < borderArr.length; bi++) {
+            const key = borderArr[bi];
+            const px = key % width, py = (key - px) / width;
+
+            let conf = 0;
+            const pyStart = py - halfPatch, pyEnd = py + halfPatch;
+            const pxStart = px - halfPatch, pxEnd = px + halfPatch;
+            const syClamp0 = pyStart < 0 ? 0 : pyStart;
+            const syClamp1 = pyEnd >= height ? height - 1 : pyEnd;
+            const sxClamp0 = pxStart < 0 ? 0 : pxStart;
+            const sxClamp1 = pxEnd >= width ? width - 1 : pxEnd;
+
+            for (let sy = syClamp0; sy <= syClamp1; sy++) {
+                const row = sy * width;
+                for (let sx = sxClamp0; sx <= sxClamp1; sx++) {
+                    conf += confidence[row + sx];
+                }
+            }
+            conf /= patchArea;
+
+            let nnx = 0, nny = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+                const sy2 = py + dy;
+                if (sy2 < 0 || sy2 >= height) continue;
+                const row2 = sy2 * width;
+                for (let dx = -1; dx <= 1; dx++) {
+                    const sx2 = px + dx;
+                    if (sx2 >= 0 && sx2 < width && mask[row2 + sx2]) {
+                        nnx -= dx; nny -= dy;
+                    }
+                }
+            }
+            const nLen = Math.sqrt(nnx * nnx + nny * nny) || 1;
+            nnx /= nLen; nny /= nLen;
+
+            let gx = 0, gy = 0;
+            const pyRow = py * width;
+            if (px > 0 && px < width - 1 && filled[pyRow + px - 1] && filled[pyRow + px + 1]) {
+                const i1 = (pyRow + px + 1) * 4, i2 = (pyRow + px - 1) * 4;
+                gx = ((output[i1] * 0.299 + output[i1+1] * 0.587 + output[i1+2] * 0.114) -
+                      (output[i2] * 0.299 + output[i2+1] * 0.587 + output[i2+2] * 0.114)) * 0.5;
+            }
+            if (py > 0 && py < height - 1 && filled[(py-1) * width + px] && filled[(py+1) * width + px]) {
+                const i1 = ((py+1) * width + px) * 4, i2 = ((py-1) * width + px) * 4;
+                gy = ((output[i1] * 0.299 + output[i1+1] * 0.587 + output[i1+2] * 0.114) -
+                      (output[i2] * 0.299 + output[i2+1] * 0.587 + output[i2+2] * 0.114)) * 0.5;
+            }
+            const dataVal = Math.abs(-gy * nnx + gx * nny) / 255 + 0.001;
+
+            const p = conf * dataVal;
+            if (p > maxP) { maxP = p; targetX = px; targetY = py; bestIdx = bi; }
+        }
+
+        // 粗搜：在候选列表中找最佳匹配
+        let bestDist = Infinity, bestX = sx0, bestY = sy0;
+
+        const tClampY0 = targetY - halfPatch < 0 ? -targetY : -halfPatch;
+        const tClampY1 = targetY + halfPatch >= height ? height - 1 - targetY : halfPatch;
+        const tClampX0 = targetX - halfPatch < 0 ? -targetX : -halfPatch;
+        const tClampX1 = targetX + halfPatch >= width ? width - 1 - targetX : halfPatch;
+
+        for (let ci = 0; ci < candidates.length; ci++) {
+            const cKey = candidates[ci];
+            const cx = cKey % width, cy = (cKey - cx) / width;
+
+            let sum = 0, count = 0;
+            for (let dy = tClampY0; dy <= tClampY1; dy++) {
+                const pby = cy + dy;
+                if (pby < 0 || pby >= height) continue;
+                const rowA = (targetY + dy) * width;
+                const rowB = pby * width;
+                for (let dx = tClampX0; dx <= tClampX1; dx++) {
+                    const pbx = cx + dx;
+                    if (pbx < 0 || pbx >= width) continue;
+                    if (!filled[rowA + targetX + dx]) continue;
+                    const i1 = (rowA + targetX + dx) * 4, i2 = (rowB + pbx) * 4;
+                    const dr = output[i1] - output[i2];
+                    const dg = output[i1 + 1] - output[i2 + 1];
+                    const db = output[i1 + 2] - output[i2 + 2];
+                    sum += dr * dr + dg * dg + db * db;
+                    count++;
+                }
+            }
+            if (count > 0) {
+                const d = sum / count;
+                if (d < bestDist) { bestDist = d; bestX = cx; bestY = cy; }
+            }
+        }
+
+        // 精搜
+        for (let cy = bestY - 2; cy <= bestY + 2; cy++) {
+            if (cy < 0 || cy >= height) continue;
+            for (let cx = bestX - 2; cx <= bestX + 2; cx++) {
+                if (cx < 0 || cx >= width) continue;
+                if (cx >= x && cx < x + w && cy >= y && cy < y + h) continue;
+
+                let sum = 0, count = 0;
+                for (let dy = tClampY0; dy <= tClampY1; dy++) {
+                    const pby = cy + dy;
+                    if (pby < 0 || pby >= height) continue;
+                    const rowA = (targetY + dy) * width;
+                    const rowB = pby * width;
+                    for (let dx = tClampX0; dx <= tClampX1; dx++) {
+                        const pbx = cx + dx;
+                        if (pbx < 0 || pbx >= width) continue;
+                        if (!filled[rowA + targetX + dx]) continue;
+                        const i1 = (rowA + targetX + dx) * 4, i2 = (rowB + pbx) * 4;
+                        const dr = output[i1] - output[i2];
+                        const dg = output[i1 + 1] - output[i2 + 1];
+                        const db = output[i1 + 2] - output[i2 + 2];
+                        sum += dr * dr + dg * dg + db * db;
+                        count++;
+                    }
+                }
+                if (count > 0) {
+                    const d = sum / count;
+                    if (d < bestDist) { bestDist = d; bestX = cx; bestY = cy; }
+                }
+            }
+        }
+
+        // 填充patch
+        let filledCount = 0;
+        for (let dy = -halfPatch; dy <= halfPatch; dy++) {
+            const ty = targetY + dy, fsy = bestY + dy;
+            if (ty < 0 || ty >= height || fsy < 0 || fsy >= height) continue;
+            const dstRow = ty * width, srcRow = fsy * width;
+            for (let dx = -halfPatch; dx <= halfPatch; dx++) {
+                const tx = targetX + dx, fsx = bestX + dx;
+                if (tx < 0 || tx >= width || fsx < 0 || fsx >= width) continue;
+                const dstKey = dstRow + tx;
+                if (filled[dstKey]) continue;
+
+                const srcIdx = (srcRow + fsx) * 4;
+                const dstIdx = dstKey * 4;
+                output[dstIdx] = output[srcIdx];
+                output[dstIdx + 1] = output[srcIdx + 1];
+                output[dstIdx + 2] = output[srcIdx + 2];
+                output[dstIdx + 3] = 255;
+                filled[dstKey] = 1;
+                mask[dstKey] = 0;
+                confidence[dstKey] = maxP;
+                filledCount++;
+
+                if (inBorder[dstKey]) {
+                    inBorder[dstKey] = 0;
+                }
+
+                for (let ndy = -1; ndy <= 1; ndy++) {
+                    const nny2 = ty + ndy;
+                    if (nny2 < y || nny2 >= y + h) continue;
+                    for (let ndx = -1; ndx <= 1; ndx++) {
+                        if (ndx === 0 && ndy === 0) continue;
+                        const nnx2 = tx + ndx;
+                        if (nnx2 < x || nnx2 >= x + w) continue;
+                        const nKey = nny2 * width + nnx2;
+                        if (!filled[nKey] && !inBorder[nKey]) {
+                            borderArr.push(nKey);
+                            inBorder[nKey] = 1;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 清理borderArr中已填充的元素（swap-remove）
+        let writeIdx = 0;
+        for (let ri = 0; ri < borderArr.length; ri++) {
+            if (!filled[borderArr[ri]]) {
+                borderArr[writeIdx++] = borderArr[ri];
+            }
+        }
+        borderArr.length = writeIdx;
+
+        remaining -= filledCount;
+        if (filledCount === 0) break;
+    }
+
+    imageData.data.set(output);
+    ctx.putImageData(imageData, 0, 0);
+}
+onMounted(async () => {
+    const img = await loadImage(import("./a.png"));
+    canvas.value.width = img.width;
+    canvas.value.height = img.height;
+    const ctx = canvas.value?.getContext("2d");
+    ctx?.drawImage(img, 0, 0);
+    console.time()
+    contentAwareFill(img.width - 320, img.height - 120, 300, 100);
+    console.timeEnd()
+})
+</script>
+<style scoped lang="less">
+.App {}
+</style>
+```
+
 ## 零宽字符串隐藏
 
 利用零宽字符串及字符串分割思路
