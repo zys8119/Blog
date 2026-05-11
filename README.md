@@ -2,6 +2,82 @@
 
 个人爱好，知识积累，点滴成石
 
+
+## 实现ps内容识别，去图片水印效果，基于opencv.js
+
+[opencv.js](https://docs.opencv.org/4.x/opencv.js)
+
+```vue
+<template>
+    <div class='App'>
+        <canvas ref="canvas" class="abs-content"></canvas>
+    </div>
+</template>
+<script setup lang="ts">
+// @ts-ignore
+// import "opencv.js";
+const cv = (window as any).cv;
+
+const canvas = ref<HTMLCanvasElement>() as Ref<HTMLCanvasElement>;
+const loadImage = async (src: any) => {
+    const { resolve, reject, promise } = Promise.withResolvers();
+    const url = await src.then((res: any) => res.default);
+    const img = new Image();
+    img.src = url;
+    img.onload = () => {
+        resolve(img);
+    }
+    return promise as Promise<HTMLImageElement>;
+}
+function contentAwareFill(x: number, y: number, w: number, h: number) {
+    const ctxCanvas = canvas.value.getContext("2d") as CanvasRenderingContext2D;
+    const width = canvas.value.width;
+    const height = canvas.value.height;
+    const imageData = ctxCanvas.getImageData(0, 0, width, height);
+
+    const src = cv.matFromImageData(imageData);
+    const srcRgb = new cv.Mat();
+    cv.cvtColor(src, srcRgb, cv.COLOR_RGBA2RGB);
+
+    const mask = cv.Mat.zeros(height, width, cv.CV_8UC1);
+    for (let py = y; py < y + h; py++) {
+        for (let px = x; px < x + w; px++) {
+            mask.ucharPtr(py, px)[0] = 255;
+        }
+    }
+
+    const dst = new cv.Mat();
+    cv.inpaint(srcRgb, mask, dst, 3, cv.INPAINT_TELEA);
+
+    const dstRgba = new cv.Mat();
+    cv.cvtColor(dst, dstRgba, cv.COLOR_RGB2RGBA);
+
+    const result = new ImageData(new Uint8ClampedArray(dstRgba.data), width, height);
+    ctxCanvas.putImageData(result, 0, 0);
+
+    src.delete();
+    srcRgb.delete();
+    mask.delete();
+    dst.delete();
+    dstRgba.delete();
+}
+onMounted(async () => {
+    const img = await loadImage(import("./a.png"));
+    canvas.value.width = img.width;
+    canvas.value.height = img.height;
+    const ctx = canvas.value?.getContext("2d");
+    ctx?.drawImage(img, 0, 0);
+    console.time()
+    contentAwareFill(img.width - 320, img.height - 120, 300, 100);
+    console.timeEnd()
+})
+</script>
+<style scoped lang="less">
+.App {}
+</style>
+
+```
+
 ## 实现ps内容识别，去图片水印效果
 ```vue
 <template>
