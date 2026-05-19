@@ -2,6 +2,42 @@
 
 个人爱好，知识积累，点滴成石
 
+## Cloudflare 部署
+
+wrangler.toml
+
+字段说明
+字段	作用
+name	项目名称，只能小写英文/数字/中划线
+compatibility_date	Cloudflare runtime 版本日期
+pages_build_output_dir	Vite 构建输出目录
+compatibility_flags	Node.js 兼容模式（很多 npm 包需要）
+
+```txt
+name = "blog"
+
+compatibility_date = "2026-05-19"
+
+pages_build_output_dir = "dist"
+
+[build]
+command = "npm run build"
+
+[assets]
+directory = "./dist"
+```
+纯页面模式部署配置
+
+```txt
+name = "blog"
+
+compatibility_date = "2026-05-19"
+
+pages_build_output_dir = "dist"
+```
+部署命令：
+npm run build
+npx wrangler pages deploy dist
 
 ## 实现ps内容识别，去图片水印效果，基于opencv.js
 
