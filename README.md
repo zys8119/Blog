@@ -4,6 +4,12 @@
 
 ## puppeteer 反爬
 
+启动代理浏览器
+
+`/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+--remote-debugging-port=9222 \
+--user-data-dir=./chrome-data`
+
 ```ts
 // import { launch, connect } from "puppeteer";
 import puppeteer from "puppeteer-extra";
