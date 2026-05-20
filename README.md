@@ -2,6 +2,44 @@
 
 个人爱好，知识积累，点滴成石
 
+## puppeteer 反爬
+
+```ts
+// import { launch, connect } from "puppeteer";
+import puppeteer from "puppeteer-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+puppeteer.use(StealthPlugin());
+let _browser = null as unknown as Awaited<ReturnType<typeof puppeteer.launch>>;
+Promise.resolve()
+  .then(async () => {
+    _browser = await puppeteer.launch({
+      userDataDir: "./chrome-data",
+      args: ["--profile-directory=Default"],
+      headless: false,
+    });
+    const pages = await _browser.pages();
+
+    await Promise.all(pages.map((page) => page.close()));
+    const page = await _browser.newPage();
+    await page.evaluateOnNewDocument(() => {
+      Object.defineProperty(navigator, "webdriver", { get: () => false });
+    });
+    await page.setUserAgent({
+      userAgent:
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
+        "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    });
+    await page.goto("https://chatgpt.com");
+    const title = await page.title();
+    console.log(title);
+  })
+  .catch(console.error)
+  .finally(async () => {
+    // await _browser.close();
+  });
+
+```
+
 ## Cloudflare 部署
 
 wrangler.toml
