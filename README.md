@@ -4837,18 +4837,23 @@ export default function (sql: string | QueryOptions, values?: any) {
 
 ## puppeteer 等待选择器
 ```typescript
-const waitForSelector = async (selector: string) => {
-    return await page.evaluate(async function name(selector) {
-        if (!document.querySelector(selector)) {
-            return await new Promise(r => {
-                requestAnimationFrame(async () => {
-                    await name(selector)
-                    r(true)
-                })
-            })
-        }
-    },selector)
-}
+const waitForSelector = async (selector: string, hasContent?: boolean) => {
+  return await page.evaluate(
+	async function name(selector, hasContent) {
+	  const el: any = document.querySelector(selector) as HTMLDivElement;
+	  if (!el || (hasContent && !el.innerText.trim())) {
+		return await new Promise((r) => {
+		  requestAnimationFrame(async () => {
+			await name(selector, hasContent);
+			r(true);
+		  });
+		});
+	  }
+	},
+	selector,
+	hasContent,
+  );
+};
 ```
 
 ## adb保持手机屏幕不关闭，请使用tsnd 运行
