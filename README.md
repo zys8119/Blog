@@ -2,6 +2,163 @@
 
 个人爱好，知识积累，点滴成石
 
+## puppeteer 抓sse数据包
+
+### 启动浏览器调试
+
+/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome \
+--remote-debugging-port=9222 \
+--user-data-dir=./chrome-data --start-fullscreen --auto-open-devtools-for-tabs  --headless=new  TargetURL
+
+### puppeteer 抓sse数据包具体代码
+
+```ts
+// import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-extra";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+puppeteer.use(StealthPlugin());
+let _browser = null as unknown as Awaited<ReturnType<typeof puppeteer.launch>>;
+Promise.resolve()
+  .then(async () => {
+    _browser = await puppeteer.connect({
+      browserURL: "http://127.0.0.1:9222",
+      defaultViewport: {
+        width: 0,
+        height: 0,
+      },
+    });
+    const pages = await _browser.pages();
+    const page = (await pages[0]) || (await _browser.newPage());
+    // 页面里可调用 window.sendToNode()
+    const isSendToNodeExposed = await page.evaluate(() => {
+      return !!window.isSendToNodeExposed;
+    });
+    await page.exposeFunction("sendToNode", async (data: any) => {
+      switch (data.type) {
+        case "start":
+          if (data.data === "[START]") {
+            console.log("start");
+          }
+          break;
+        case "done":
+          if (data.data === "[DONE]") {
+            console.log("done");
+          }
+          break;
+        case "other":
+          // if (data.data === "[DONE]") {
+          //   console.log("done");
+          // }
+          break;
+        default:
+          if (typeof data.v === "string") {
+            console.log(data.v);
+          } else if (data.o === "patch" && Array.isArray(data.v)) {
+            console.log(
+              data.v
+                .filter(
+                  (e: any, index: number) =>
+                    typeof e.v === "string" && e.o === "append",
+                )
+                .map((item: any) => item.v)
+                .join("\n"),
+            );
+          }
+          break;
+      }
+    });
+    if (!isSendToNodeExposed) {
+      await page.evaluate(() => {
+        const originalFetch = window.fetch;
+
+        window.fetch = async (...args) => {
+          const response = await originalFetch(...args);
+
+          const url = args[0];
+
+          if (typeof url === "string" && url.includes("/conversation")) {
+            const cloned = response.clone() as any;
+
+            const reader = cloned.body.getReader();
+            const decoder = new TextDecoder();
+
+            (async () => {
+              window.sendToNode({
+                type: "start",
+                data: "[START]",
+              });
+              while (true) {
+                const { done, value } = await reader.read();
+
+                if (done) break;
+                const sse = decoder.decode(value);
+                const lines = sse.split("\n");
+
+                for (const line of lines) {
+                  if (line.startsWith("data:")) {
+                    const jsonText = line.slice(5).trim();
+
+                    try {
+                      const obj = JSON.parse(jsonText);
+                      window.sendToNode(obj);
+                    } catch (err) {
+                      window.sendToNode({
+                        type: "other",
+                        data: jsonText,
+                      });
+                      // console.error("json parse error", err);
+                    }
+                  }
+                }
+              }
+              window.sendToNode({
+                type: "done",
+                data: "[DONE]",
+              });
+            })();
+          }
+
+          return response;
+        };
+      });
+      await page.evaluate(() => {
+        window.isSendToNodeExposed = true;
+      });
+    }
+    const waitForSelector = async (selector: string, hasContent?: boolean) => {
+      return await page.evaluate(
+        async function name(selector, hasContent) {
+          const el: any = document.querySelector(selector) as HTMLDivElement;
+          if (!el || (hasContent && !el.innerText.trim())) {
+            return await new Promise((r) => {
+              requestAnimationFrame(async () => {
+                await name(selector, hasContent);
+                r(true);
+              });
+            });
+          }
+        },
+        selector,
+        hasContent,
+      );
+    };
+    await waitForSelector("#prompt-textarea");
+    await page.click("#prompt-textarea", {
+      clickCount: 3,
+    });
+
+    await page.keyboard.press("Backspace");
+
+    await page.type("#prompt-textarea", "js去重复");
+    await page.click("#composer-submit-button");
+  })
+  .catch(console.error)
+  .finally(async () => {
+    // await _browser.close();
+  });
+
+```
+
 ## puppeteer 反爬
 
 启动代理浏览器
