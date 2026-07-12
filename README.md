@@ -2,6 +2,27 @@
 
 个人爱好，知识积累，点滴成石
 
+## ffmpeg 视频去水印
+
+```ts
+import { spawn } from "child_process";
+spawn(
+  `ffmpeg -y \
+-i 昆仑山脉航拍视频生成.mp4 \
+-vf "delogo=x=30:y=30:w=260:h=160,delogo=x=1019:y=459:w=260:h=260" \
+-c:v h264_videotoolbox \
+-b:v 8M \
+-c:a copy \
+output.mp4
+`,
+  {
+    stdio: "inherit",
+    shell: true,
+  },
+);
+
+```
+
 ## puppeteer 抓sse数据包
 
 ### 启动浏览器调试
