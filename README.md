@@ -2,6 +2,43 @@
 
 个人爱好，知识积累，点滴成石
 
+## go debuger by vscode launch.json
+
+```json
+{
+  "configurations": [
+    {
+      "name": "dock",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/services/dock"
+    },
+    {
+      "name": "salttrader",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/services/salttrader"
+    },
+    {
+      "name": "treasurehold",
+      "type": "go",
+      "request": "launch",
+      "mode": "debug",
+      "program": "${workspaceFolder}/services/treasurehold"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "lqt launch all",
+      "configurations": ["dock", "salttrader", "treasurehold"]
+    }
+  ]
+}
+
+```
+
 ## ffmpeg 视频去水印
 
 ```ts
