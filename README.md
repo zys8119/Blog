@@ -32,15 +32,22 @@ export default {
         captchaId,
         captchaCode,
         password,
-      } = ctx.request.body;
+      } = JSON.parse(ctx.request.body);
       const encryptedAccount = SM4.encrypt(
-        `${account}/${password}/${tenantId}/${clientType}/${deviceId}/${captchaId}/${captchaCode}`,
+        // `${account}/${password}/${tenantId || ""}/${clientType}/${deviceId || ""}/${captchaId}/${captchaCode}`,
+        JSON.stringify({
+          account,
+          password,
+          captchaCode,
+          captchaId,
+        }),
         sm4Key,
         {
-          mode: SM4.constants.CBC,
-          iv: sm4Key, // 需配置对应初始向量
+          // mode: SM4.constants.ECB,
+          // iv: sm4Key, // 需配置对应初始向量
           inputEncoding: "utf8",
           outputEncoding: "hex",
+          // padding: "pkcs#7",
         },
       );
       console.log("SM4加密后的账户信息:", encryptedAccount);
