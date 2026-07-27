@@ -2,6 +2,60 @@
 
 个人爱好，知识积累，点滴成石
 
+## yonglai sm4加密
+
+```ts
+import { SM4 } from "gm-crypto";
+/**
+ * A set of functions called "actions" for `test`
+ */
+
+export default {
+  exampleAction: async (ctx: any, next: any) => {
+    try {
+      // 导入SM4加密工具（假设已安装gm-crypto库）
+      // 从请求中获取账户信息
+
+      // 配置SM4加密密钥（需与业务实际密钥一致，建议通过环境变量管理）
+      const sm4Key = "yonglaitech20265"
+        .split("")
+        .map((char) =>
+          Number(char.charCodeAt(0).toString().padStart(2, "0")).toString(16),
+        )
+        .join("");
+      // 使用SM4 CBC模式加密账户信息，输出base64编码的密文
+      const {
+        account,
+        tenantId,
+        clientType,
+        deviceId,
+        captchaId,
+        captchaCode,
+        password,
+      } = ctx.request.body;
+      const encryptedAccount = SM4.encrypt(
+        `${account}/${password}/${tenantId}/${clientType}/${deviceId}/${captchaId}/${captchaCode}`,
+        sm4Key,
+        {
+          mode: SM4.constants.CBC,
+          iv: sm4Key, // 需配置对应初始向量
+          inputEncoding: "utf8",
+          outputEncoding: "hex",
+        },
+      );
+      console.log("SM4加密后的账户信息:", encryptedAccount);
+      ctx.body = {
+        obj: encryptedAccount,
+      };
+    } catch (err) {
+      console.log(err);
+      ctx.body = err;
+    }
+  },
+};
+
+```
+
 ## go debuger by vscode launch.json
 
 ```json
