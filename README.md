@@ -2,6 +2,109 @@
 
 个人爱好，知识积累，点滴成石
 
+## vite库模式混淆打包
+
+```ts
+import { defineConfig } from "vite";
+import dts from "vite-plugin-dts";
+import obfuscator from "vite-plugin-javascript-obfuscator";
+
+function stripPresetBundledTypes(content: string) {
+  const extraDeclarationsStart = content.search(/\nexport\s*\{\s*\}\s*\n/);
+
+  if (extraDeclarationsStart === -1) {
+    return content;
+  }
+
+  return `${content.slice(0, extraDeclarationsStart).trimEnd()}\n`;
+}
+
+export default defineConfig({
+  plugins: [
+    dts({
+      outDirs: "dist/types",
+      exclude: ["vite.config.ts"],
+      bundleTypes: true,
+      insertTypesEntry: true,
+      beforeWriteFile: (filePath, content) => {
+        if (filePath.includes("preset.d.ts")) {
+          return {
+            content: stripPresetBundledTypes(content),
+            filePath,
+          };
+        }
+      },
+    }),
+    obfuscator({
+      options: {
+        controlFlowFlattening: true,
+        stringArrayThreshold: 1,
+        unicodeEscapeSequence: true,
+        stringArrayEncoding: ["none", "base64", "rc4"],
+        forceTransformStrings: ["."],
+        deadCodeInjection: true,
+        deadCodeInjectionThreshold: 1,
+        numbersToExpressions: true,
+        renameGlobals: true,
+        splitStrings: true,
+        stringArray: true,
+        // disableConsoleOutput: true,
+      },
+    }),
+  ],
+  build: {
+    watch: {},
+    lib: {
+      entry: ["src/preset.ts", "src/index.ts"],
+      formats: ["es", "cjs"],
+      name: "wpRequest",
+    },
+    // rollupOptions: {
+    //   // external: ["wp-utils"],
+    // },
+    rollupOptions: {
+      output: {
+        exports: "named",
+      },
+    },
+  },
+});
+
+```
+
+## 快速obf混淆
+
+```ts
+import obfuscate from "javascript-obfuscator";
+import { copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
+import path from "node:path";
+import glob from "fast-glob";
+(async () => {
+  const srcRoot = path.resolve("src");
+  const distRoot = path.resolve("dist");
+  const files = await glob(["src/**/*"], { onlyFiles: true, dot: true });
+  for (const file of files) {
+    const absFile = path.resolve(file);
+    const rel = path.relative(srcRoot, absFile);
+    const outFile = path.join(distRoot, rel);
+    await mkdir(path.dirname(outFile), { recursive: true });
+
+    if (/\.(js|cjs)$/.test(file)) {
+      const code = await readFile(absFile, "utf-8");
+      const res = obfuscate.obfuscate(code) as any;
+      const obfuscated =
+        typeof res === "string"
+          ? res
+          : (res?.getObfuscatedCode?.() as string | undefined) ?? String(res);
+      await writeFile(outFile, obfuscated, "utf-8");
+    } else {
+      await copyFile(absFile, outFile);
+    }
+  }
+})();
+
+```
+
 ## yonglai sm4加密
 
 ```ts
