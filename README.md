@@ -30,10 +30,8 @@ tmp_dir = "tmp"
 
 [build]
   bin = "./tmp/main"
-  cmd = "dlv debug . --headless --listen=127.0.0.1:2345 --api-version=2 --accept-multiclient"
-  env = [
-    "SERVER_ADDRESS=':8898'",
-  ]
+  cmd = "SERVER_ADDRESS=':8888' dlv debug . --headless --listen=127.0.0.1:2345 --api-version=2 --accept-multiclient"
+  
   delay = 1000
   send_interrupt = true
   kill_delay = "500ms"
