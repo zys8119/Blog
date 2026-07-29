@@ -2,6 +2,86 @@
 
 个人爱好，知识积累，点滴成石
 
+### go debug 热更新
+
+```sh
+ls .air.toml | entr -r zsh -c 'kill -9 $(lsof -ti:8888) && kill -9 $(lsof -ti:2345) && air'   
+```
+
+```json
+{
+  "name": "Go Hot Debug",
+  "type": "go",
+  "request": "attach",
+  "mode": "remote",
+  "remotePath": "${workspaceFolder}",
+  "port": 2345,
+  "host": "127.0.0.1"
+}
+```
+
+```toml
+#:schema https://json.schemastore.org/any.json
+
+env_files = []
+root = "."
+testdata_dir = "testdata"
+tmp_dir = "tmp"
+
+[build]
+  bin = "./tmp/main"
+  cmd = "dlv debug . --headless --listen=127.0.0.1:2345 --api-version=2 --accept-multiclient"
+  env = [
+    "SERVER_ADDRESS=':8898'",
+  ]
+  delay = 1000
+  send_interrupt = true
+  kill_delay = "500ms"
+
+  exclude_dir = [
+    "assets",
+    "tmp",
+    "vendor",
+    "testdata"
+  ]
+
+  include_ext = [
+    "go",
+    "tpl",
+    "tmpl",
+    "html"
+  ]
+
+  stop_on_error = true
+
+[color]
+  app = ""
+  build = "yellow"
+  main = "magenta"
+  mode = ""
+  runner = "green"
+  watcher = "cyan"
+
+[log]
+  main_only = false
+  silent = false
+  time = false
+
+[misc]
+  clean_on_exit = false
+
+[proxy]
+  app_port = 0
+  app_start_timeout = 0
+  enabled = false
+  proxy_port = 0
+
+[screen]
+  clear_on_rebuild = false
+  keep_scroll = true
+
+```
+
 ## vite库模式混淆打包
 
 ```ts
