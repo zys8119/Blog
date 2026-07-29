@@ -5,7 +5,7 @@
 ### go debug 热更新
 
 ```sh
-ls **/*.go | entr -r zsh -c 'rm __debug_** && lsof -ti:8888 | xargs -r kill -9 && lsof -ti:2345 | xargs -r kill -9 &&  air'
+ls **/*.go | entr -r zsh -c ' noglob rm -f __debug_** && lsof -ti:8888 | xargs -r kill -9 && lsof -ti:2345 | xargs -r kill -9 &&  air'
 ```
 
 ```json
