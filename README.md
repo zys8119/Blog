@@ -5,7 +5,7 @@
 ### go debug 热更新
 
 ```sh
-ls .air.toml | entr -r zsh -c 'lsof -ti:8888 | xargs -r kill -9; lsof -ti:2345 | xargs -r kill -9; air' 
+ls **/* | entr -r zsh -c 'lsof -ti:8888 | xargs -r kill -9; lsof -ti:2345 | xargs -r kill -9; air' 
 ```
 
 ```json
