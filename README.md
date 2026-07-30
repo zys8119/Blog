@@ -2,6 +2,17 @@
 
 个人爱好，知识积累，点滴成石
 
+### electron 静态资源提取
+
+资源目录：`appRootDir/resources`
+
+```sh
+# 提取代码
+asar extract app.asar output
+# 合成app.asar包
+asar pack output app.asar
+```
+
 ### go debug 热更新
 
 ```sh
