@@ -5,55 +5,110 @@
 ### go gin 基础框架实现
 
 ```go
+// 声明当前包名为svg
 package svg
 
 import (
+	// 标准库日志包，用于打印日志信息
+	"log"
+	// 标准库系统操作包，用于操作标准输出等系统资源
+	"os"
+	// 标准库时间包，用于处理时间相关逻辑
+	"time"
+
+	// 标准库数据库/sql包，提供通用数据库操作接口
 	"database/sql"
 
+	// Gin Web框架，用于构建HTTP服务
 	"github.com/gin-gonic/gin"
+	// MySQL数据库驱动，注册后供database/sql包使用（仅初始化不直接调用）
 	_ "github.com/go-sql-driver/mysql"
+	// GORM的MySQL数据库驱动，用于连接GORM与MySQL
 	gormmysql "gorm.io/driver/mysql"
+	// GORM核心包，提供ORM操作能力
 	"gorm.io/gorm"
+	// GORM日志模块，用于配置数据库操作日志
+	gormlogger "gorm.io/gorm/logger"
 )
 
+// Test 数据模型，对应数据库中的tests表（GORM默认会将结构体名转为复数表名）
 type Test struct {
+	// ID字段，为主键，自增
 	ID   uint   `gorm:"primaryKey"`
+	// Name字段，数据库列名为name，默认值为"121"；同时支持JSON序列化、参数绑定、校验、表单和查询参数绑定
 	Name string `gorm:"column:name;default:121" json:"name" binding:"required" validate:"required" form:"name" query:"name"`
 }
 
+// AllModels 返回所有需要数据库迁移的模型列表，供AutoMigrate使用
 func AllModels() []any {
 	return []any{
 		&Test{},
 	}
 }
+
+// New 初始化并启动整个服务，包括数据库连接、GORM配置、Gin服务启动
 func New() {
+	// 数据库连接字符串（DNS），包含用户名、密码、数据库地址、端口、数据库名及连接参数
 	dns := "root:rootroot@tcp(127.0.0.1:3306)/smy?charset=utf8mb4&parseTime=True&loc=Local"
+	// 使用database/sql包创建MySQL连接池
 	dialector, err := sql.Open("mysql", dns)
 	if err != nil {
+		// 连接失败直接抛出 panic 终止程序
 		panic(err)
 	}
+	// 函数结束前关闭数据库连接（这段代码实际未生效，因为后续gorm会接管连接，此处存在代码冗余）
 	defer dialector.Close()
+	// 使用GORM的MySQL驱动创建连接实例
 	dialector2 := gormmysql.Open(dns)
-	db, err := gorm.Open(dialector2, &gorm.Config{})
+	// 初始化GORM实例，配置日志参数
+	db, err := gorm.Open(dialector2, &gorm.Config{
+		// 配置GORM日志记录器
+		Logger: gormlogger.New(
+			// 创建标准输出日志实例，带时间戳
+			log.New(os.Stdout, "\r\n", log.LstdFlags),
+			// 日志配置项
+			gormlogger.Config{
+				SlowThreshold:             time.Second, // 慢查询阈值，超过1秒的查询会被记录为慢查询
+				LogLevel:                  gormlogger.Info, // 日志级别为Info，记录所有Info及以上级别的日志
+				IgnoreRecordNotFoundError: false, // 不忽略记录未找到的错误，会打印相关日志
+				Colorful:                  false, // 日志不输出彩色字符
+			},
+		),
+	})
 	if err != nil {
+		// GORM初始化失败直接panic
 		panic(err)
 	}
+	// 自动迁移数据库，会自动创建/更新模型对应的数据库表结构
 	db.AutoMigrate(AllModels()...)
+	// 创建Gin引擎实例
 	r := gin.New()
+	// 注册Recovery中间件，捕获panic避免程序崩溃
+	r.Use(gin.Recovery())
+	// 注册Logger中间件，记录HTTP请求日志
+	r.Use(gin.Logger())
+	// 注册GET路由/test，处理函数
 	r.GET("/test", func(c *gin.Context) {
+		// 创建一条空的Test记录插入数据库
 		db.Create(&Test{})
+		// 定义切片用于存储查询结果
 		var tests []Test
+		// 查询ID为1或2的所有Test记录
 		err := db.Model(&Test{}).Where("id IN ?", []uint{1, 2}).Find(&tests).Error
 		if err != nil {
+			// 查询失败panic
 			panic(err)
 		}
+		// 返回JSON响应，包含消息和查询到的数据
 		c.JSON(200, gin.H{
-			"message": "hello worldasdasda撒打算大",
+			"message": "sdasd",
 			"data":    tests,
 		})
 	})
+	// 启动Gin服务，监听8080端口
 	r.Run(":8080")
 }
+
 
 ```
 
