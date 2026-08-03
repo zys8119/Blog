@@ -2,6 +2,61 @@
 
 个人爱好，知识积累，点滴成石
 
+### go gin 基础框架实现
+
+```go
+package svg
+
+import (
+	"database/sql"
+
+	"github.com/gin-gonic/gin"
+	_ "github.com/go-sql-driver/mysql"
+	gormmysql "gorm.io/driver/mysql"
+	"gorm.io/gorm"
+)
+
+type Test struct {
+	ID   uint   `gorm:"primaryKey"`
+	Name string `gorm:"column:name;default:121" json:"name" binding:"required" validate:"required" form:"name" query:"name"`
+}
+
+func AllModels() []any {
+	return []any{
+		&Test{},
+	}
+}
+func New() {
+	dns := "root:rootroot@tcp(127.0.0.1:3306)/smy?charset=utf8mb4&parseTime=True&loc=Local"
+	dialector, err := sql.Open("mysql", dns)
+	if err != nil {
+		panic(err)
+	}
+	defer dialector.Close()
+	dialector2 := gormmysql.Open(dns)
+	db, err := gorm.Open(dialector2, &gorm.Config{})
+	if err != nil {
+		panic(err)
+	}
+	db.AutoMigrate(AllModels()...)
+	r := gin.New()
+	r.GET("/test", func(c *gin.Context) {
+		db.Create(&Test{})
+		var tests []Test
+		err := db.Model(&Test{}).Where("id IN ?", []uint{1, 2}).Find(&tests).Error
+		if err != nil {
+			panic(err)
+		}
+		c.JSON(200, gin.H{
+			"message": "hello worldasdasda撒打算大",
+			"data":    tests,
+		})
+	})
+	r.Run(":8080")
+}
+
+```
+
 ### electron 静态资源提取
 
 资源目录：`appRootDir/resources`
