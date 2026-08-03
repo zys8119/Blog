@@ -19,6 +19,8 @@ asar pack output app.asar
 ls **/*.go | entr -r zsh -c ' noglob rm -f __debug_** && lsof -ti:8888 | xargs -r kill -9 && lsof -ti:2345 | xargs -r kill -9 &&  air'
 ```
 
+.air.toml
+
 ```json
 {
   "name": "Go Hot Debug",
