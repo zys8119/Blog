@@ -2,6 +2,18 @@
 
 个人爱好，知识积累，点滴成石
 
+## go 打包部署一条命令
+
+```sh
+# 不备份
+APP=/opt/app/bin/server/golang/smy/smy && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o smy . && ssh yonglai "rm -f $APP" && scp smy root@yonglai:$APP && ssh yonglai "supervisorctl restart smy"
+
+# 备份
+APP=/opt/app/bin/server/golang/smy/smy && CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o smy . && scp smy root@yonglai:/tmp/smy && ssh root@yonglai "cp $APP ${APP}.\$(date +%Y%m%d%H%M%S).bak && install -m 755 /tmp/smy $APP && supervisorctl restart smy"
+```
+
+
+
 ### go gin 基础框架实现
 
 ```go
