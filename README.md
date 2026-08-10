@@ -2,6 +2,43 @@
 
 个人爱好，知识积累，点滴成石
 
+## 微信小程序access_token
+
+```ts
+import axios from "axios";
+import { readJsonSync, writeJsonSync, existsSync } from "fs-extra";
+(async () => {
+  const tokenPath = "./token.json";
+  if (!existsSync(tokenPath)) {
+	writeJsonSync(tokenPath, {});
+  }
+  let token = readJsonSync(tokenPath);
+  if (!token.access_token) {
+	token = {};
+  }
+  if (!token.expires_in) {
+	token = {};
+  }
+  if (new Date().getTime() > token.expires_in) {
+	token = {};
+  }
+  if (!token.access_token) {
+	let res = await axios({
+	  url: "https://api.weixin.qq.com/cgi-bin/token",
+	  method: "get",
+	  params: {
+		appid: "",
+		secret: "",
+		grant_type: "client_credential",
+	  },
+	});
+	token = res.data;
+	token.expires_in = new Date().getTime() + token.expires_in;
+	writeJsonSync(tokenPath, token);
+  }
+})()
+```
+
 ## llama.ccp 运行gguf
 
 对话
