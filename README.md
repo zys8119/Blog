@@ -2,6 +2,27 @@
 
 个人爱好，知识积累，点滴成石
 
+## llama.ccp 运行gguf
+
+对话
+
+```sh
+llama-cli -m ~/Desktop/MiniCPM5-1B-Q8_0.gguf -ngl 999 -p "你好"
+```
+
+服务
+
+```sh
+llama-server \
+-m ~/Desktop/MiniCPM5-1B-Q8_0.gguf \ 
+-ngl 999 \
+-c 32768 \
+-n 4096 \
+--host 127.0.0.1 \
+--port 11434 \
+--jinja
+```
+
 ## blog 下载工具命令
 
 a.js
