@@ -668,8 +668,8 @@ if [[ -n "$SINGLE" ]]; then
     G_MAIN="${MODEL_MAIN[$IDX]}"
     G_MMPROJ="${MODEL_MMPROJ[$IDX]}"
     G_DRAFTER="${MODEL_DRAFTER[$IDX]}"
-    G_SPEC_TYPE="${MODEL_SPEC_TYPE[$IDX]}"
-    G_VERDICT="${MODEL_VERDICT[$IDX]}"
+    G_SPEC_TYPE="${MODEL_SPEC_TYPE[$IDX]:-}"
+    G_VERDICT="${MODEL_VERDICT[$IDX]:-cpu}"
 
     main_bytes="$(stat -f%z "$G_MAIN" 2>/dev/null || echo 0)"
     mm_bytes=0
@@ -738,7 +738,9 @@ if [[ -n "$SINGLE" ]]; then
         SRV_ARGS+=("-fa" "on")
     fi
 
+    N_MAX=0
     if [[ -n "$G_DRAFTER" && "$HAS_SPEC" -eq 1 && "$USE_SPEC" -eq 1 ]]; then
+        [[ -n "$G_SPEC_TYPE" ]] || G_SPEC_TYPE="draft-dflash"
         SRV_ARGS+=("--spec-type" "$G_SPEC_TYPE" "-md" "$G_DRAFTER")
 
         if [[ "$G_SPEC_TYPE" == "draft-dspark" ]]; then
@@ -868,6 +870,7 @@ say ""
 
 # exec 保证 Ctrl+C / 信号直接作用于 llama-server。
 exec "$EXE" "${SRV_ARGS[@]}"
+
 
 ```
 
