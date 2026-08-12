@@ -30,6 +30,8 @@ spec-draft-ngl = all
 
 llama-oneclick.sh
 
+`chmod +x llama-oneclick.sh`
+
 ```sh
 #!/bin/bash
 # ============================================================================
