@@ -2,6 +2,874 @@
 
 个人爱好，知识积累，点滴成石
 
+## 零度 llama 一键启动脚本
+
+presets.ini
+
+```ini
+# llama.cpp 模型预设
+# [*] 是全局默认；命令行参数优先级高于这里，所以 ctx-size 会被启动脚本覆盖
+[*]
+cache-type-k = q8_0
+cache-type-v = q8_0
+
+# ---------------------------------------------------------------
+# 单个模型的配置。段名要跟 WebUI 下拉框里显示的模型名一致，
+# 如果不生效，先看启动日志里 llama.cpp 是怎么命名这个模型的，再改这里。
+# ---------------------------------------------------------------
+[Muse-Glimmer-30B]
+ctx-size = 32768
+flash-attn = on
+mmproj = models/Muse-Glimmer-30B/mmproj-kquant.gguf
+spec-type = draft-dflash
+spec-draft-model = models/Muse-Glimmer-30B/dflash-kquant.gguf
+spec-draft-n-max = 15
+spec-draft-ngl = all
+
+```
+
+llama-oneclick.sh
+
+```sh
+#!/bin/bash
+# ============================================================================
+# llama.cpp 一键启动器 (macOS)
+# 自动检测 Apple Silicon / GPU / 内存 → 计算参数 → 启动 llama-server
+# 支持单模型 / router 多模型 / DFlash / EAGLE3 / presets.ini
+#
+# 用法：
+#   ./llama-oneclick.sh
+#   ./llama-oneclick.sh -Single glimmer -Spec on
+#   ./llama-oneclick.sh -Single glimmer -Spec off
+#   ./llama-oneclick.sh -NoMenu
+#   ./llama-oneclick.sh -Ctx 65536
+#   ./llama-oneclick.sh -Port 8080
+# ============================================================================
+
+set -u
+set -o pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR" || exit 1
+
+PORT=8080
+SINGLE=""
+SPEC="ask"
+NO_SPEC=0
+NO_MENU=0
+CTX_OVERRIDE=0
+
+MODELS_DIR="$SCRIPT_DIR/models"
+PRESETS="$SCRIPT_DIR/presets.ini"
+
+say() {
+    printf '%s\n' "$*"
+}
+
+die() {
+    say ""
+    say "  $*" >&2
+    exit 1
+}
+
+usage() {
+    cat <<EOF
+用法：
+  $0
+  $0 -Single <模型关键词> [-Spec on|off]
+  $0 -NoMenu
+  $0 -Ctx <上下文token数>
+  $0 -Port <端口>
+
+参数：
+  -Single <keyword>   只启动匹配的模型
+  -Spec on|off|ask    投机解码：开 / 关 / 启动时询问
+  -NoSpec             等同于 -Spec off
+  -NoMenu             跳过启动菜单
+  -Ctx <n>             手动指定上下文长度
+  -Port <n>            HTTP 服务端口，默认 8080
+  -h, --help          显示帮助
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        -Single|--single)
+            [[ $# -ge 2 ]] || die "$1 缺少参数"
+            SINGLE="$2"
+            shift 2
+            ;;
+        -Spec|--spec)
+            [[ $# -ge 2 ]] || die "$1 缺少参数"
+            case "$2" in
+                on|off|ask) SPEC="$2" ;;
+                *) die "-Spec 只能是 on / off / ask" ;;
+            esac
+            shift 2
+            ;;
+        -NoSpec|--no-spec)
+            NO_SPEC=1
+            shift
+            ;;
+        -NoMenu|--no-menu)
+            NO_MENU=1
+            shift
+            ;;
+        -Ctx|--ctx)
+            [[ $# -ge 2 ]] || die "$1 缺少参数"
+            [[ "$2" =~ ^[0-9]+$ ]] || die "-Ctx 必须是数字"
+            CTX_OVERRIDE="$2"
+            shift 2
+            ;;
+        -Port|--port)
+            [[ $# -ge 2 ]] || die "$1 缺少参数"
+            [[ "$2" =~ ^[0-9]+$ ]] || die "-Port 必须是数字"
+            PORT="$2"
+            shift 2
+            ;;
+        -h|--help)
+            usage
+            exit 0
+            ;;
+        *)
+            die "未知参数：$1"
+            ;;
+    esac
+done
+
+if [[ "$NO_SPEC" -eq 1 ]]; then
+    SPEC="off"
+fi
+
+# -Single 通常用于录制/脚本场景，无人交互时默认开启投机解码
+if [[ -n "$SINGLE" && "$SPEC" == "ask" ]]; then
+    SPEC="on"
+fi
+
+printf '\033c'
+say ""
+say "  llama.cpp 一键启动器"
+say "  ---------------------------------------------"
+
+# ============================================================================
+# 1. 硬件检测
+# ============================================================================
+
+GPU_NAME="无独立显卡"
+VRAM_GB=0
+VENDOR="cpu"
+
+ARCH="$(uname -m)"
+
+# Apple Silicon：macOS 使用统一内存，无法像 NVIDIA VRAM 那样严格分离。
+# llama.cpp Metal 会共享系统统一内存，因此这里把物理内存作为 GPU 可用内存预算。
+if [[ "$ARCH" == "arm64" ]]; then
+    GPU_NAME="$(system_profiler SPDisplaysDataType 2>/dev/null |
+        awk -F': ' '/Chipset Model:/ {print $2; exit}')"
+
+    [[ -n "$GPU_NAME" ]] || GPU_NAME="Apple GPU"
+
+    VENDOR="metal"
+
+    MEM_BYTES="$(sysctl -n hw.memsize 2>/dev/null || echo 0)"
+    if [[ "$MEM_BYTES" =~ ^[0-9]+$ && "$MEM_BYTES" -gt 0 ]]; then
+        VRAM_GB="$(awk -v b="$MEM_BYTES" 'BEGIN { printf "%.1f", b/1024/1024/1024 }')"
+    fi
+else
+    # Intel Mac：优先读取显卡名称。
+    GPU_NAME="$(system_profiler SPDisplaysDataType 2>/dev/null |
+        awk -F': ' '/Chipset Model:/ {print $2; exit}')"
+
+    if [[ -n "$GPU_NAME" ]]; then
+        case "$GPU_NAME" in
+            *AMD*|*Radeon*|*Apple*)
+                VENDOR="metal"
+                ;;
+            *)
+                VENDOR="cpu"
+                ;;
+        esac
+    fi
+fi
+
+RAM_BYTES="$(sysctl -n hw.memsize 2>/dev/null || echo 0)"
+RAM_GB="$(awk -v b="$RAM_BYTES" 'BEGIN {
+    if (b > 0) printf "%.1f", b/1024/1024/1024;
+    else print "0";
+}')"
+
+CORES="$(sysctl -n hw.physicalcpu 2>/dev/null || echo 0)"
+[[ "$CORES" =~ ^[0-9]+$ ]] || CORES=0
+
+if (( CORES < 1 )); then
+    CORES="$(sysctl -n hw.ncpu 2>/dev/null || echo 4)"
+fi
+
+THREADS="$CORES"
+(( THREADS < 4 )) && THREADS=4
+(( THREADS > 16 )) && THREADS=16
+
+say ""
+say "  显卡     : $GPU_NAME"
+if awk -v v="$VRAM_GB" 'BEGIN { exit !(v > 0) }'; then
+    say "  显存/统一内存 : $VRAM_GB GB"
+else
+    say "  显存     : —"
+fi
+say "  内存     : $RAM_GB GB"
+say "  物理核心 : $CORES"
+
+# ============================================================================
+# 2. 查找 llama-server
+# ============================================================================
+
+EXE=""
+
+# 优先搜索脚本目录及常见位置。
+if [[ -x "$SCRIPT_DIR/llama-server" ]]; then
+    EXE="$SCRIPT_DIR/llama-server"
+elif [[ -x "$SCRIPT_DIR/bin/llama-server" ]]; then
+    EXE="$SCRIPT_DIR/bin/llama-server"
+elif command -v llama-server >/dev/null 2>&1; then
+    EXE="$(command -v llama-server)"
+fi
+
+if [[ -z "$EXE" ]]; then
+    say ""
+    say "  未找到 llama-server。" 
+    say "  尝试通过 Homebrew 安装 llama.cpp…" 
+    say ""
+
+    if command -v brew >/dev/null 2>&1; then
+        if brew install llama.cpp; then
+            EXE="$(command -v llama-server || true)"
+        fi
+    else
+        say "  未找到 Homebrew。"
+        say "  请先安装 Homebrew，再执行："
+        say "    brew install llama.cpp"
+    fi
+fi
+
+if [[ -z "$EXE" ]]; then
+    die "安装失败。请手动安装 llama.cpp，确保 llama-server 在 PATH 中。"
+fi
+
+# ============================================================================
+# 3. 探测 llama-server 支持的参数
+# ============================================================================
+
+HELP="$("$EXE" --help 2>&1 || true)"
+
+has_flag() {
+    local flag="$1"
+    grep -Fq -- "$flag" <<< "$HELP"
+}
+
+if [[ -z "$SINGLE" ]] && ! has_flag "--models-dir"; then
+    say ""
+    say "  你的 llama.cpp 版本不支持 router 模式（--models-dir）。"
+    say "  请升级 llama.cpp 后重试。"
+    say ""
+    read -r -p "  按回车退出..."
+    exit 1
+fi
+
+HAS_SPEC=0
+if has_flag "--spec-type"; then
+    HAS_SPEC=1
+fi
+
+# ============================================================================
+# 4. 按内存/显存档位计算参数
+# ============================================================================
+
+# 原 Windows 脚本按 VRAM 分档。
+# Apple Silicon 使用统一内存，因此这里使用统一内存作为预算。
+CTX=4096
+KVQ=1
+MAX_MODELS=1
+TIER="纯 CPU / 低内存模式"
+
+if awk -v v="$VRAM_GB" 'BEGIN { exit !(v >= 32) }'; then
+    CTX=131072
+    MAX_MODELS=2
+    TIER="32G+ 统一内存档"
+elif awk -v v="$VRAM_GB" 'BEGIN { exit !(v >= 24) }'; then
+    CTX=65536
+    MAX_MODELS=1
+    TIER="24G 档"
+elif awk -v v="$VRAM_GB" 'BEGIN { exit !(v >= 16) }'; then
+    CTX=32768
+    MAX_MODELS=1
+    TIER="16G 档"
+elif awk -v v="$VRAM_GB" 'BEGIN { exit !(v >= 11) }'; then
+    CTX=16384
+    MAX_MODELS=1
+    TIER="12G 档"
+elif awk -v v="$VRAM_GB" 'BEGIN { exit !(v >= 7) }'; then
+    CTX=8192
+    MAX_MODELS=1
+    TIER="8G 档"
+elif awk -v v="$VRAM_GB" 'BEGIN { exit !(v >= 4) }'; then
+    CTX=4096
+    MAX_MODELS=1
+    TIER="6G 及以下"
+fi
+
+if awk -v r="$RAM_GB" 'BEGIN { exit !(r < 16) }' && (( CTX > 8192 )); then
+    CTX=8192
+fi
+
+if (( CTX_OVERRIDE > 0 )); then
+    CTX="$CTX_OVERRIDE"
+    say ""
+    say "  已手动指定上下文长度：$CTX tokens"
+fi
+
+say ""
+say "  匹配档位 : $TIER"
+say "  后端     : $VENDOR"
+say "  上下文   : $CTX tokens"
+
+if (( CTX < 65536 )); then
+    say "             （Hermes Agent 要求 ≥64K，接 Agent 框架请加 -Ctx 65536）"
+fi
+
+say "  KV 缓存  : q8_0 压缩（省内存，质量几乎无损）"
+
+# ============================================================================
+# 5. 模型扫描
+# ============================================================================
+
+mkdir -p "$MODELS_DIR"
+
+MODEL_DIRS=()
+MODEL_NAMES=()
+MODEL_MAIN=()
+MODEL_MMPROJ=()
+MODEL_DRAFTER=()
+MODEL_SPEC_TYPE=()
+MODEL_SIZE_GB=()
+MODEL_VERDICT=()
+MODEL_SPEC_OK=()
+
+add_model() {
+    local dir="$1"
+    local main="$2"
+    local mmproj="$3"
+    local drafter="$4"
+    local spec_type="$5"
+
+    local name
+    if [[ "$dir" == "$MODELS_DIR" ]]; then
+        name="$(basename "$main" .gguf)"
+    else
+        name="$(basename "$dir")"
+    fi
+
+    local size_bytes=0
+    [[ -f "$main" ]] && size_bytes=$((size_bytes + $(stat -f%z "$main" 2>/dev/null || echo 0)))
+    [[ -n "$mmproj" && -f "$mmproj" ]] && size_bytes=$((size_bytes + $(stat -f%z "$mmproj" 2>/dev/null || echo 0)))
+    [[ -n "$drafter" && -f "$drafter" ]] && size_bytes=$((size_bytes + $(stat -f%z "$drafter" 2>/dev/null || echo 0)))
+
+    local size_gb
+    size_gb="$(awk -v b="$size_bytes" 'BEGIN { printf "%.1f", b/1024/1024/1024 }')"
+
+    MODEL_DIRS+=("$dir")
+    MODEL_NAMES+=("$name")
+    MODEL_MAIN+=("$main")
+    MODEL_MMPROJ+=("$mmproj")
+    MODEL_DRAFTER+=("$drafter")
+    MODEL_SPEC_TYPE+=("$spec_type")
+    MODEL_SIZE_GB+=("$size_gb")
+}
+
+# 根目录 + 所有子目录。
+DIRS=("$MODELS_DIR")
+while IFS= read -r -d '' d; do
+    DIRS+=("$d")
+done < <(find "$MODELS_DIR" -type d -print0 2>/dev/null)
+
+for d in "${DIRS[@]}"; do
+    files=()
+    while IFS= read -r -d '' f; do
+        files+=("$f")
+    done < <(find "$d" -maxdepth 1 -type f -name "*.gguf" -print0 2>/dev/null)
+
+    (( ${#files[@]} == 0 )) && continue
+
+    mmproj=""
+    drafter=""
+    mains=()
+    shard1=""
+
+    for f in "${files[@]}"; do
+        base="$(basename "$f")"
+
+        if [[ "$base" =~ mmproj ]]; then
+            [[ -z "$mmproj" ]] && mmproj="$f"
+            continue
+        fi
+
+        if [[ "$base" =~ (dflash|dspark|eagle3|draft) ]]; then
+            [[ -z "$drafter" ]] && drafter="$f"
+            continue
+        fi
+
+        if [[ "$base" =~ -[0-9]{5}-of-[0-9]{5}\.gguf$ ]]; then
+            if [[ "$base" =~ -00001-of-[0-9]{5}\.gguf$ ]]; then
+                shard1="$f"
+            fi
+            continue
+        fi
+
+        mains+=("$f")
+    done
+
+    [[ -n "$shard1" ]] && mains+=("$shard1")
+    (( ${#mains[@]} == 0 )) && continue
+
+    main="${mains[0]}"
+    for f in "${mains[@]}"; do
+        a="$(stat -f%z "$f" 2>/dev/null || echo 0)"
+        b="$(stat -f%z "$main" 2>/dev/null || echo 0)"
+        (( a > b )) && main="$f"
+    done
+
+    spec_type=""
+    if [[ -n "$drafter" ]]; then
+        base="$(basename "$drafter")"
+        if [[ "$base" =~ dspark ]]; then
+            spec_type="draft-dspark"
+        elif [[ "$base" =~ eagle3 ]]; then
+            spec_type="draft-eagle3"
+        else
+            spec_type="draft-dflash"
+        fi
+    fi
+
+    add_model "$d" "$main" "$mmproj" "$drafter" "$spec_type"
+done
+
+COUNT="${#MODEL_NAMES[@]}"
+
+say ""
+
+if (( COUNT == 0 )); then
+    say "  models 文件夹是空的。"
+    say "  按你的统一内存，推荐先下载对应量化模型。"
+    say ""
+    say "  目录建议："
+    say "    models/Muse-Glimmer-30B/Muse-Glimmer-30B-UD-Q4_K_XL.gguf"
+    say "    models/Muse-Glimmer-30B/mmproj-kquant.gguf"
+    say "    models/Muse-Glimmer-30B/dflash-kquant.gguf"
+    say ""
+    say "  放好后重新运行本脚本即可。"
+    read -r -p "  按回车退出..."
+    exit 0
+fi
+
+# ============================================================================
+# 5.1 判断模型适配程度
+# ============================================================================
+
+get_verdict() {
+    local idx="$1"
+
+    local main="${MODEL_MAIN[$idx]}"
+    local mmproj="${MODEL_MMPROJ[$idx]}"
+    local drafter="${MODEL_DRAFTER[$idx]}"
+
+    local main_bytes
+    main_bytes="$(stat -f%z "$main" 2>/dev/null || echo 0)"
+
+    local mm_bytes=0
+    local draft_bytes=0
+
+    [[ -n "$mmproj" ]] && mm_bytes="$(stat -f%z "$mmproj" 2>/dev/null || echo 0)"
+    [[ -n "$drafter" ]] && draft_bytes="$(stat -f%z "$drafter" 2>/dev/null || echo 0)"
+
+    local core_gb draft_gb
+    core_gb="$(awk -v b="$((main_bytes + mm_bytes))" 'BEGIN { printf "%.1f", b/1024/1024/1024 }')"
+    draft_gb="$(awk -v b="$draft_bytes" 'BEGIN { printf "%.1f", b/1024/1024/1024 }')"
+
+    if awk -v v="$VRAM_GB" 'BEGIN { exit !(v <= 0) }'; then
+        MODEL_VERDICT[$idx]="cpu"
+        MODEL_SPEC_OK[$idx]=0
+        return
+    fi
+
+    if awk -v v="$VRAM_GB" -v c="$core_gb" -v d="$draft_gb" \
+        'BEGIN { exit !(v >= c+d+1.5) }'; then
+        MODEL_VERDICT[$idx]="full"
+        if [[ -n "$drafter" ]]; then
+            MODEL_SPEC_OK[$idx]=1
+        else
+            MODEL_SPEC_OK[$idx]=0
+        fi
+    elif awk -v v="$VRAM_GB" -v c="$core_gb" \
+        'BEGIN { exit !(v >= c+1.5) }'; then
+        MODEL_VERDICT[$idx]="full"
+        MODEL_SPEC_OK[$idx]=0
+    elif awk -v v="$VRAM_GB" -v c="$core_gb" \
+        'BEGIN { exit !(v >= c*0.55) }'; then
+        MODEL_VERDICT[$idx]="part"
+        MODEL_SPEC_OK[$idx]=0
+    else
+        MODEL_VERDICT[$idx]="over"
+        MODEL_SPEC_OK[$idx]=0
+    fi
+}
+
+for (( i=0; i<COUNT; i++ )); do
+    get_verdict "$i"
+done
+
+say "  发现 $COUNT 个模型："
+
+for (( i=0; i<COUNT; i++ )); do
+    tags=""
+    [[ -n "${MODEL_MMPROJ[$i]}" ]] && tags="多模态"
+    [[ -n "${MODEL_DRAFTER[$i]}" ]] && {
+        [[ -n "$tags" ]] && tags="$tags · "
+        tags="${tags}投机加速"
+    }
+
+    [[ -n "$tags" ]] && tags="  [$tags]"
+
+    case "${MODEL_VERDICT[$i]}" in
+        full)
+            verdict_text="全速"
+            ;;
+        part)
+            verdict_text="部分层跑内存，速度打折"
+            ;;
+        over)
+            verdict_text="显存明显不够，建议换更低量化"
+            ;;
+        *)
+            verdict_text="纯 CPU，会很慢"
+            ;;
+    esac
+
+    say "    · ${MODEL_NAMES[$i]}  (${MODEL_SIZE_GB[$i]} GB)$tags"
+    say "      └ 你的 ${VRAM_GB} GB 显存/统一内存：$verdict_text"
+done
+
+# ============================================================================
+# 5.5 投机解码菜单
+# ============================================================================
+
+SPEC_READY=()
+SPEC_ALL=()
+
+for (( i=0; i<COUNT; i++ )); do
+    [[ -n "${MODEL_DRAFTER[$i]}" ]] && SPEC_ALL+=("$i")
+    [[ -n "${MODEL_DRAFTER[$i]}" && "${MODEL_SPEC_OK[$i]}" == "1" ]] && SPEC_READY+=("$i")
+done
+
+if [[ -z "$SINGLE" && "$NO_MENU" -eq 0 && "$HAS_SPEC" -eq 1 && ${#SPEC_ALL[@]} -gt 0 ]]; then
+    say ""
+    say "  ---------------------------------------------"
+
+    if (( ${#SPEC_READY[@]} > 0 )); then
+        say "  检测到支持投机解码的模型。"
+        say "  加速原理：小模型先猜一整块 token，大模型批量验证。"
+        say "  输出内容和不开时一致，具体加速倍数取决于模型和硬件。"
+    else
+        say "  检测到带草稿模型的模型，但当前内存预算不适合同时加载加速组件。"
+        say "  仍可强行开启，但速度可能变慢。"
+    fi
+
+    say ""
+    say "    [1] 多模型模式          网页里随时热切换模型（不开加速）"
+    say "    [2] 单模型 + 开启加速"
+    say "    [3] 单模型 + 关闭加速"
+    say ""
+
+    read -r -p "  请输入 1 / 2 / 3（直接回车 = 1）" choice
+    [[ -z "$choice" ]] && choice="1"
+
+    if [[ "$choice" == "2" || "$choice" == "3" ]]; then
+        if (( ${#SPEC_READY[@]} > 0 )); then
+            PICK=("${SPEC_READY[@]}")
+        else
+            PICK=("${SPEC_ALL[@]}")
+        fi
+
+        if (( ${#PICK[@]} == 1 )); then
+            SINGLE="${MODEL_NAMES[${PICK[0]}]}"
+        else
+            say ""
+            say "  选择要启动的模型："
+            for (( j=0; j<${#PICK[@]}; j++ )); do
+                idx="${PICK[$j]}"
+                say "    [$((j+1))] ${MODEL_NAMES[$idx]}"
+            done
+
+            say ""
+            read -r -p "  请输入序号（直接回车 = 1）" mi
+            [[ -z "$mi" ]] && mi="1"
+
+            if [[ "$mi" =~ ^[0-9]+$ ]] && (( mi >= 1 && mi <= ${#PICK[@]} )); then
+                SINGLE="${MODEL_NAMES[${PICK[$((mi-1))]}]}"
+            else
+                SINGLE="${MODEL_NAMES[${PICK[0]}]}"
+            fi
+        fi
+
+        if [[ "$choice" == "2" ]]; then
+            SPEC="on"
+        else
+            SPEC="off"
+        fi
+
+        say ""
+        say "  已选择：$SINGLE  投机加速 = $SPEC"
+    else
+        SPEC="off"
+    fi
+fi
+
+# ============================================================================
+# 6/7. 构造 llama-server 参数
+# ============================================================================
+
+SRV_ARGS=()
+
+find_model_index() {
+    local keyword="$1"
+
+    for (( i=0; i<COUNT; i++ )); do
+        if [[ "${MODEL_NAMES[$i]}" == *"$keyword"* ||
+              "$(basename "${MODEL_MAIN[$i]}")" == *"$keyword"* ]]; then
+            echo "$i"
+            return 0
+        fi
+    done
+
+    return 1
+}
+
+if [[ -n "$SINGLE" ]]; then
+    IDX="$(find_model_index "$SINGLE" || true)"
+
+    [[ -n "$IDX" ]] || {
+        say ""
+        say "  没找到匹配「$SINGLE」的模型。"
+        read -r -p "  按回车退出..."
+        exit 1
+    }
+
+    G_NAME="${MODEL_NAMES[$IDX]}"
+    G_MAIN="${MODEL_MAIN[$IDX]}"
+    G_MMPROJ="${MODEL_MMPROJ[$IDX]}"
+    G_DRAFTER="${MODEL_DRAFTER[$IDX]}"
+    G_SPEC_TYPE="${MODEL_SPEC_TYPE[$IDX]}"
+    G_VERDICT="${MODEL_VERDICT[$IDX]}"
+
+    main_bytes="$(stat -f%z "$G_MAIN" 2>/dev/null || echo 0)"
+    mm_bytes=0
+    [[ -n "$G_MMPROJ" ]] && mm_bytes="$(stat -f%z "$G_MMPROJ" 2>/dev/null || echo 0)"
+
+    core_gb="$(awk -v b="$((main_bytes + mm_bytes))" 'BEGIN { printf "%.1f", b/1024/1024/1024 }')"
+    free_gb="$(awk -v v="$VRAM_GB" -v c="$core_gb" 'BEGIN { printf "%.1f", v-c }')"
+
+    say ""
+    say "  单模型模式：$G_NAME"
+    say "  模型权重 : $core_gb GB（主模型 + 视觉编码器）"
+    say "  剩余显存 : $free_gb GB"
+
+    case "$G_VERDICT" in
+        full) say "  预期表现 : 全速" ;;
+        over) say "  预期表现 : 显存明显不够" ;;
+        part) say "  预期表现 : 部分层跑内存，速度打折" ;;
+        *) say "  预期表现 : 纯 CPU，会很慢" ;;
+    esac
+
+    CAN_FULL_OFFLOAD=0
+    [[ "$G_VERDICT" == "full" ]] && CAN_FULL_OFFLOAD=1
+
+    USE_SPEC="${MODEL_SPEC_OK[$IDX]}"
+
+    [[ "$SPEC" == "off" ]] && USE_SPEC=0
+
+    if [[ "$SPEC" == "on" && -n "$G_DRAFTER" ]]; then
+        if [[ "${MODEL_SPEC_OK[$IDX]}" != "1" ]]; then
+            say "  注意：当前内存预算不足，但已按你的要求强制开启加速"
+            say "        如果速度反而变慢，可使用 -Spec off"
+        fi
+        USE_SPEC=1
+    fi
+
+    if [[ "$CAN_FULL_OFFLOAD" -eq 0 && "$VENDOR" != "cpu" ]]; then
+        say "  → 使用 llama.cpp 的自动分层能力，部分层可能跑在内存上"
+    fi
+
+    SRV_ARGS+=(
+        "-m" "$G_MAIN"
+        "--host" "127.0.0.1"
+        "--port" "$PORT"
+        "-c" "$CTX"
+        "-t" "$THREADS"
+        "--alias" "$G_NAME"
+    )
+
+    if [[ "$CAN_FULL_OFFLOAD" -eq 1 ]]; then
+        SRV_ARGS+=("-ngl" "99")
+    fi
+
+    if [[ -n "$G_MMPROJ" ]] && has_flag "--mmproj"; then
+        SRV_ARGS+=("--mmproj" "$G_MMPROJ")
+    fi
+
+    if (( KVQ )) && has_flag "--cache-type-k"; then
+        SRV_ARGS+=("--cache-type-k" "q8_0" "--cache-type-v" "q8_0")
+    fi
+
+    if has_flag "--jinja"; then
+        SRV_ARGS+=("--jinja")
+    fi
+
+    if has_flag "--flash-attn"; then
+        SRV_ARGS+=("-fa" "on")
+    fi
+
+    if [[ -n "$G_DRAFTER" && "$HAS_SPEC" -eq 1 && "$USE_SPEC" -eq 1 ]]; then
+        SRV_ARGS+=("--spec-type" "$G_SPEC_TYPE" "-md" "$G_DRAFTER")
+
+        if [[ "$G_SPEC_TYPE" == "draft-dspark" ]]; then
+            N_MAX=7
+        else
+            N_MAX=15
+        fi
+
+        if has_flag "--spec-draft-n-max"; then
+            SRV_ARGS+=("--spec-draft-n-max" "$N_MAX")
+        fi
+
+        if [[ "$CAN_FULL_OFFLOAD" -eq 1 ]] && has_flag "--spec-draft-ngl"; then
+            SRV_ARGS+=("--spec-draft-ngl" "all")
+        fi
+
+        say "  投机解码 : 已开启（$G_SPEC_TYPE，草稿 $N_MAX token）"
+    elif [[ -n "$G_DRAFTER" && "$SPEC" == "off" ]]; then
+        say "  投机解码 : 已关闭（对比模式）"
+    elif [[ -n "$G_DRAFTER" && "$HAS_SPEC" -eq 0 ]]; then
+        say "  投机解码 : 检测到草稿模型，但当前 llama.cpp 版本不支持，已跳过"
+    elif [[ -n "$G_DRAFTER" && "$USE_SPEC" -eq 0 ]]; then
+        say "  投机解码 : 已跳过——内存不足以同时装下主模型和草稿模型"
+    fi
+
+else
+    # ------------------------------------------------------------------------
+    # router，多模型热切换
+    # ------------------------------------------------------------------------
+
+    SRV_ARGS+=(
+        "--models-dir" "$MODELS_DIR"
+        "--host" "127.0.0.1"
+        "--port" "$PORT"
+        "-c" "$CTX"
+        "-t" "$THREADS"
+    )
+
+    if has_flag "--models-max"; then
+        SRV_ARGS+=("--models-max" "$MAX_MODELS")
+    fi
+
+    if [[ -f "$PRESETS" ]] && has_flag "--models-preset"; then
+        SRV_ARGS+=("--models-preset" "$PRESETS")
+        say "  已加载 presets.ini（参数已固化）"
+    fi
+
+    if (( KVQ )) && has_flag "--cache-type-k"; then
+        SRV_ARGS+=("--cache-type-k" "q8_0" "--cache-type-v" "q8_0")
+    fi
+
+    if has_flag "--jinja"; then
+        SRV_ARGS+=("--jinja")
+    fi
+
+    EXTRA_MB=0
+
+    for (( i=0; i<COUNT; i++ )); do
+        mm="${MODEL_MMPROJ[$i]}"
+        [[ -z "$mm" ]] && continue
+
+        mb="$(stat -f%z "$mm" 2>/dev/null || echo 0)"
+        mb="$(awk -v b="$mb" 'BEGIN { printf "%d", b/1024/1024 }')"
+
+        (( mb > EXTRA_MB )) && EXTRA_MB="$mb"
+    done
+
+    if has_flag "--fit-target"; then
+        if awk -v v="$VRAM_GB" 'BEGIN { exit !(v >= 16) }'; then
+            BASE=2048
+        else
+            BASE=1024
+        fi
+
+        SRV_ARGS+=("--fit-target" "$((BASE + EXTRA_MB))")
+
+        if (( EXTRA_MB > 0 )); then
+            say "  显存余量 : $BASE + $EXTRA_MB MB（已为 mmproj 预留）"
+        fi
+    fi
+
+    if (( ${#SPEC_READY[@]} > 0 )) && [[ "$HAS_SPEC" -eq 1 && "$NO_MENU" -eq 1 ]]; then
+        say ""
+        say "  提示：以下模型可使用投机解码："
+        for idx in "${SPEC_READY[@]}"; do
+            say "        · ${MODEL_NAMES[$idx]}"
+        done
+        say "        去掉 -NoMenu 重新运行，在菜单里选择单模型 + 加速。"
+    fi
+fi
+
+if [[ "$VENDOR" == "cpu" ]] && has_flag "--no-warmup"; then
+    SRV_ARGS+=("--no-warmup")
+fi
+
+# ============================================================================
+# 8. 启动
+# ============================================================================
+
+say ""
+say "  启动命令："
+printf '  %q' "$EXE"
+for arg in "${SRV_ARGS[@]}"; do
+    printf ' %q' "$arg"
+done
+say ""
+say ""
+say "  正在启动… 浏览器会自动打开 http://127.0.0.1:$PORT"
+
+if [[ -z "$SINGLE" ]]; then
+    say "  在网页左上角的下拉框里可以随时切换模型，无需重启。"
+fi
+
+say "  按 Ctrl+C 停止服务。"
+say ""
+
+# 后台等待健康检查。
+(
+    for (( i=0; i<60; i++ )); do
+        sleep 1
+        if curl -fsS --max-time 2 "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
+            open "http://127.0.0.1:$PORT" >/dev/null 2>&1
+            exit 0
+        fi
+    done
+) &
+
+# exec 保证 Ctrl+C / 信号直接作用于 llama-server。
+exec "$EXE" "${SRV_ARGS[@]}"
+
+```
+
+
 ## 微信小程序access_token
 
 ```ts
