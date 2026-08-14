@@ -7531,6 +7531,115 @@ class pdfForCanvasDraw {
 new pdfForCanvasDraw().init();
 ```
 
+# 无纸化会议文件下载脚本
+
+```ts
+import { createHash } from "crypto";
+import axios from "axios";
+import { spawnSync } from "node:child_process";
+import { writeFileSync, mkdirSync, rmSync } from "node:fs";
+import cliProgress from "cli-progress";
+import chalk from "chalk";
+import process from "node:process";
+// Node.js环境下的MD5加密函数
+function md5Encrypt(text: string): string {
+  // 创建MD5哈希实例
+  const hash = createHash("md5");
+  // 更新哈希内容并编码为十六进制字符串
+  return hash.update(text).digest("hex");
+}
+async function removePdfPassword(
+  input: string,
+  output: string,
+  password: string,
+) {
+  await spawnSync("qpdf", [
+    `--password=${password}`,
+    "--decrypt",
+    input,
+    output,
+  ]);
+}
+console.log(process.env.TOKEN);
+// 从环境变量中获取token
+const token = process.env.TOKEN;
+// 从环境变量中获取baseURL
+const baseURL = process.env.BASEURL;
+// 从环境变量中获取outputPath
+const outputPath = process.env.OUTPUTPATH;
+// 从环境变量中获取meetingID
+const meetingID = process.env.MEETINGID;
+(async () => {
+  console.log(chalk.blue("→ 开始获取会议文件"));
+  const res = await axios({
+    baseURL,
+    url: `/extend/api/v1/conference/main/${meetingID}`,
+    method: "get",
+    headers: {
+      authorization: token,
+    },
+  });
+  return res.data.data;
+})()
+  .then((meetingInfo) => {
+    const files: any[] = [].concat(
+      meetingInfo.noticeDocumnets,
+      meetingInfo.scheduleDocumnets,
+    );
+    console.log(chalk.green("✓ 获取会议文件完成\n"));
+    console.log(chalk.blue(`→ 开始下载${files.length}个文件\n`));
+    const bar = new cliProgress.SingleBar({
+      format: "下载 [{bar}] {percentage}% | {value}/{total} 个文件\n",
+      barCompleteChar: "█",
+      barIncompleteChar: "░",
+    });
+    bar.start(files.length, 0);
+    return Promise.allSettled(
+      files.map((item) => {
+        return new Promise((resolve, reject) => {
+          (async () => {
+            process.stdout.write("\x1b[2J\x1b[3J\x1b[H");
+            console.log(chalk.blue(`→ 开始下载${item.name}\n`));
+            const fileUrl = `${baseURL}/galaxy/api/v1/file/pre/download?fileId=${item.documentId}&Authorization=${token}`;
+            const password = md5Encrypt(item.documentId);
+            const res = await axios({
+              url: fileUrl,
+              method: "get",
+              headers: {
+                authorization: token,
+              },
+              responseType: "arraybuffer",
+            });
+            console.log(chalk.green(`✓ 下载[${item.name}] 完成\n`));
+            const currMeetingDir = `${outputPath}/${meetingInfo.title}`;
+            mkdirSync(currMeetingDir, { recursive: true });
+            const output = `${currMeetingDir}/${item.name}-tmp.pdf`;
+            writeFileSync(output, res.data);
+            await removePdfPassword(
+              output,
+              output.replace(/-tmp.pdf$/g, ".pdf"),
+              password,
+            );
+            rmSync(output);
+          })().finally(() => {
+            // process.stdout.write("\x1b[2J\x1b[3J\x1b[H");
+            bar.update(bar.value + 1);
+            resolve(item);
+          });
+        });
+      }),
+    ).finally(() => {
+      console.log(chalk.green("✓ 所有文件下载完成\n"));
+      console.log(chalk.blue(`→ 下载文件目录位置：${outputPath}\n`));
+      bar.stop();
+    });
+  })
+  .catch((err) => {
+    console.log("error", err.message);
+  });
+
+```
+
 # 无纸化pdf批注nodejs渲染
 
 [非canvas 版本,canvas会导致cpu爆满](./serve/pdf-annotation-synthesis.ts)
