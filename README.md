@@ -12,6 +12,8 @@ presets.ini
 [*]
 cache-type-k = q8_0
 cache-type-v = q8_0
+jinja = on
+tools = all
 
 # ---------------------------------------------------------------
 # 单个模型的配置。段名要跟 WebUI 下拉框里显示的模型名一致，
@@ -408,16 +410,15 @@ for d in "${DIRS[@]}"; do
 
     for f in "${files[@]}"; do
         base="$(basename "$f")"
-
         if [[ "$base" =~ mmproj ]]; then
             [[ -z "$mmproj" ]] && mmproj="$f"
             continue
         fi
-
         if [[ "$base" =~ (dflash|dspark|eagle3|draft) ]]; then
             [[ -z "$drafter" ]] && drafter="$f"
             continue
         fi
+            echo "base: ${base}"
 
         if [[ "$base" =~ -[0-9]{5}-of-[0-9]{5}\.gguf$ ]]; then
             if [[ "$base" =~ -00001-of-[0-9]{5}\.gguf$ ]]; then
@@ -429,9 +430,10 @@ for d in "${DIRS[@]}"; do
         mains+=("$f")
     done
 
+    
     [[ -n "$shard1" ]] && mains+=("$shard1")
     (( ${#mains[@]} == 0 )) && continue
-
+    
     main="${mains[0]}"
     for f in "${mains[@]}"; do
         a="$(stat -f%z "$f" 2>/dev/null || echo 0)"
@@ -455,7 +457,7 @@ for d in "${DIRS[@]}"; do
 done
 
 COUNT="${#MODEL_NAMES[@]}"
-
+echo "COUNT: $COUNT"
 say ""
 
 if (( COUNT == 0 )); then
@@ -796,6 +798,10 @@ else
         SRV_ARGS+=("--jinja")
     fi
 
+    if has_flag "--tools"; then
+        SRV_ARGS+=("--tools" "all")
+    fi
+
     EXTRA_MB=0
 
     for (( i=0; i<COUNT; i++ )); do
@@ -862,7 +868,7 @@ say ""
     for (( i=0; i<60; i++ )); do
         sleep 1
         if curl -fsS --max-time 2 "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
-            open "http://127.0.0.1:$PORT" >/dev/null 2>&1
+            # open "http://127.0.0.1:$PORT" >/dev/null 2>&1
             exit 0
         fi
     done
@@ -870,8 +876,6 @@ say ""
 
 # exec 保证 Ctrl+C / 信号直接作用于 llama-server。
 exec "$EXE" "${SRV_ARGS[@]}"
-
-
 ```
 
 
