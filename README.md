@@ -2,6 +2,91 @@
 
 个人爱好，知识积累，点滴成石
 
+## 浪潮数据参数签名处理
+
+```ts
+import { createHash, createHmac } from "crypto";
+import { equal } from "node:assert";
+
+const md5 = (txt: string) => createHash("md5").update(txt).digest("hex");
+const sha256 = (txt: string) => createHash("sha256").update(txt).digest("hex");
+const sha256Hmac = (txt: string, secret: string) =>
+  createHmac("sha256", secret).update(txt).digest("hex");
+// 生成16位随机字符串
+function randomString(): string {
+  const chars =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  let result = "";
+  const length = chars.length;
+  for (let i = 0; i < 16; i++) {
+    result += chars.charAt(Math.floor(Math.random() * length));
+  }
+  return result;
+}
+
+// 处理GET请求参数：按key降序排列后拼接，再进行MD5加密
+function encryptGetParams(params: Record<string, string>): string {
+  // 提取参数键并按降序排序
+  const sortedKeys = Object.keys(params).sort((a, b) => b.localeCompare(a));
+  // 拼接参数字符串
+  const queryString = sortedKeys
+    .map((key) => `${key}=${params[key]}`)
+    .join("&");
+  // 进行MD5加密
+  return md5(queryString);
+}
+
+const appKey = "1a11561d-6e15-4e45-a7ee-a95b68226df6";
+const appSecret =
+  "981b40d5bc2c7e905ff9725f6e77eacb0c1ddb33abd5ff01ea50ebe783a9b961";
+const createRequestData = ({
+  data,
+  params,
+  xTime,
+  xRandom,
+}: {
+  data?: Record<string, string>;
+  params?: Record<string, string>;
+  xTime: string;
+  xRandom: string;
+}) => {
+  const xBody = params
+    ? encryptGetParams(params)
+    : data
+      ? md5(JSON.stringify(data))
+      : null;
+  const signString = `${xBody ? `x-body=${xBody}&` : ""}x-random=${xRandom}&x-time=${xTime}`;
+  const xSign = sha256Hmac(signString, appSecret);
+  return {
+    xBody,
+    appKey,
+    xRandom,
+    xTime,
+    xSign,
+  };
+};
+
+equal(
+  createRequestData({
+    xTime: "1573722631879",
+    xRandom: "da3df059255345b5",
+    data: {
+      tenantId: "a1b2c3",
+      account: "test",
+      token: "123456",
+      optType: "create",
+      role: "普通",
+      status: "正常",
+    },
+  }).xBody,
+  "42bb0f5d56633acaceb0adc981d21a8d",
+  "post test xbody",
+);
+
+console.log("success");
+
+```
+
 ## 零度 llama 一键启动脚本
 
 presets.ini
