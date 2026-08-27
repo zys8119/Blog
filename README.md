@@ -2,6 +2,12 @@
 
 个人爱好，知识积累，点滴成石
 
+## adb 查询UI元素的resource-id
+
+```
+adb shell uiautomator dump /sdcard/window.xml >/dev/null 2>&1 && adb shell cat /sdcard/window.xml | sed 's/></>\n</g' | grep '打卡' | grep -oE 'resource-id="[^"]*"|text="[^"]*"' | sed 's/resource-id="//;s/text="//;s/"$//' | paste - -
+```
+
 ## 浪潮数据参数签名处理
 
 ```ts
