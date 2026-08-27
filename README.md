@@ -19,6 +19,51 @@ RESOURCE_ID='com.alibaba.android.rimet:id/im_ding_kit_item_txt'; TEXT='打卡'; 
 adb shell uiautomator dump /sdcard/window.xml >/dev/null 2>&1 && adb shell cat /sdcard/window.xml | grep -o 'class="[^"]*WebView[^"]*"'
 ```
 
+## adb查看WebView 区域
+
+```
+adb shell uiautomator dump /sdcard/window.xml >/dev/null 2>&1 && adb shell cat /sdcard/window.xml | sed 's/></>\n</g' | grep -i 'webview'
+```
+
+## adb通过ocr识别查找点击元素
+
+```sh
+# 安装ocr识别
+brew install tesseract
+brew install tesseract-lang
+# 截图
+adb exec-out screencap -p > screen.png
+# 图片灰度化
+brew install imagemagick
+magick screen.png -colorspace Gray -threshold 60% ocr.png
+magick screen.png -colorspace Gray -negate -threshold 60% ocr.png
+magick screen.png -colorspace Gray -contrast-stretch 0x20% -threshold 70% ocr.png
+magick screen.png -fuzz 15% -fill white -opaque white -colorspace Gray ocr.png
+
+# ocr文字识别
+tesseract ocr.png stdout -l chi_sim
+# ocr调试信息
+tesseract ocr.png stdout -l chi_sim tsv 2>/dev/null | awk -F'\t' 'NF>=12 && $12!="" {print $12, "x="$7, "y="$8, "w="$9, "h="$10, "conf="$11}'
+# 真实识别：请将调试信息给到AI去处理成以下结果，如识别“下班打卡”
+tesseract ocr.png stdout -l chi_sim tsv 2>/dev/null | awk -F'\t' '$12=="下"{x=$7;y=$8;w=$9;h=$10} $12=="班" && $7>x && $7<x+w+20 && $8>y-20 && $8<y+h+20 {x2=$7+w;y2=$8+h} $12==" 打卡" && $7>x2-20 && $7<x2+30 && $8>y-20 && $8<y+h+20 {print int((x+x2+$9)/2),int((y+y2)/2);exit}'
+```
+
+## adb滑动页面
+
+```
+# 向上滚动
+adb shell input swipe 636 2200 636 800 500
+
+# 向下滚动
+adb shell input swipe 636 800 636 2200 500
+
+# 向左滚动
+adb shell input swipe 1100 1400 300 1400 500
+
+# 向右滚动
+adb shell input swipe 300 1400 1100 1400 500
+```
+
 ## 浪潮数据参数签名处理
 
 ```ts
