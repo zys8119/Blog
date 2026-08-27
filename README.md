@@ -5,7 +5,13 @@
 ## adb 查询UI元素的resource-id
 
 ```
-adb shell uiautomator dump /sdcard/window.xml >/dev/null 2>&1 && adb shell cat /sdcard/window.xml | sed 's/></>\n</g' | grep '打卡' | grep -oE 'resource-id="[^"]*"|text="[^"]*"' | sed 's/resource-id="//;s/text="//;s/"$//' | paste - -
+TEXT='张云山'; adb shell uiautomator dump /sdcard/window.xml >/dev/null 2>&1 && adb shell cat /sdcard/window.xml | sed 's/></>\n</g' | grep "text=\"$TEXT\"" | grep -oE 'resource-id="[^"]*"|text="[^"]*"' | sed 's/resource-id="//;s/text="//;s/"$//' | paste - -
+```
+
+## adb 点击
+
+```
+RESOURCE_ID='com.alibaba.android.rimet:id/im_ding_kit_item_txt'; TEXT='打卡'; adb shell uiautomator dump /sdcard/window.xml >/dev/null 2>&1 && adb shell cat /sdcard/window.xml | sed 's/></>\n</g' | grep "resource-id=\"$RESOURCE_ID\"" | grep "text=\"$TEXT\"" | sed -n 's/.*bounds="\[\([0-9]*\),\([0-9]*\)\]\[\([0-9]*\),\([0-9]*\)\]".*/\1 \2 \3 \4/p' | awk '{system("adb shell input tap " int(($1+$3)/2) " " int(($2+$4)/2))}'
 ```
 
 ## 浪潮数据参数签名处理
