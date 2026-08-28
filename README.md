@@ -352,11 +352,11 @@ async function streamMessage(
 // ============================================================
 async function processingRequestMessages(
   request: AnthropicRequest,
-  lineCallback?: (lineData: any, index: number) => void,
+  lineCallback?: (lineData: any, index: number) => Promise<void>,
 ) {
   return new Promise<void>((resolve, reject) => {
     (async () => {
-      const onResponse = async (response) => {
+      const onResponse = async (response: any) => {
         if (/api\/v0\/chat\/completion/.test(response.url())) {
           const data = (await response.buffer()).toString().split(/\n+/);
           const items = [];
@@ -373,7 +373,7 @@ async function processingRequestMessages(
               try {
                 const dataJson = JSON.parse(line.split(/^data:/)[1].trim());
                 item.data.push(dataJson);
-                lineCallback?.(dataJson, item.data.length - 1);
+                await lineCallback?.(dataJson, item.data.length - 1);
               } catch (error) {
                 item.data.push(line);
               }
@@ -675,6 +675,7 @@ app.post(
 app.listen(PORT, () => {
   console.log(`Anthropic API listening on http://127.0.0.1:${PORT}`);
 });
+
 
 ```
 
