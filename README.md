@@ -2,6 +2,61 @@
 
 个人爱好，知识积累，点滴成石
 
+## puppeteer 远程连接方式调试chrome， 一个实例 
+
+```ts
+import { connect, Page, Browser } from "puppeteer";
+import { execSync } from "child_process";
+import axios from "axios";
+import chalk from "chalk";
+const debugPort = 9222;
+const execFileUrl = "./b.ts";
+const launchChrome = async () => {
+  execSync(`/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome \
+    --remote-debugging-port=${debugPort} \
+    --user-data-dir="./chromeUserData"`);
+};
+const sleep = (ms: number) => {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+};
+const getWebSocketDebuggerUrl = async () => {
+  try {
+    const res = await axios.get(`http://127.0.0.1:${debugPort}/json/version`);
+    return res.data.webSocketDebuggerUrl;
+  } catch (error) {
+    // 启动chrome
+    await launchChrome();
+    await sleep(1000);
+    return await getWebSocketDebuggerUrl();
+  }
+};
+const url = await getWebSocketDebuggerUrl();
+console.log(chalk.green(`Connected to Chrome debugger at ${url}`));
+const browser = await connect({
+  browserWSEndpoint: url,
+  defaultViewport: null,
+});
+const pages = await browser.pages();
+const pageUrl = "https://chat.deepseek.com/";
+let page = (await pages.find(async (page) =>
+  (await page.url()).includes(pageUrl),
+)) as Page;
+if (!page) {
+  page = await browser.newPage();
+  await page.goto(pageUrl);
+}
+console.log(chalk.green(`Navigated to ${pageUrl}`));
+await page.setViewport(null);
+await page.openDevTools();
+declare global {
+  var page: Page;
+  var browser: Browser;
+}
+globalThis.page = page;
+globalThis.browser = browser;
+await import(execFileUrl);
+```
+
 ## adb 查询UI元素的resource-id
 
 ```
