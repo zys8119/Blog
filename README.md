@@ -6,24 +6,39 @@
 
 ```ts
 import { connect, Page, Browser } from "puppeteer";
-import { execSync } from "child_process";
+import { spawn } from "child_process";
 import axios from "axios";
 import chalk from "chalk";
 const debugPort = 9222;
 const execFileUrl = "./b.ts";
-const launchChrome = async () => {
-  execSync(`/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome \
-    --remote-debugging-port=${debugPort} \
-    --user-data-dir="./chromeUserData"`);
-};
+const pageUrl = "https://chat.deepseek.com";
 const sleep = (ms: number) => {
   return new Promise((resolve) => setTimeout(resolve, ms));
+};
+const launchChrome = async () => {
+  try {
+    spawn(
+      `/Applications/Google\\ Chrome.app/Contents/MacOS/Google\\ Chrome \
+        --remote-debugging-port=${debugPort} \
+        --user-data-dir="./chromeUserData"`,
+      [],
+      {
+        detached: true,
+        stdio: "ignore",
+        shell: true,
+      },
+    );
+  } catch (error: any) {
+    await sleep(1000);
+    await launchChrome();
+  }
 };
 const getWebSocketDebuggerUrl = async () => {
   try {
     const res = await axios.get(`http://127.0.0.1:${debugPort}/json/version`);
+    console.log(res.data);
     return res.data.webSocketDebuggerUrl;
-  } catch (error) {
+  } catch (error: any) {
     // 启动chrome
     await launchChrome();
     await sleep(1000);
@@ -37,10 +52,9 @@ const browser = await connect({
   defaultViewport: null,
 });
 const pages = await browser.pages();
-const pageUrl = "https://chat.deepseek.com/";
-let page = (await pages.find(async (page) =>
-  (await page.url()).includes(pageUrl),
-)) as Page;
+const urls = await Promise.all(pages.map(async (page) => await page.url()));
+const urlIndex = urls.findIndex((url) => url.includes(pageUrl));
+let page = urlIndex !== -1 ? pages[urlIndex] : null;
 if (!page) {
   page = await browser.newPage();
   await page.goto(pageUrl);
@@ -55,6 +69,7 @@ declare global {
 globalThis.page = page;
 globalThis.browser = browser;
 await import(execFileUrl);
+
 ```
 
 ## adb 查询UI元素的resource-id
