@@ -2,6 +2,559 @@
 
 个人爱好，知识积累，点滴成石
 
+## express实现 兼容 Claude Code Agent Loop 消息对话
+
+```ts
+import express, { type Request, type Response } from "express";
+import crypto from "node:crypto";
+
+const app = express();
+
+app.use(express.json({ limit: "10mb" }));
+
+const PORT = 3333;
+
+// ============================================================
+// Types
+// ============================================================
+
+type AnthropicTextBlock = {
+  type: "text";
+  text: string;
+};
+
+type AnthropicToolUseBlock = {
+  type: "tool_use";
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+};
+
+type AnthropicToolResultBlock = {
+  type: "tool_result";
+  tool_use_id: string;
+  content?: string | unknown;
+  is_error?: boolean;
+};
+
+type AnthropicContentBlock = AnthropicTextBlock | AnthropicToolUseBlock;
+
+type AnthropicMessage = {
+  role: "user" | "assistant";
+  content:
+    | string
+    | Array<
+        AnthropicTextBlock | AnthropicToolUseBlock | AnthropicToolResultBlock
+      >;
+};
+
+type AnthropicRequest = {
+  model: string;
+
+  messages: AnthropicMessage[];
+
+  system?: string | AnthropicTextBlock[];
+
+  tools?: Array<{
+    name: string;
+    description?: string;
+    input_schema: Record<string, unknown>;
+  }>;
+
+  stream?: boolean;
+
+  max_tokens?: number;
+
+  temperature?: number;
+};
+
+// ============================================================
+// Response Types
+// ============================================================
+
+type AnthropicUsage = {
+  input_tokens: number;
+  output_tokens: number;
+};
+
+type AnthropicResponse = {
+  id: string;
+
+  type: "message";
+
+  role: "assistant";
+
+  model: string;
+
+  content: AnthropicContentBlock[];
+
+  stop_reason: "end_turn" | "tool_use" | "max_tokens" | null;
+
+  stop_sequence: string | null;
+
+  usage: AnthropicUsage;
+};
+
+// ============================================================
+// ID
+// ============================================================
+
+function createId(prefix: string): string {
+  return `${prefix}_${crypto.randomUUID().replaceAll("-", "")}`;
+}
+
+// ============================================================
+// SSE
+// ============================================================
+
+class SSE {
+  constructor(private readonly res: Response) {}
+
+  send<T>(event: string, data: T): void {
+    this.res.write(`event: ${event}\n`);
+    this.res.write(`data: ${JSON.stringify(data)}\n\n`);
+  }
+
+  end(): void {
+    this.res.end();
+  }
+}
+
+// ============================================================
+// SSE Header
+// ============================================================
+
+function initSSE(res: Response): void {
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream; charset=utf-8",
+
+    "Cache-Control": "no-cache, no-transform",
+
+    Connection: "keep-alive",
+
+    "Access-Control-Allow-Origin": "*",
+
+    "X-Accel-Buffering": "no",
+  });
+
+  // Node.js HTTP keep alive
+  res.flushHeaders?.();
+}
+
+// ============================================================
+// 发送普通 JSON
+// ============================================================
+
+function sendMessage(res: Response, message: AnthropicResponse): void {
+  res.status(200).json(message);
+}
+
+// ============================================================
+// SSE Text
+// ============================================================
+
+async function streamText(
+  sse: SSE,
+  index: number,
+  text: string,
+): Promise<void> {
+  // content_block_start
+
+  sse.send("content_block_start", {
+    type: "content_block_start",
+
+    index,
+
+    content_block: {
+      type: "text",
+
+      text: "",
+    },
+  });
+
+  // 模拟流式
+  for (const char of text) {
+    sse.send("content_block_delta", {
+      type: "content_block_delta",
+
+      index,
+
+      delta: {
+        type: "text_delta",
+
+        text: char,
+      },
+    });
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 10));
+  }
+
+  // content_block_stop
+
+  sse.send("content_block_stop", {
+    type: "content_block_stop",
+
+    index,
+  });
+}
+
+// ============================================================
+// SSE Tool Use
+// ============================================================
+
+function streamToolUse(
+  sse: SSE,
+  index: number,
+  block: AnthropicToolUseBlock,
+): void {
+  // content_block_start
+
+  sse.send("content_block_start", {
+    type: "content_block_start",
+
+    index,
+
+    content_block: {
+      type: "tool_use",
+
+      id: block.id,
+
+      name: block.name,
+
+      input: {},
+    },
+  });
+
+  // input_json_delta
+
+  sse.send("content_block_delta", {
+    type: "content_block_delta",
+
+    index,
+
+    delta: {
+      type: "input_json_delta",
+
+      partial_json: JSON.stringify(block.input),
+    },
+  });
+
+  // content_block_stop
+
+  sse.send("content_block_stop", {
+    type: "content_block_stop",
+
+    index,
+  });
+}
+
+// ============================================================
+// SSE Message
+// ============================================================
+
+async function streamMessage(
+  res: Response,
+  message: AnthropicResponse,
+): Promise<void> {
+  const sse = new SSE(res);
+
+  // ----------------------------------------------------------
+  // message_start
+  // ----------------------------------------------------------
+
+  sse.send("message_start", {
+    type: "message_start",
+
+    message: {
+      id: message.id,
+
+      type: "message",
+
+      role: "assistant",
+
+      model: message.model,
+
+      content: [],
+
+      stop_reason: null,
+
+      stop_sequence: null,
+
+      usage: message.usage,
+    },
+  });
+
+  // ----------------------------------------------------------
+  // content blocks
+  // ----------------------------------------------------------
+
+  for (let index = 0; index < message.content.length; index++) {
+    const block = message.content[index];
+
+    switch (block.type) {
+      case "text":
+        await streamText(sse, index, block.text);
+        break;
+
+      case "tool_use":
+        streamToolUse(sse, index, block);
+        break;
+    }
+  }
+
+  // ----------------------------------------------------------
+  // message_delta
+  // ----------------------------------------------------------
+
+  sse.send("message_delta", {
+    type: "message_delta",
+
+    delta: {
+      stop_reason: message.stop_reason,
+
+      stop_sequence: message.stop_sequence,
+    },
+
+    usage: message.usage,
+  });
+
+  // ----------------------------------------------------------
+  // message_stop
+  // ----------------------------------------------------------
+
+  sse.send("message_stop", {
+    type: "message_stop",
+  });
+
+  sse.end();
+}
+
+// ============================================================
+// 这里替换成你自己的 Agent / LLM
+// ============================================================
+
+async function generateResponse(
+  request: AnthropicRequest,
+): Promise<AnthropicResponse> {
+  /**
+   * 这里不调用 callModel。
+   *
+   * 你可以：
+   *
+   * 1. 调自己的 Agent
+   * 2. 调 llama-server
+   * 3. 调 new-api
+   * 4. 调 OpenAI
+   * 5. 调你自己的 Tool Calling 系统
+   */
+
+  console.log("messages:", JSON.stringify(request.messages, null, 2));
+
+  // ----------------------------------------------------------
+  // 示例：
+  //
+  // 如果你的 Agent 决定调用工具
+  // ----------------------------------------------------------
+
+  if (request.messages.length === 1 && request.tools?.length) {
+    return {
+      id: createId("msg"),
+
+      type: "message",
+
+      role: "assistant",
+
+      model: request.model,
+
+      content: [
+        {
+          type: "tool_use",
+
+          id: createId("toolu"),
+
+          name: request.tools[0].name,
+
+          input: {
+            city: "东京",
+          },
+        },
+      ],
+
+      stop_reason: "tool_use",
+
+      stop_sequence: null,
+
+      usage: {
+        input_tokens: 0,
+
+        output_tokens: 0,
+      },
+    };
+  }
+
+  // ----------------------------------------------------------
+  // 如果上一轮存在 tool_result
+  // ----------------------------------------------------------
+
+  const lastMessage = request.messages[request.messages.length - 1];
+
+  if (lastMessage?.role === "user" && Array.isArray(lastMessage.content)) {
+    const toolResult = lastMessage.content.find(
+      (block): block is AnthropicToolResultBlock =>
+        block.type === "tool_result",
+    );
+
+    if (toolResult) {
+      return {
+        id: createId("msg"),
+
+        type: "message",
+
+        role: "assistant",
+
+        model: request.model,
+
+        content: [
+          {
+            type: "text",
+
+            text: `工具返回结果：${
+              typeof toolResult.content === "string"
+                ? toolResult.content
+                : JSON.stringify(toolResult.content)
+            }`,
+          },
+        ],
+
+        stop_reason: "end_turn",
+
+        stop_sequence: null,
+
+        usage: {
+          input_tokens: 0,
+
+          output_tokens: 0,
+        },
+      };
+    }
+  }
+
+  // ----------------------------------------------------------
+  // 普通回答
+  // ----------------------------------------------------------
+
+  return {
+    id: createId("msg"),
+
+    type: "message",
+
+    role: "assistant",
+
+    model: request.model,
+
+    content: [
+      {
+        type: "text",
+
+        text: "你好，这是一个普通的流式响应。",
+      },
+    ],
+
+    stop_reason: "end_turn",
+
+    stop_sequence: null,
+
+    usage: {
+      input_tokens: 0,
+
+      output_tokens: 0,
+    },
+  };
+}
+
+// ============================================================
+// POST /v1/messages
+// ============================================================
+
+app.post(
+  "/v1/messages",
+  async (
+    req: Request<Record<string, never>, unknown, AnthropicRequest>,
+    res: Response,
+  ) => {
+    try {
+      const request = req.body;
+
+      // ------------------------------------------------------
+      // 校验
+      // ------------------------------------------------------
+
+      if (!request || !Array.isArray(request.messages)) {
+        res.status(400).json({
+          type: "error",
+
+          error: {
+            type: "invalid_request_error",
+
+            message: "messages is required",
+          },
+        });
+
+        return;
+      }
+
+      // ------------------------------------------------------
+      // 调你的 Agent
+      // ------------------------------------------------------
+
+      const message = await generateResponse(request);
+
+      // ------------------------------------------------------
+      // SSE
+      // ------------------------------------------------------
+
+      if (request.stream) {
+        initSSE(res);
+        await streamMessage(res, message);
+
+        return;
+      }
+
+      // ------------------------------------------------------
+      // 普通 JSON
+      // ------------------------------------------------------
+
+      sendMessage(res, message);
+    } catch (error) {
+      console.error(error);
+
+      if (res.headersSent) {
+        res.end();
+
+        return;
+      }
+
+      res.status(500).json({
+        type: "error",
+
+        error: {
+          type: "api_error",
+
+          message: error instanceof Error ? error.message : String(error),
+        },
+      });
+    }
+  },
+);
+
+// ============================================================
+
+app.listen(PORT, () => {
+  console.log(`Anthropic API listening on http://127.0.0.1:${PORT}`);
+});
+
+```
+
 ## puppeteer 远程连接方式调试chrome， 一个实例 
 
 ```ts
