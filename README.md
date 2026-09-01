@@ -2,6 +2,23 @@
 
 个人爱好，知识积累，点滴成石
 
+##  adb 调试sh脚本
+
+1.创建 start.sh
+2.运行：ls *.sh | entr -r zsh -c "sh adbShell.sh"
+3.创建 adbShell.sh，内容如下：
+
+```sh
+clear
+adb shell "pkill -f '/data/local/tmp/start.sh'"
+adb push start.sh /data/local/tmp/start.sh 
+adb shell chmod +x /data/local/tmp/start.sh
+# adb shell "nohup /sdcard/test/start.sh >/sdcard/test/start.log 2>&1 &"
+adb shell 'setsid /data/local/tmp/start.sh >/data/local/tmp/start.log 2>&1 < /dev/null &'
+adb shell tail -f /data/local/tmp/start.log
+echo "start.sh started"
+```
+
 ## deepseek 流式捕获
 
 ```ts
