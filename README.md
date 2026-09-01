@@ -2,6 +2,15 @@
 
 个人爱好，知识积累，点滴成石
 
+## 安卓系统使用与安装ubuntu
+
+`pkg update -y`
+
+`pkg install proot-distro -y`
+
+`proot-distro install ubuntu`
+
+
 ##  adb 调试sh脚本
 
 1.创建 start.sh
