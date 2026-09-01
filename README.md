@@ -5,7 +5,9 @@
 ##  adb 调试sh脚本
 
 1.创建 start.sh
+
 2.运行：ls *.sh | entr -r zsh -c "sh adbShell.sh"
+
 3.创建 adbShell.sh，内容如下：
 
 ```sh
