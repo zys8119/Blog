@@ -2,6 +2,50 @@
 
 个人爱好，知识积累，点滴成石
 
+## node二进制打包
+
+sea-config.json
+
+```json
+{
+  "main": "sea-entry.cjs",
+  "output": "sea-prep.blob",
+  "disableExperimentalSEAWarning": true
+}
+```
+
+打包程序
+
+```
+const cwd = {
+  stdio: "inherit",
+  cwd: "dist",
+} as Parameters<typeof execSync>[1];
+execSync("cp -R package.json dist", {
+  stdio: "inherit",
+});
+execSync("cp -R sea-config.json dist", {
+  stdio: "inherit",
+});
+execSync("cp -R sea-entry.cjs dist", {
+  stdio: "inherit",
+});
+execSync("node --experimental-sea-config sea-config.json", cwd);
+execSync("ls -lh sea-prep.blob", cwd);
+execSync("file sea-prep.blob", cwd);
+execSync(`cp "$(command -v node)" myapp`, cwd);
+execSync(`file myapp`, cwd);
+execSync(
+  `pnpm exec postject myapp NODE_SEA_BLOB sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2 --macho-segment-name NODE_SEA`,
+  cwd,
+);
+execSync(`chmod +x myapp`, cwd);
+execSync(`codesign --sign - myapp`, cwd);
+execSync("cp -R node_modules dist/node_modules", {
+  stdio: "inherit",
+});
+```
+
 ## 安卓系统使用与安装ubuntu
 
 `pkg update -y`
