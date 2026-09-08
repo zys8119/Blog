@@ -2,6 +2,227 @@
 
 个人爱好，知识积累，点滴成石
 
+## go 实现blog资源搜索 
+
+```
+package main
+
+import (
+	"fmt"
+	"io"
+	"net/http"
+	"os"
+	"os/exec"
+	"regexp"
+	"strings"
+)
+
+const readmeURL = "https://raw.githubusercontent.com/zys8119/Blog/refs/heads/master/README.md"
+
+func main() {
+	// 获取 README 内容
+	content, err := fetchContent(readmeURL)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "错误：无法获取 %s: %v\n", readmeURL, err)
+		os.Exit(1)
+	}
+
+	if content == "" {
+		fmt.Fprintln(os.Stderr, "错误：获取的内容为空")
+		os.Exit(1)
+	}
+
+	// 提取所有标题
+	titles := extractTitles(content)
+	if len(titles) == 0 {
+		fmt.Fprintln(os.Stderr, "错误：未找到任何 Markdown 标题")
+		os.Exit(1)
+	}
+
+	// 创建临时文件存储完整内容
+	tmpFile, err := os.CreateTemp("", "readme_*.md")
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "错误：创建临时文件失败: %v\n", err)
+		os.Exit(1)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err := tmpFile.WriteString(content); err != nil {
+		fmt.Fprintf(os.Stderr, "错误：写入临时文件失败: %v\n", err)
+		os.Exit(1)
+	}
+	tmpFile.Close()
+
+	// 创建预览脚本
+	previewScript := createPreviewScript(tmpFile.Name())
+	defer os.Remove(previewScript)
+
+	// 使用 fzf 选择标题
+	selectedTitle, err := runFzf(titles, previewScript)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "错误：%v\n", err)
+		os.Exit(1)
+	}
+
+	if selectedTitle == "" {
+		fmt.Println("未选择任何标题")
+		return
+	}
+
+	// 提取并显示选中标题的内容
+	level := getTitleLevel(selectedTitle)
+	contentUnderTitle := extractContentUnderTitle(content, selectedTitle, level)
+
+	fmt.Printf("\n=== %s ===\n\n", selectedTitle)
+	fmt.Println(contentUnderTitle)
+}
+
+func fetchContent(url string) (string, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("HTTP %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return string(body), nil
+}
+
+func extractTitles(content string) []string {
+	lines := strings.Split(content, "\n")
+	var titles []string
+	titleRegex := regexp.MustCompile(`^#+\s+`)
+
+	for _, line := range lines {
+		if titleRegex.MatchString(line) {
+			titles = append(titles, line)
+		}
+	}
+	return titles
+}
+
+func getTitleLevel(title string) int {
+	count := 0
+	for _, ch := range title {
+		if ch == '#' {
+			count++
+		} else {
+			break
+		}
+	}
+	return count
+}
+
+func extractContentUnderTitle(content, title string, level int) string {
+	lines := strings.Split(content, "\n")
+	var result []string
+	found := false
+	titleRegex := regexp.MustCompile(`^#+`)
+
+	for _, line := range lines {
+		if titleRegex.MatchString(line) {
+			currentLevel := getTitleLevel(line)
+			if found && currentLevel <= level {
+				break
+			}
+			if line == title {
+				found = true
+				result = append(result, line)
+				continue
+			}
+		}
+		if found {
+			result = append(result, line)
+		}
+	}
+
+	return strings.Join(result, "\n")
+}
+
+func createPreviewScript(contentFile string) string {
+	script := fmt.Sprintf(`#!/bin/bash
+title="$1"
+file="%s"
+
+if [ -z "$title" ] || [ -z "$file" ]; then
+    exit 1
+fi
+
+level=$(echo "$title" | awk '{print match($0, /^#+/); print RLENGTH}' | tail -1)
+
+awk -v t="$title" -v l="$level" '
+BEGIN { found=0 }
+{
+    if ($0 ~ /^#/) {
+        match($0, /^#+/);
+        current_level = RLENGTH;
+        if (found && current_level <= l) {
+            exit;
+        }
+        if ($0 == t) {
+            found=1;
+            print;
+            next;
+        }
+    }
+    if (found) {
+        print;
+    }
+}
+' "$file"
+`, contentFile)
+
+	tmpFile, _ := os.CreateTemp("", "preview_*.sh")
+	tmpFile.WriteString(script)
+	tmpFile.Close()
+	os.Chmod(tmpFile.Name(), 0755)
+	return tmpFile.Name()
+}
+
+func runFzf(titles []string, previewScript string) (string, error) {
+	// 使用 shell 执行，确保 fzf 能正常交互
+	titlesInput := strings.Join(titles, "\n")
+
+	// 创建一个临时文件存储标题列表
+	tmpTitles, err := os.CreateTemp("", "titles_*.txt")
+	if err != nil {
+		return "", err
+	}
+	defer os.Remove(tmpTitles.Name())
+	tmpTitles.WriteString(titlesInput)
+	tmpTitles.Close()
+
+	// 构建 fzf 命令 - 使用 cat 从文件读取标题
+	cmd := exec.Command("sh", "-c",
+		fmt.Sprintf("cat %s | fzf --prompt='选择标题 > ' --preview-window='right:60%%:wrap' --preview='%s {}'",
+			tmpTitles.Name(), previewScript))
+
+	cmd.Stdin = os.Stdin
+	cmd.Stderr = os.Stderr
+
+	output, err := cmd.Output()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			if exitErr.ExitCode() == 130 || exitErr.ExitCode() == 1 {
+				return "", nil
+			}
+		}
+		return "", err
+	}
+
+	return strings.TrimSpace(string(output)), nil
+}
+
+```
+
 ## node二进制打包
 
 sea-config.json
