@@ -8,22 +8,67 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
 
-const readmeURL = "https://raw.githubusercontent.com/zys8119/Blog/refs/heads/master/README.md"
+const configFileName = ".mdsearch_config.json"
+
+// Config 配置结构
+type Config struct {
+	URLs []string `json:"urls"`
+}
 
 func main() {
-	// 获取 README 内容
-	content, err := fetchContent(readmeURL)
+	// 解析命令行参数
+	if len(os.Args) > 1 {
+		switch os.Args[1] {
+		case "--config":
+			if len(os.Args) > 2 && os.Args[2] == "add" {
+				handleConfigAdd()
+				return
+			}
+			fmt.Println("用法: mdsearch --config add <URL>")
+			fmt.Println("示例: mdsearch --config add https://example.com/README.md")
+			os.Exit(0)
+		case "--help", "-h":
+			printHelp()
+			return
+		}
+	}
+
+	// 正常启动：选择 URL 并搜索
+	config := loadConfig()
+	if len(config.URLs) == 0 {
+		fmt.Println("错误：没有配置任何资源 URL")
+		fmt.Println("请使用以下命令添加：")
+		fmt.Println("  mdsearch --config add <URL>")
+		os.Exit(1)
+	}
+
+	// 让用户选择要搜索的 URL
+	selectedURL, err := selectURL(config.URLs)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "错误：无法获取 %s: %v\n", readmeURL, err)
+		fmt.Fprintf(os.Stderr, "错误：%v\n", err)
+		os.Exit(1)
+	}
+
+	if selectedURL == "" {
+		fmt.Println("未选择任何 URL")
+		return
+	}
+
+	// 获取内容并搜索
+	content, err := fetchContent(selectedURL)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "错误：无法获取 %s: %v\n", selectedURL, err)
 		os.Exit(1)
 	}
 
@@ -75,6 +120,105 @@ func main() {
 
 	fmt.Printf("\n=== %s ===\n\n", selectedTitle)
 	fmt.Println(contentUnderTitle)
+}
+
+func printHelp() {
+	fmt.Println("mdsearch - 使用 fzf 搜索 Markdown 文档标题")
+	fmt.Println()
+	fmt.Println("用法:")
+	fmt.Println("  mdsearch                启动交互式搜索")
+	fmt.Println("  mdsearch --config add <URL>  添加资源 URL")
+	fmt.Println("  mdsearch --help, -h     显示帮助信息")
+	fmt.Println()
+	fmt.Println("示例:")
+	fmt.Println("  mdsearch --config add https://raw.githubusercontent.com/user/repo/main/README.md")
+}
+
+// handleConfigAdd 处理添加配置
+func handleConfigAdd() {
+	if len(os.Args) < 4 {
+		fmt.Println("错误：请提供 URL")
+		fmt.Println("用法: mdsearch --config add <URL>")
+		os.Exit(1)
+	}
+
+	url := os.Args[3]
+	config := loadConfig()
+
+	// 检查是否已存在
+	for _, u := range config.URLs {
+		if u == url {
+			fmt.Printf("URL 已存在: %s\n", url)
+			return
+		}
+	}
+
+	config.URLs = append(config.URLs, url)
+	if err := saveConfig(config); err != nil {
+		fmt.Fprintf(os.Stderr, "错误：保存配置失败: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("成功添加 URL: %s\n", url)
+}
+
+// getConfigPath 获取配置文件路径
+func getConfigPath() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return configFileName
+	}
+	return filepath.Join(home, configFileName)
+}
+
+// loadConfig 加载配置
+func loadConfig() Config {
+	configPath := getConfigPath()
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return Config{URLs: []string{}}
+	}
+
+	var config Config
+	if err := json.Unmarshal(data, &config); err != nil {
+		return Config{URLs: []string{}}
+	}
+	return config
+}
+
+// saveConfig 保存配置
+func saveConfig(config Config) error {
+	configPath := getConfigPath()
+	data, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(configPath, data, 0644)
+}
+
+// selectURL 让用户选择 URL
+func selectURL(urls []string) (string, error) {
+	if len(urls) == 1 {
+		return urls[0], nil
+	}
+
+	// 使用 fzf 选择 URL
+	cmd := exec.Command("fzf", "--prompt", "选择资源 URL > ", "--height", "40%")
+	cmd.Stdin = strings.NewReader(strings.Join(urls, "\n"))
+	cmd.Stderr = os.Stderr
+
+	output, err := cmd.Output()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			if exitErr.ExitCode() == 130 || exitErr.ExitCode() == 1 {
+				return "", nil // 用户取消
+			}
+		}
+		return "", err
+	}
+
+	selected := strings.TrimSpace(string(output))
+	return selected, nil
 }
 
 func fetchContent(url string) (string, error) {
@@ -188,10 +332,8 @@ BEGIN { found=0 }
 }
 
 func runFzf(titles []string, previewScript string) (string, error) {
-	// 使用 shell 执行，确保 fzf 能正常交互
 	titlesInput := strings.Join(titles, "\n")
 
-	// 创建一个临时文件存储标题列表
 	tmpTitles, err := os.CreateTemp("", "titles_*.txt")
 	if err != nil {
 		return "", err
@@ -200,7 +342,6 @@ func runFzf(titles []string, previewScript string) (string, error) {
 	tmpTitles.WriteString(titlesInput)
 	tmpTitles.Close()
 
-	// 构建 fzf 命令 - 使用 cat 从文件读取标题
 	cmd := exec.Command("sh", "-c",
 		fmt.Sprintf("cat %s | fzf --prompt='选择标题 > ' --preview-window='right:60%%:wrap' --preview='%s {}'",
 			tmpTitles.Name(), previewScript))
@@ -220,6 +361,7 @@ func runFzf(titles []string, previewScript string) (string, error) {
 
 	return strings.TrimSpace(string(output)), nil
 }
+
 
 ```
 
