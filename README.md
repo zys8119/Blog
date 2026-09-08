@@ -55,6 +55,9 @@ func main() {
 			case "use", "-u":
 				handleConfigUse()
 				return
+			case "modify", "-m":
+				handleConfigModify()
+				return
 			default:
 				printConfigHelp()
 				return
@@ -188,6 +191,8 @@ func printHelp() {
 	fmt.Println("  --config add / -c -a <别名> <URL>   添加一个资源")
 	fmt.Println("                                    别名用于快速识别和切换")
 	fmt.Println()
+	fmt.Println("  --config modify / -c -m <别名> <新URL>  修改资源的 URL")
+	fmt.Println()
 	fmt.Println("  --config list / -c -l              列出所有已配置的资源")
 	fmt.Println("                                    带 * 标记的是当前选中的资源")
 	fmt.Println()
@@ -202,32 +207,38 @@ func printHelp() {
 	fmt.Println("  1. 添加资源:")
 	fmt.Println("     mdsearch --config add blog https://raw.githubusercontent.com/zys8119/Blog/refs/heads/master/README.md")
 	fmt.Println()
-	fmt.Println("  2. 列出资源:")
+	fmt.Println("  2. 修改资源 URL:")
+	fmt.Println("     mdsearch --config modify blog https://new-url.com/README.md")
+	fmt.Println()
+	fmt.Println("  3. 列出资源:")
 	fmt.Println("     mdsearch --config list")
 	fmt.Println()
-	fmt.Println("  3. 切换资源:")
+	fmt.Println("  4. 切换资源:")
 	fmt.Println("     mdsearch --config use blog")
 	fmt.Println()
-	fmt.Println("  4. 删除资源:")
+	fmt.Println("  5. 删除资源:")
 	fmt.Println("     mdsearch --config remove docs")
 	fmt.Println()
-	fmt.Println("  5. 启动搜索:")
+	fmt.Println("  6. 启动搜索:")
 	fmt.Println("     mdsearch")
 	fmt.Println()
 	fmt.Println("示例 (短参数):")
 	fmt.Println("  1. 添加资源:")
 	fmt.Println("     mdsearch -c -a blog https://raw.githubusercontent.com/zys8119/Blog/refs/heads/master/README.md")
 	fmt.Println()
-	fmt.Println("  2. 列出资源:")
+	fmt.Println("  2. 修改资源 URL:")
+	fmt.Println("     mdsearch -c -m blog https://new-url.com/README.md")
+	fmt.Println()
+	fmt.Println("  3. 列出资源:")
 	fmt.Println("     mdsearch -c -l")
 	fmt.Println()
-	fmt.Println("  3. 切换资源:")
+	fmt.Println("  4. 切换资源:")
 	fmt.Println("     mdsearch -c -u blog")
 	fmt.Println()
-	fmt.Println("  4. 删除资源:")
+	fmt.Println("  5. 删除资源:")
 	fmt.Println("     mdsearch -c -r docs")
 	fmt.Println()
-	fmt.Println("  5. 查看帮助:")
+	fmt.Println("  6. 查看帮助:")
 	fmt.Println("     mdsearch -h")
 	fmt.Println()
 	fmt.Println("交互操作:")
@@ -251,6 +262,7 @@ func printConfigHelp() {
 	fmt.Println("  mdsearch --config list               列出所有资源（显示当前选中）")
 	fmt.Println("  mdsearch --config remove <别名>      删除资源")
 	fmt.Println("  mdsearch --config use <别名>         切换当前选中的资源")
+	fmt.Println("  mdsearch --config modify <别名> <新URL>  修改资源的 URL")
 }
 
 // handleConfigAdd 处理添加配置
@@ -392,6 +404,41 @@ func handleConfigUse() {
 	}
 
 	fmt.Printf("已切换到资源: %s\n", alias)
+}
+
+// handleConfigModify 修改资源的 URL
+func handleConfigModify() {
+	if len(os.Args) < 5 {
+		fmt.Println("错误：请提供别名和新 URL")
+		fmt.Println("用法: mdsearch --config modify <别名> <新URL>")
+		fmt.Println("示例: mdsearch --config modify blog https://new-url.com/README.md")
+		os.Exit(1)
+	}
+
+	alias := os.Args[3]
+	newURL := os.Args[4]
+	config := loadConfig()
+
+	found := false
+	for i := range config.URLs {
+		if config.URLs[i].Alias == alias {
+			config.URLs[i].URL = newURL
+			found = true
+			break
+		}
+	}
+
+	if !found {
+		fmt.Printf("未找到别名 '%s'\n", alias)
+		os.Exit(1)
+	}
+
+	if err := saveConfig(config); err != nil {
+		fmt.Fprintf(os.Stderr, "错误：保存配置失败: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Printf("已更新资源 '%s' 的 URL: %s\n", alias, newURL)
 }
 
 // hasCurrent 检查是否有当前选中的资源
@@ -665,6 +712,7 @@ func runFzf(titles []string, previewScript string) (string, error) {
 
 	return strings.TrimSpace(string(output)), nil
 }
+
 
 ```
 
