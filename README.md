@@ -147,6 +147,8 @@ func main() {
 		os.Exit(1)
 	}
 
+	fmt.Fprintf(os.Stderr, "[DEBUG] 选中的标题: '%s'\n", selectedTitle)
+
 	if selectedTitle == "" {
 		fmt.Println("未选择任何标题")
 		return
@@ -158,6 +160,13 @@ func main() {
 
 	fmt.Printf("\n=== %s ===\n\n", selectedTitle)
 	fmt.Println(contentUnderTitle)
+
+	// 复制到剪贴板 (macOS)
+	if err := copyToClipboard(contentUnderTitle); err != nil {
+		fmt.Fprintf(os.Stderr, "警告：复制到剪贴板失败: %v\n", err)
+	} else {
+		fmt.Println("\n✅ 内容已复制到剪贴板")
+	}
 }
 
 func printHelp() {
@@ -523,13 +532,21 @@ func extractContentUnderTitle(content, title string, level int) string {
 	found := false
 	titleRegex := regexp.MustCompile(`^#+`)
 
+	// 规范化标题用于比较
+	normalizeTitle := func(s string) string {
+		return strings.TrimSpace(s)
+	}
+
+	normalizedTarget := normalizeTitle(title)
+
 	for _, line := range lines {
 		if titleRegex.MatchString(line) {
 			currentLevel := getTitleLevel(line)
 			if found && currentLevel <= level {
 				break
 			}
-			if line == title {
+			// 使用规范化后的标题进行比较
+			if normalizeTitle(line) == normalizedTarget {
 				found = true
 				result = append(result, line)
 				continue
@@ -541,6 +558,26 @@ func extractContentUnderTitle(content, title string, level int) string {
 	}
 
 	return strings.Join(result, "\n")
+}
+
+func copyToClipboard(text string) error {
+	// macOS 使用 pbcopy
+	cmd := exec.Command("pbcopy")
+	stdin, err := cmd.StdinPipe()
+	if err != nil {
+		return err
+	}
+
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	if _, err := stdin.Write([]byte(text)); err != nil {
+		return err
+	}
+	stdin.Close()
+
+	return cmd.Wait()
 }
 
 func createPreviewScript(contentFile string) string {
@@ -591,16 +628,31 @@ func runFzf(titles []string, previewScript string) (string, error) {
 		return "", err
 	}
 	defer os.Remove(tmpTitles.Name())
-	tmpTitles.WriteString(titlesInput)
+	if _, err := tmpTitles.WriteString(titlesInput); err != nil {
+		return "", err
+	}
 	tmpTitles.Close()
 
-	cmd := exec.Command("sh", "-c",
-		fmt.Sprintf("cat %s | fzf --prompt='选择标题 > ' --preview-window='right:60%%:wrap' --preview='%s {}'",
-			tmpTitles.Name(), previewScript))
+	// 构建 fzf 命令
+	cmd := exec.Command("fzf",
+		"--prompt", "选择标题 > ",
+		"--preview-window", "right:60%:wrap",
+		"--preview", previewScript+" {}",
+		"--bind", "enter:accept",
+		"--bind", "ctrl-c:abort",
+	)
 
-	cmd.Stdin = os.Stdin
+	// 从临时文件读取标题列表作为 stdin
+	f, err := os.Open(tmpTitles.Name())
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	cmd.Stdin = f
 	cmd.Stderr = os.Stderr
 
+	// 捕获 stdout
 	output, err := cmd.Output()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
@@ -613,7 +665,6 @@ func runFzf(titles []string, previewScript string) (string, error) {
 
 	return strings.TrimSpace(string(output)), nil
 }
-
 
 ```
 
