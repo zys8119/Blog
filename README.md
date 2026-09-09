@@ -2,6 +2,61 @@
 
 个人爱好，知识积累，点滴成石
 
+## gemini 对话数据解析
+
+```
+import fs from "fs";
+
+const messages = fs.readFileSync("./a.txt", "utf-8");
+
+const parseMessage = (message: string) => {
+  const [[type, d0_1, d0_2], d1] = eval(message) as any;
+  return {
+    type,
+    d0_1,
+    d0_2: (() => {
+      const d = eval(d0_2);
+      return {
+        text: d?.[4]?.[0]?.[1]?.[0],
+      };
+    })(),
+    d1: (() => {
+      if (!d1) {
+        return d1;
+      }
+      const d1_1 = eval(d1);
+      return {
+        a: d1_1[0],
+        b: d1_1[1],
+        c: d1_1[2],
+      };
+    })(),
+  };
+};
+const chunk = [];
+let isNext = false;
+let item: Record<string, any> = {};
+for (const message of messages.split(/\n/)) {
+  if (/^\s*\d+/.test(message)) {
+    isNext = true;
+    item.index = message;
+    continue;
+  }
+  if (isNext) {
+    item.content = parseMessage(message);
+    chunk.push(item);
+    item = {};
+    isNext = false;
+  }
+}
+
+console.log(
+  (chunk.filter((item: any) => item.content.d0_2.text) as any).at(-1).content
+    .d0_2.text,
+);
+
+```
+
 ## go 实现blog资源搜索 
 
 ```go
