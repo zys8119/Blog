@@ -2,6 +2,12 @@
 
 个人爱好，知识积累，点滴成石
 
+## 密码填充
+
+```
+expect -c 'set p "你的密码"; spawn bash -c "[command]"; expect -re "(?i)password.*:"; send "$p\r"; interact'
+```
+
 ## 通过mac地址 + nmap 扫描端口
 
 ```
