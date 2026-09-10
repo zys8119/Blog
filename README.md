@@ -5,7 +5,7 @@
 ## 通过mac地址 + nmap 扫描端口
 
 ```
-macArr=电脑名称 x arp | grep "9a:42:be:14:6a:c4" | awk '{print $2; exit}' | xargs -I {} x nmap -Pn -r -p 5173-5200,80,22,3000,3333,3306,8080,8899,8888,9999,443,4433
+macArr=电脑名称 x arp | grep "9a:42:be:14:6a:c4" | awk '{print $2; exit}' | xargs -I {} x nmap -Pn -r -p 5173-5200,80,22,3000,3333,3306,8080,8899,8888,9999,443,4433 {}
 ```
 
 ## gemini 对话数据解析
