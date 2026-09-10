@@ -2,6 +2,12 @@
 
 个人爱好，知识积累，点滴成石
 
+## macos wifi 扫描
+
+```
+swift -e 'import CoreWLAN; let i=CWWiFiClient.shared().interface()!; for n in try! i.scanForNetworks(withSSID:nil).sorted(by:{$0.rssiValue>$1.rssiValue}) { print("SSID: \(n.ssid ?? "<Hidden>")  MAC: \(n.bssid ?? "-")  RSSI: \(n.rssiValue)  CH: \(n.wlanChannel?.channelNumber ?? 0)") }'
+```
+
 ## 密码填充
 
 ```
