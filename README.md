@@ -2,6 +2,51 @@
 
 个人爱好，知识积累，点滴成石
 
+## 手机安装kali系统
+
+在手机端安装termux
+打开termux
+键入termux-change-repo
+选择ok
+
+选择 Mirrors by USTC 
+这是中科大的镜像源
+
+然后我们更新软件列表
+apt upgrade -y 
+
+中间会停下，按y继续
+
+获取储存权限
+termux-setup-storage
+安装wget
+pkg install wget
+然后yes
+下载 安装脚本
+wget -O install-nethunter-termux https://offs.ec/2MceZWr
+给脚本执行权限
+chmod +x install-nethunter-termux
+运行安装脚本 
+./install-nethunter-termux
+选择1
+是否保留下载文件，按enter跳过
+
+现在我们的kali已经安装好了，键入nh即可进入kali
+
+那如何进入图形化的kali
+先设置密码
+nh kex passwd
+进入kali打开vnc服务
+nh kex
+
+然后我们安装F-Droidi
+
+打开它找到NetHunter KeX这个软件
+安装打开
+设置5901端口
+输入刚刚设置好的密码
+点击connect
+
 ## macos wifi 扫描
 
 ```
