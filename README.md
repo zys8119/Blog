@@ -2,6 +2,15 @@
 
 个人爱好，知识积累，点滴成石
 
+## go 验证码打印
+
+```go
+wd, err := os.Getwd()
+if err == nil && strings.Contains(wd, "zhangyunshan") {
+	fmt.Printf("captcha issued: id=%s code=%s\n", item.ID, item.Code)
+}
+```
+
 ## 手机安装kali系统
 
 在手机端安装termux
