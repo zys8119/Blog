@@ -8,6 +8,15 @@
 PID=$(lsof -nP -i | fzf -e  | awk '{print $2}') && x ps "$PID"
 ```
 
+~/.zshrc
+
+```
+kp(){
+    PID=$(lsof -nP -i | fzf -e  | awk '{print $2}') ;
+    x ps "$PID";
+}
+```
+
 ## go 验证码打印
 
 ```go
