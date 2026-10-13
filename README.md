@@ -2,6 +2,22 @@
 
 个人爱好，知识积累，点滴成石
 
+## 开放端口扫描
+
+```sh
+defaultPort=${1:-5173}
+defaultHost=${2:-192.168.2}
+for i in {1..254}; do
+        (nc -z -G 1 -w 1 ${defaultHost}.$i ${defaultPort} >/dev/null 2>&1 &&
+            echo "OPEN http://${defaultHost}.$i:$defaultPort\nOPEN https://${defaultHost}.$i:$defaultPort\n-----------------"
+        ) &
+        while (( $(jobs -p | wc -l) >= 100 )); do
+            wait -n 2>/dev/null
+        done
+    done
+    wait
+```
+
 ## 端口查找进程
 
 ```
