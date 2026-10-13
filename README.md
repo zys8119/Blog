@@ -5,17 +5,173 @@
 ## 开放端口扫描
 
 ```sh
-defaultPort=${1:-5173}
-defaultHost=${2:-192.168.2}
-for i in {1..254}; do
-        (nc -z -G 1 -w 1 ${defaultHost}.$i ${defaultPort} >/dev/null 2>&1 &&
-            echo "OPEN http://${defaultHost}.$i:$defaultPort\nOPEN https://${defaultHost}.$i:$defaultPort\n-----------------"
-        ) &
-        while (( $(jobs -p | wc -l) >= 100 )); do
-            wait -n 2>/dev/null
+#!/bin/bash
+
+portArg="${1:-5173}"
+hostArg="${2:-192.168.2.0/24}"
+maxJobs=100
+
+# ---------- 解析端口 ----------
+ports=()
+oldIFS=$IFS
+IFS=','
+
+for item in $portArg; do
+    if [[ "$item" =~ ^[0-9]+-[0-9]+$ ]]; then
+        start=$((10#${item%-*}))
+        end=$((10#${item#*-}))
+
+        if (( start < 1 || end > 65535 || start > end )); then
+            echo "无效端口范围: $item" >&2
+            exit 1
+        fi
+
+        for ((p=start; p<=end; p++)); do
+            ports+=("$p")
         done
+    elif [[ "$item" =~ ^[0-9]+$ ]]; then
+        port=$((10#$item))
+        if (( port < 1 || port > 65535 )); then
+            echo "无效端口: $item" >&2
+            exit 1
+        fi
+        ports+=("$port")
+    else
+        echo "无效端口: $item" >&2
+        exit 1
+    fi
+done
+
+IFS=$oldIFS
+
+# 端口去重
+unique_ports=()
+for port in "${ports[@]}"; do
+    duplicate=0
+    for existing in "${unique_ports[@]}"; do
+        if [[ "$port" == "$existing" ]]; then
+            duplicate=1
+            break
+        fi
     done
-    wait
+    (( duplicate == 0 )) && unique_ports+=("$port")
+done
+
+# ---------- IP 转整数 ----------
+ip_to_num() {
+    local a b c d
+    IFS='.' read -r a b c d <<< "$1"
+
+    [[ "$a" =~ ^[0-9]+$ && "$b" =~ ^[0-9]+$ &&
+       "$c" =~ ^[0-9]+$ && "$d" =~ ^[0-9]+$ ]] || return 1
+
+    # 去掉前导零，避免八进制解析
+    a=$((10#$a)); b=$((10#$b))
+    c=$((10#$c)); d=$((10#$d))
+
+    (( a<=255 && b<=255 && c<=255 && d<=255 )) || return 1
+
+    IP_NUM=$(( (a<<24) | (b<<16) | (c<<8) | d ))
+}
+
+num_to_ip() {
+    local n=$1
+    printf '%d.%d.%d.%d' \
+        "$(( (n >> 24) & 255 ))" \
+        "$(( (n >> 16) & 255 ))" \
+        "$(( (n >> 8) & 255 ))" \
+        "$(( n & 255 ))"
+}
+
+# ---------- 解析 IP / CIDR ----------
+targets=()
+IFS=','
+
+for item in $hostArg; do
+    if [[ "$item" == */* ]]; then
+        ip=${item%/*}
+        prefix=${item#*/}
+
+        if [[ ! "$prefix" =~ ^[0-9]+$ ]] ||
+           (( 10#$prefix > 32 )); then
+            echo "无效 CIDR: $item" >&2
+            exit 1
+        fi
+
+        prefix=$((10#$prefix))
+
+        if ! ip_to_num "$ip"; then
+            echo "无效 IP: $ip" >&2
+            exit 1
+        fi
+
+        ipNum=$IP_NUM
+        mask=0
+
+        if (( prefix > 0 )); then
+            mask=$(( (0xFFFFFFFF << (32-prefix)) & 0xFFFFFFFF ))
+        fi
+
+        network=$(( ipNum & mask ))
+        broadcast=$(( network | (0xFFFFFFFF ^ mask) ))
+
+        # /31 和 /32 保留全部地址；其他网段排除网络地址和广播地址
+        if (( prefix >= 31 )); then
+            first=$network
+            last=$broadcast
+        else
+            first=$((network+1))
+            last=$((broadcast-1))
+        fi
+
+        for ((n=first; n<=last; n++)); do
+            targets+=("$(num_to_ip "$n")")
+        done
+    else
+        if ! ip_to_num "$item"; then
+            echo "无效 IP: $item" >&2
+            exit 1
+        fi
+        targets+=("$(num_to_ip "$IP_NUM")")
+    fi
+done
+
+IFS=$oldIFS
+
+# IP 去重
+unique_targets=()
+for ip in "${targets[@]}"; do
+    duplicate=0
+    for existing in "${unique_targets[@]}"; do
+        if [[ "$ip" == "$existing" ]]; then
+            duplicate=1
+            break
+        fi
+    done
+    (( duplicate == 0 )) && unique_targets+=("$ip")
+done
+
+# ---------- 并发扫描 ----------
+active=0
+
+for ip in "${unique_targets[@]}"; do
+    for port in "${unique_ports[@]}"; do
+        (
+            if nc -z -w 1 "$ip" "$port" >/dev/null 2>&1; then
+                printf 'OPEN %s:%s\n' "$ip" "$port"
+            fi
+        ) &
+
+        active=$((active+1))
+
+        if (( active >= maxJobs )); then
+            wait
+            active=0
+        fi
+    done
+done
+
+wait
 ```
 
 ## 端口查找进程
