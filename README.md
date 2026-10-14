@@ -2,6 +2,18 @@
 
 个人爱好，知识积累，点滴成石
 
+## bilibili 视频下载
+
+```
+yt-dlp \
+  --cookies-from-browser chrome \
+  --no-playlist \
+  -f "30116+30280/30116+30232" \
+  --merge-output-format mkv \
+  -o "$HOME/Downloads/%(title)s.%(ext)s" \
+  'https://www.bilibili.com/video/BV1Tq5VziEFF'
+```
+
 ## 开放端口扫描
 
 ```sh
