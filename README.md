@@ -2,6 +2,125 @@
 
 个人爱好，知识积累，点滴成石
 
+## bilibili 视频下载增强版
+
+bilibili.sh
+
+```
+clear
+id="$1"
+# 检查是否提供了视频ID参数
+if [ -z "${id:-}" ]; then
+  echo "错误：请提供Bilibili视频ID作为参数"
+  echo "用法：$0 <视频ID>"
+  exit 1
+fi
+
+data=$(yt-dlp  --cookies-from-browser chrome   --no-playlist   -F   "https://www.bilibili.com/video/$id")
+tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/yt-dlp.XXXXXX")"
+trap 'rm -rf "$tmpdir"' EXIT
+
+tmpfile="$tmpdir/main.ts"
+cat > "$tmpfile" <<EOF
+const data = \`$data\`;
+interface Format {
+  id: string;
+  ext: string;
+  resolution?: string;
+  width?: number;
+  height?: number;
+  fps?: number;
+  size?: number;
+  bitrate: number;
+  codec?: string;
+  type: "video" | "audio";
+}
+
+function getBestFormats(formats: string) {
+  const results: Format[] = [];
+
+  for (const line of formats.split(/\r?\n/)) {
+    // 匹配格式 ID、扩展名、分辨率、FPS
+    const match = line.match(
+      /^\s*(\d+)\s+(\w+)\s+(?:(\d+x\d+)|audio\s+only)(?:\s+(\d+))?/,
+    );
+
+    if (!match) continue;
+
+    const [, id, ext, resolution, fps] = match;
+
+    // 提取码率，优先使用 TBR；没有时取该行最大 k 值
+    const bitrateValues = [...line.matchAll(/(\d+(?:\.\d+)?)k\b/g)].map((m) =>
+      Number(m[1]),
+    );
+
+    const bitrate = Math.max(0, ...bitrateValues);
+
+    // 提取文件大小，统一换算成 MiB
+    const sizeMatch = line.match(/≈\s*([\d.]+)\s*(KiB|MiB|GiB)/i);
+    let size: number | undefined;
+
+    if (sizeMatch) {
+      const value = Number(sizeMatch[1]);
+      const unit = sizeMatch[2].toLowerCase();
+
+      size = value * (unit === "gib" ? 1024 : unit === "kib" ? 1 / 1024 : 1);
+    }
+
+    const isAudio = /audio\s+only/.test(line);
+    const codecMatch = isAudio
+      ? line.match(/\b(mp4a\.[\w.]+|opus)\b/i)
+      : line.match(/\b(avc1\.[\w.]+|hvc1\.[\w.]+|av01\.[\w.]+)\b/i);
+
+    const item: Format = {
+      id,
+      ext,
+      resolution,
+      fps: fps ? Number(fps) : undefined,
+      size,
+      bitrate,
+      codec: codecMatch?.[1],
+      type: isAudio ? "audio" : "video",
+    };
+
+    if (resolution) {
+      const [width, height] = resolution.split("x").map(Number);
+      item.width = width;
+      item.height = height;
+    }
+
+    results.push(item);
+  }
+
+  // 最高分辨率优先，同分辨率选最高码率
+  const video = results
+    .filter((item) => item.type === "video" && item.width && item.height)
+    .sort(
+      (a, b) =>
+        b.width! * b.height! - a.width! * a.height! || b.bitrate - a.bitrate,
+    )[0];
+
+  // 音频选择最高码率
+  const audio = results
+    .filter((item) => item.type === "audio")
+    .sort((a, b) => b.bitrate - a.bitrate)[0];
+
+  return { video, audio };
+}
+
+// formats 是完整的 yt-dlp 格式列表字符串
+const best = getBestFormats(data);
+
+// console.log("最佳视频:", best.video);
+// console.log("最佳音频:", best.audio);
+// console.log("视频 ID:", best.video?.id);
+// console.log("音频 ID:", best.audio?.id);
+console.log('yt-dlp \\\\\n  --cookies-from-browser chrome \\\\\n --no-playlist  \\\\\n  -f "'+best.video?.id+'+'+best.audio?.id+'" \\\\\n  --merge-output-format mkv \\\\\n  -o "$HOME/Downloads/%(title)s.%(ext)s" \\\\\n  "https://www.bilibili.com/video/$id"');
+EOF
+
+eval "$(tsx "$tmpfile")"
+```
+
 ## bilibili 视频下载
 
 ```
@@ -13,6 +132,8 @@ yt-dlp \
   -o "$HOME/Downloads/%(title)s.%(ext)s" \
   'https://www.bilibili.com/video/BV1Tq5VziEFF'
 ```
+
+
 
 ## 开放端口扫描
 
