@@ -2,6 +2,211 @@
 
 个人爱好，知识积累，点滴成石
 
+## 端口或pid查找
+
+```sh
+#!/usr/bin/env bash
+# 查询端口占用或直接查询 PID 的进程详情
+# 用法：
+#   ./a.sh 3333          查端口，fzf 选择进程后看详情
+#   ./a.sh               不带参数，用 fzf 选择监听端口
+#   ./a.sh -p 1234       直接查询指定 PID
+#   ./a.sh -p            用 fzf 交互搜索并选择进程
+#   ./a.sh --pid 1234    同上
+
+set -uo pipefail
+
+show_process() {
+  local pid="$1"
+
+  if ! ps -p "$pid" >/dev/null 2>&1; then
+    echo "进程 $pid 不存在或已退出" >&2
+    return 1
+  fi
+
+  echo "=== 进程 $pid 详细信息 ==="
+  ps -o pid=,ppid=,user=,%cpu=,%mem=,etime=,comm= -p "$pid" \
+    | while read -r p ppid u cpu mem etime com; do
+        echo "PID：$p"
+        echo "COM：${com##*/}"
+        echo "PPID：$ppid"
+        echo "USER：$u"
+        echo "CPU：$cpu%"
+        echo "MEM：$mem%"
+        echo "ELAPSED：$etime"
+      done
+
+  echo
+  echo "=== 进程 $pid 监听的端口 ==="
+  lsof -nP -iTCP -sTCP:LISTEN -a -p "$pid" 2>/dev/null || true
+
+  echo
+  echo "=== 完整命令行 ==="
+  ps -o command= -p "$pid"
+
+  local exe cwd
+  exe=$(lsof -a -nP -p "$pid" -d txt -Fn 2>/dev/null | awk '/^n\//{sub(/^n/,""); print; exit}')
+  cwd=$(lsof -a -nP -p "$pid" -d cwd -Fn 2>/dev/null | awk '/^n\//{sub(/^n/,""); print; exit}')
+
+  echo
+  echo "=== 可执行文件 ==="
+  if [[ -n "$exe" ]]; then
+    echo "EXE：$exe"
+    echo "DIR：$(dirname "$exe")"
+  else
+    echo "EXE：（无法获取，可能需要权限）"
+  fi
+
+  echo
+  echo "=== 工作目录 ==="
+  echo "CWD：${cwd:-（无法获取，可能需要权限）}"
+
+  show_parent_chain "$pid"
+}
+
+# 追溯父级进程链：PID / PPID / USER / COM / CWD
+show_parent_chain() {
+  local cur="$1" depth=0 info p ppid u com cwd indent marker
+
+  echo
+  echo "=== 父级进程链 ==="
+
+  while [[ -n "$cur" && "$cur" != "0" && $depth -lt 20 ]]; do
+    info=$(ps -o pid=,ppid=,user=,comm= -p "$cur" 2>/dev/null) || break
+    read -r p ppid u com <<< "$info"
+    cwd=$(lsof -a -nP -p "$cur" -d cwd -Fn 2>/dev/null | awk '/^n\//{sub(/^n/,""); print; exit}')
+    indent=$(printf '%*s' $((depth * 2)) '')
+    if [[ $depth -eq 0 ]]; then marker="●"; else marker="└─"; fi
+    printf '%s%s [%s] PID=%s PPID=%s USER=%s CWD=%s\n' \
+      "$indent" "$marker" "${com##*/}" "$p" "$ppid" "$u" "${cwd:-（无法获取）}"
+    cur="$ppid"
+    depth=$((depth + 1))
+  done
+}
+
+# 询问是否结束进程（仅交互终端；预览模式不会走到这里）
+ask_kill() {
+  local pid="$1" sig ans
+
+  [[ -t 0 ]] || return 0
+  ps -p "$pid" >/dev/null 2>&1 || return 0
+
+  echo
+  read -r -p "是否结束进程 ${pid}？[y/N] " ans
+  case "$ans" in
+    y|Y|yes|YES) ;;
+    *) echo "已取消"; return 0 ;;
+  esac
+
+  read -r -p "选择信号 TERM(默认) / KILL [TERM]：" sig
+  sig="${sig:-TERM}"
+
+  case "$sig" in
+    KILL|kill|9) kill -KILL "$pid" 2>/dev/null ;;
+    *)           kill -TERM "$pid" 2>/dev/null ;;
+  esac
+
+  sleep 1
+  if ps -p "$pid" >/dev/null 2>&1; then
+    echo "已发送信号，进程 $pid 仍在运行；如需强制结束可再执行 kill -9 $pid"
+  else
+    echo "进程 $pid 已结束"
+  fi
+}
+
+# 供 fzf 预览调用：只输出进程详细数据，不依赖 fzf
+if [[ "${1:-}" == "--preview-pid" ]]; then
+  show_process "${2:-}"
+  exit $?
+fi
+
+# 解析参数：-p/--pid 直接查进程
+pid=""
+port=""
+
+if [[ "${1:-}" == "-p" || "${1:-}" == "--pid" ]]; then
+  pid="${2:-}"
+
+  # 未给出 PID 时，用 fzf 交互选择进程
+  if [[ -z "$pid" ]]; then
+    if ! command -v fzf >/dev/null 2>&1; then
+      echo "未找到 fzf，请先安装：brew install fzf，或直接使用：$0 -p <PID>" >&2
+      exit 1
+    fi
+
+    selected=$(ps -axo pid=,user=,comm= \
+      | fzf --header="选择进程查看详情" \
+            --prompt="搜索 PID / 用户 / 进程名> " \
+            --preview "$0 --preview-pid {1}" \
+            --preview-window=right:60%:wrap)
+
+    [[ -z "$selected" ]] && exit 0
+    pid=$(printf '%s\n' "$selected" | awk '{print $1}')
+    show_process "$pid"
+    ask_kill "$pid"
+    exit $?
+  fi
+
+  if [[ ! "$pid" =~ ^[0-9]+$ ]]; then
+    echo "PID 无效：$pid" >&2
+    echo "用法：$0 -p <PID> | $0 <端口> | $0" >&2
+    exit 1
+  fi
+  show_process "$pid"
+  ask_kill "$pid"
+  exit $?
+elif [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  sed -n '2,8p' "$0" | sed 's/^# //'
+  exit 0
+else
+  port="${1:-}"
+fi
+
+if ! command -v fzf >/dev/null 2>&1; then
+  echo "未找到 fzf，请先安装：brew install fzf" >&2
+  exit 1
+fi
+
+# 未指定端口：列出所有正在监听的端口，交给 fzf 选择
+if [[ -z "$port" ]]; then
+  port=$(lsof -nP -iTCP -sTCP:LISTEN 2>/dev/null \
+    | awk 'NR > 1 { n = split($9, a, ":"); print a[n] }' \
+    | grep -E '^[0-9]+$' \
+    | sort -n -u \
+    | fzf --prompt="选择端口> " --height=40%)
+  [[ -z "$port" ]] && exit 0
+fi
+
+if [[ ! "$port" =~ ^[0-9]+$ ]]; then
+  echo "端口号无效：$port" >&2
+  exit 1
+fi
+
+# 取出该端口的所有 socket 记录（含 LISTEN / ESTABLISHED 等）
+out=$(lsof -nP -iTCP:"$port" 2>/dev/null)
+
+if [[ -z "$out" ]]; then
+  echo "端口 $port 未被占用"
+  exit 0
+fi
+
+# 用 fzf 选择具体条目，右侧预览对应进程的详情
+selected=$(printf '%s\n' "$out" \
+  | fzf --header="端口 $port 的占用情况" \
+        --header-lines=1 \
+        --prompt="选择条目查看进程详情> " \
+        --preview "$0 --preview-pid {2}" \
+        --preview-window=right:60%:wrap)
+
+[[ -z "$selected" ]] && exit 0
+
+pid=$(printf '%s\n' "$selected" | awk '{print $2}')
+
+show_process "$pid"
+ask_kill "$pid"
+
+```
+
 ## bilibili 视频下载增强版
 
 bilibili.sh
