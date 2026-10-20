@@ -2,6 +2,92 @@
 
 个人爱好，知识积累，点滴成石
 
+## 无头扫码登陆
+
+```ts
+import { launch, Page } from "puppeteer";
+import { execSync, execFileSync } from "child_process";
+import path from "path";
+import fs from "fs";
+import os from "os";
+await (async function main() {
+  const browser = await launch({
+    executablePath:
+      "/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome",
+    userDataDir: "./chromeUserDataDir",
+  });
+  const page = await browser.newPage();
+  await page.goto(`https://chat.deepseek.com`);
+  const title = await page.title();
+  async function waitForAny(page: Page, selectors: string[], options = {}) {
+    const candidates = selectors.map(async (selector) => {
+      const element = await page.waitForSelector(selector, options);
+      return { selector, element }; // 谁先完成，就带着自己的 selector 返回
+    });
+
+    return Promise.race(candidates); // 返回 { selector, element }
+  }
+  await page.exposeFunction("log", console.log);
+  const { selector } = await waitForAny(page, [
+    ".ds-sign-in-with-wechat-block",
+    "textarea",
+  ]);
+  const isTextarea = selector === "textarea";
+  if (isTextarea) {
+    console.log("已登陆");
+    await browser.close();
+    return;
+  }
+  const frames = await page.frames();
+  const framesPage =
+    frames[
+      frames.map((e) => e.url()).findIndex((e) => e.includes("weixin.qq.com"))
+    ];
+  const base64 = await framesPage.$eval(".web_qrcode_img", async (img: any) => {
+    if (img.src.startsWith("data:")) {
+      return img.src.split(",")[1];
+    }
+
+    const response = await fetch(img.src);
+    if (!response.ok) {
+      throw new Error(`图片请求失败：${response.status}`);
+    }
+
+    const blob = await response.blob();
+
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+
+      reader.onload = () => {
+        const result = String(reader.result);
+        resolve(result.split(",")[1]);
+      };
+
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  });
+  const qrcodePath = path.join(os.tmpdir(), "qrcode.png");
+  fs.writeFileSync(qrcodePath, Buffer.from(base64, "base64"));
+
+  const qrcodeUrl = execFileSync(`x`, ["qr", "webdec", qrcodePath])
+    .toString()
+    .match(/https:.*/)?.[0];
+  console.log(execFileSync(`x`, ["qr", qrcodeUrl as any]).toString());
+
+  await page.waitForNavigation({
+    timeout: 0,
+  });
+  console.log("登陆成功");
+  await browser.close();
+  await main();
+})();
+declare global {
+  const log: typeof console.log;
+}
+
+```
+
 ## 读取local-storage
 
 ```ts
