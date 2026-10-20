@@ -2,6 +2,240 @@
 
 个人爱好，知识积累，点滴成石
 
+## MoonTv 配置
+
+仓库地址
+
+```json
+{
+  "ConfigFile": "{\"cache_time\":0,\"api_site\":{\"dyttzy\":{\"key\":\"暴風\",\"name\":\"暴風\",\"api\":\"https://bfzyapi.com/api.php/provide/vod\",\"playUrl\":\"json:http://127.0.0.1:10079/parse/?thread=0&proxy=&url=\"}},\"custom_category\":[{\"name\":\"华语\",\"type\":\"movie\",\"query\":\"华语\"}]}",
+  "ConfigSubscribtion": {
+    "URL": "http://host.docker.internal:5555",
+    "AutoUpdate": true,
+    "LastCheck": "2026-10-20T08:50:20.657Z"
+  },
+  "SiteConfig": {
+    "SiteName": "MoonTV",
+    "Announcement": "本网站仅提供影视信息搜索服务，所有内容均来自第三方网站。本站不存储任何视频资源，不对任何内容的准确性、合法性、完整性负责。",
+    "SearchDownstreamMaxPage": 5,
+    "SiteInterfaceCacheTime": 7200,
+    "DoubanProxyType": "cmliussss-cdn-tencent",
+    "DoubanProxy": "",
+    "DoubanImageProxyType": "cmliussss-cdn-tencent",
+    "DoubanImageProxy": "",
+    "DisableYellowFilter": false,
+    "FluidSearch": true,
+    "EnableWebLive": false
+  },
+  "UserConfig": {
+    "Users": [
+      {
+        "username": "admin",
+        "role": "owner",
+        "banned": false
+      }
+    ]
+  },
+  "SourceConfig": [
+    {
+      "key": "dyttzy",
+      "name": "暴風",
+      "api": "https://bfzyapi.com/api.php/provide/vod",
+      "from": "config",
+      "disabled": false
+    }
+  ],
+  "CustomCategories": [
+    {
+      "name": "华语",
+      "type": "movie",
+      "query": "华语",
+      "from": "config",
+      "disabled": false
+    }
+  ],
+  "LiveConfig": []
+}
+```
+
+```ts
+import express from "express";
+import axios from "axios";
+
+const PORT = Number(process.env.PORT) || 5555;
+const HOST = process.env.HOST || "0.0.0.0";
+const app = express();
+
+// 解析 JSON 请求体
+app.use(express.json());
+
+// Base58 字母表（Bitcoin 版本，去除 0 O I l）
+const ALPHABET = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+const INDEX: Record<string, number> = {};
+for (let i = 0; i < ALPHABET.length; i++) {
+  INDEX[ALPHABET[i]] = i;
+}
+
+/**
+ * 字节数组编码为 Base58 字符串
+ * @param bytes 待编码字节
+ * @returns Base58 字符串
+ */
+function base58Encode(bytes: Uint8Array): string {
+  if (bytes.length === 0) return "";
+
+  // 统计前导零字节数量，每个零字节对应一个 '1'
+  let zeros = 0;
+  while (zeros < bytes.length && bytes[zeros] === 0) zeros++;
+
+  // 把字节数组当作大整数做进制转换
+  const digits: number[] = [];
+  for (let i = zeros; i < bytes.length; i++) {
+    let carry = bytes[i];
+    for (let j = 0; j < digits.length; j++) {
+      carry += digits[j] << 8;
+      digits[j] = carry % 58;
+      carry = (carry / 58) | 0;
+    }
+    while (carry > 0) {
+      digits.push(carry % 58);
+      carry = (carry / 58) | 0;
+    }
+  }
+
+  let result = "1".repeat(zeros);
+  for (let i = digits.length - 1; i >= 0; i--) {
+    result += ALPHABET[digits[i]];
+  }
+  return result;
+}
+
+/**
+ * Base58 字符串解码为字节数组
+ * @param str Base58 字符串
+ * @returns 解码后的字节数组
+ * @throws 输入包含非法字符时抛错
+ */
+function base58Decode(str: string): Uint8Array {
+  if (str.length === 0) return new Uint8Array(0);
+
+  // 统计前导 '1' 的数量，每个 '1' 对应一个零字节
+  let ones = 0;
+  while (ones < str.length && str[ones] === "1") ones++;
+
+  // 把 Base58 字符串当作大整数做进制转换
+  const bytes: number[] = [];
+  for (let i = ones; i < str.length; i++) {
+    const value = INDEX[str[i]];
+    if (value === undefined) {
+      throw new Error(`非法 Base58 字符: ${str[i]}`);
+    }
+    let carry = value;
+    for (let j = 0; j < bytes.length; j++) {
+      carry += bytes[j] * 58;
+      bytes[j] = carry & 0xff;
+      carry >>= 8;
+    }
+    while (carry > 0) {
+      bytes.push(carry & 0xff);
+      carry >>= 8;
+    }
+  }
+
+  const result = new Uint8Array(ones + bytes.length);
+  for (let i = 0; i < bytes.length; i++) {
+    result[ones + i] = bytes[bytes.length - 1 - i];
+  }
+  return result;
+}
+
+/**
+ * UTF-8 字符串编码为 Base58
+ */
+function encodeText(text: string): string {
+  return base58Encode(new TextEncoder().encode(text));
+}
+
+/**
+ * Base58 解码为 UTF-8 字符串
+ */
+function decodeText(str: string): string {
+  return new TextDecoder().decode(base58Decode(str));
+}
+
+// Base58 编码：GET /base58/encode?text=hello
+app.get("/base58/encode", (req, res) => {
+  const text = req.query.text;
+  if (typeof text !== "string") {
+    res.status(400).json({ error: "缺少参数 text" });
+    return;
+  }
+  res.json({ text, encoded: encodeText(text) });
+});
+
+// Base58 解码：GET /base58/decode?code=StV1DL6CwTryKyV
+app.get("/base58/decode", (req, res) => {
+  const code = req.query.code;
+  if (typeof code !== "string") {
+    res.status(400).json({ error: "缺少参数 code" });
+    return;
+  }
+  try {
+    res.json({ code, decoded: decodeText(code) });
+  } catch (err) {
+    res.status(400).json({ error: (err as Error).message });
+  }
+});
+
+// 默认首页
+app.get("/", async (_req, res) => {
+  res.send(
+    encodeText(
+      JSON.stringify({
+        cache_time: 0,
+        api_site: {
+          dyttzy: {
+            key: "暴風",
+            name: "暴風",
+            api: "https://bfzyapi.com/api.php/provide/vod",
+            playUrl: "json:http://127.0.0.1:10079/parse/?thread=0&proxy=&url=",
+          },
+        },
+        custom_category: [
+          {
+            name: "华语",
+            type: "movie",
+            query: "华语",
+          },
+        ],
+      }),
+    ),
+  );
+});
+
+// 404 兜底
+app.use((req, res) => {
+  res.status(404).json({ error: "Not Found", path: req.path });
+});
+
+// 统一错误处理
+app.use(
+  (
+    err: Error,
+    _req: express.Request,
+    res: express.Response,
+    _next: express.NextFunction,
+  ) => {
+    res.status(500).json({ error: err.message });
+  },
+);
+
+app.listen(PORT, HOST, () => {
+  console.log(`HTTP service listening on http://${HOST}:${PORT}`);
+});
+
+```
+
 ## 无头扫码登陆
 
 ```ts
