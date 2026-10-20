@@ -2,6 +2,59 @@
 
 个人爱好，知识积累，点滴成石
 
+## 读取local-storage
+
+```ts
+import path from "node:path";
+import os from "node:os";
+import fs from "node:fs/promises";
+import { ClassicLevel } from "classic-level";
+
+const profile = path.join(
+  os.homedir(),
+  "Library/Application Support/Google/Chrome/Default/Local Storage/leveldb",
+);
+
+const copy = path.join(os.tmpdir(), "chrome-local-storage-leveldb");
+
+// 必须先彻底退出 Chrome，再复制数据库，避免复制到不一致的状态。
+// 更稳妥的方式是复制整个 profile 的 Local Storage/leveldb 目录。
+await fs.rm(copy, { recursive: true, force: true });
+await fs.cp(profile, copy, { recursive: true });
+
+const db = new ClassicLevel<Buffer, Buffer>(copy, {
+  keyEncoding: "buffer",
+  valueEncoding: "buffer",
+});
+
+const data: Record<string, any> = {};
+try {
+  await db.open();
+  const reg = /.*https:\/\/.*\x00\x01/;
+  for await (const [key, value] of db.iterator()) {
+    const keyText = key.toString("utf8");
+    if (!keyText.includes("https://chat.deepseek.com") || !reg.test(keyText))
+      continue;
+    const keyName = keyText.replace(reg, "");
+    data[keyName] = await (async (value: Buffer) => {
+      try {
+        return JSON.parse(value.subarray(1).toString("utf8"));
+      } catch (e) {
+        try {
+          return JSON.parse(value.toString("utf8"));
+        } catch (e) {
+          return value.subarray(1).toString("utf8");
+        }
+      }
+    })(value);
+  }
+} finally {
+  await db.close();
+}
+console.log(data);
+
+```
+
 ## 端口或pid查找
 
 ```sh
