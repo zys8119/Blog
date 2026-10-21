@@ -2,6 +2,82 @@
 
 个人爱好，知识积累，点滴成石
 
+## 获取Github Stars 收藏星星
+
+```ts
+import fs from "fs";
+const username = "zys8119";
+
+// 可选：设置 GitHub Token，避免匿名请求的低频率限制
+const token = process.env.GITHUB_TOKEN;
+
+async function getAllStars(username) {
+  const allRepos = [];
+  let page = 1;
+
+  while (true) {
+    const url = new URL(
+      `https://api.github.com/users/${encodeURIComponent(username)}/starred`,
+    );
+
+    url.searchParams.set("per_page", "100");
+    url.searchParams.set("page", String(page));
+    url.searchParams.set("sort", "created");
+    url.searchParams.set("direction", "desc");
+
+    const headers = {
+      Accept: "application/vnd.github+json",
+    };
+
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, { headers });
+
+    if (!response.ok) {
+      throw new Error(
+        `GitHub API 错误: ${response.status} ${await response.text()}`,
+      );
+    }
+
+    const repos = await response.json();
+
+    if (repos.length === 0) break;
+
+    allRepos.push(...repos);
+    console.log(`已获取 ${allRepos.length} 个仓库`);
+
+    if (repos.length < 100) break;
+
+    page++;
+  }
+
+  return allRepos;
+}
+
+getAllStars(username)
+  .then((repos) => {
+    console.log(`共收藏 ${repos.length} 个仓库`);
+
+    // 只保留需要的字段
+    const result = repos.map((repo) => ({
+      name: repo.full_name,
+      description: repo.description,
+      url: repo.html_url,
+      language: repo.language,
+      stars: repo.stargazers_count,
+      createdAt: repo.created_at,
+      updatedAt: repo.updated_at,
+    }));
+
+    console.log(JSON.stringify(result, null, 2));
+    fs.writeFileSync("stars.json", JSON.stringify(result, null, 2), "utf-8");
+  })
+  .catch(console.error);
+
+```
+
 ## MoonTv 配置
 
 仓库地址
