@@ -2,6 +2,129 @@
 
 个人爱好，知识积累，点滴成石
 
+## 终端搜索Github Stars 收藏星星
+
+```sh
+#!/usr/bin/env bash
+#
+# 用 fzf 交互式搜索 stars.json 中的 name / description 字段，并实时预览整条记录。
+#
+# 用法：
+#   ./start.sh              # 使用同目录下的 stars.json
+#   ./start.sh other.json   # 指定其他数据文件
+#
+# 依赖：fzf、jq
+
+set -euo pipefail
+
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SELF="$SELF_DIR/$(basename "${BASH_SOURCE[0]}")"
+
+# ---------------------------------------------------------------- 预览子命令
+# 被 fzf --preview 回调，参数为记录下标。
+if [[ "${1:-}" == "--preview" ]]; then
+  data="${3:-$SELF_DIR/stars.json}"
+  idx="${2:-0}"
+  jq -r --argjson i "$idx" '
+    .[$i]
+    | "名称:      " + (.name // "-")
+    + "\n描述:      " + (.description // "-")
+    + "\n语言:      " + (.language // "-")
+    + "\nStars:     " + ((.stars // 0) | tostring)
+    + "\n地址:      " + (.url // "-")
+    + "\n创建时间:  " + (.createdAt // "-")
+    + "\n更新时间:  " + (.updatedAt // "-")
+  ' "$data"
+  exit 0
+fi
+
+# ---------------------------------------------------------------- 前置检查
+DATA="${1:-$SELF_DIR/stars.json}"
+
+if [[ ! -f "$DATA" ]]; then
+  echo "找不到数据文件: $DATA" >&2
+  exit 1
+fi
+
+for bin in fzf jq; do
+  if ! command -v "$bin" >/dev/null 2>&1; then
+    echo "缺少依赖: $bin" >&2
+    exit 1
+  fi
+done
+
+# ---------------------------------------------------------------- 列表数据
+# 每行三列（TAB 分隔）：下标、name、description。
+# 先把换行与制表符压成空格，避免破坏单行结构。
+list_records() {
+  jq -r '
+    to_entries[]
+    | [
+        (.key | tostring),
+        (.value.name // "" | gsub("[\\t\\n\\r]+"; " ")),
+        (.value.description // "" | gsub("[\\t\\n\\r]+"; " "))
+      ]
+    | @tsv
+  ' "$DATA"
+}
+
+TOTAL="$(jq 'length' "$DATA")"
+
+# ---------------------------------------------------------------- 交互搜索
+selected="$(
+  list_records |
+    fzf \
+      --delimiter='\t' \
+      --with-nth=2,3 \
+      --nth=2,3 \
+      --height=90% \
+      --layout=reverse \
+      --border=rounded \
+      --info=inline \
+      --pointer='▶' \
+      --prompt='搜索 name / description > ' \
+      --header="共 $TOTAL 条记录 · 输入关键词筛选 · Enter 查看完整 JSON" \
+      --preview "$SELF --preview {1} '$DATA'" \
+      --preview-window='right,58%,wrap,border-left'
+)" || exit 0
+
+[[ -z "$selected" ]] && exit 0
+
+# ---------------------------------------------------------------- 输出结果
+idx="$(printf '%s' "$selected" | cut -f1)"
+url="$(jq -r --argjson i "$idx" '.[$i].url // ""' "$DATA")"
+
+# ---------------------------------------------------------------- 是否打开浏览器
+# 有 url 时先询问，再打印记录。提示从 /dev/tty 读取，避免 stdin 已被管道占用。
+if [[ -n "$url" ]]; then
+  printf '\n是否在浏览器中打开该地址？\n  %s\n[y/N] ' "$url"
+  reply=""
+  # 优先读当前终端；stdin 被管道占用时改用 /dev/tty；都没有则跳过（默认不打开）。
+  if [[ -t 0 ]]; then
+    read -r reply || reply=""
+  elif exec 3</dev/tty 2>/dev/null && [[ -t 3 ]]; then
+    read -r reply <&3 || reply=""
+    exec 3<&-
+  fi
+  case "$(printf '%s' "$reply" | tr '[:upper:]' '[:lower:]')" in
+    y|yes)
+      if command -v open >/dev/null 2>&1; then
+        open "$url" >/dev/null 2>&1 &
+      elif command -v xdg-open >/dev/null 2>&1; then
+        xdg-open "$url" >/dev/null 2>&1 &
+      else
+        echo "未找到可用的浏览器打开命令（open / xdg-open）" >&2
+      fi
+      ;;
+  esac
+fi
+
+echo
+echo "---- 选中记录 (index=$idx) ----"
+jq ".[$idx]" "$DATA"
+
+```
+
 ## 获取Github Stars 收藏星星
 
 ```ts
