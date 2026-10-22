@@ -898,7 +898,7 @@ const best = getBestFormats(data);
 // console.log("最佳音频:", best.audio);
 // console.log("视频 ID:", best.video?.id);
 // console.log("音频 ID:", best.audio?.id);
-console.log('yt-dlp \\\\\n  --cookies-from-browser chrome \\\\\n --no-playlist  \\\\\n  -f "'+best.video?.id+'+'+best.audio?.id+'" \\\\\n  --merge-output-format mkv \\\\\n  -o "$HOME/Downloads/%(title)s.%(ext)s" \\\\\n  "$url"');
+console.log('yt-dlp \\\\\n  --cookies-from-browser chrome \\\\\n --no-playlist  \\\\\n  -f "'+best.video?.id+'+'+best.audio?.id+'" \\\\\n  --merge-output-format mp4 \\\\\n  -o "$HOME/Downloads/%(title)s.%(ext)s" \\\\\n  "$url"');
 EOF
 
 eval "$(tsx "$tmpfile")"
