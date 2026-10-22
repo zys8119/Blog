@@ -788,12 +788,18 @@ clear
 id="$1"
 # 检查是否提供了视频ID参数
 if [ -z "${id:-}" ]; then
-  echo "错误：请提供Bilibili视频ID作为参数"
-  echo "用法：$0 <视频ID>"
+  echo "错误：请提供Bilibili视频ID或完整链接作为参数"
+  echo "用法：$0 <视频ID|视频链接>"
   exit 1
 fi
+# 以 http 开头视为完整链接原样使用，否则按 BV/AV 号拼接
+if [[ "$id" == http* ]]; then
+  url="$id"
+else
+  url="https://www.bilibili.com/video/$id"
+fi
 
-data=$(yt-dlp  --cookies-from-browser chrome   --no-playlist   -F   "https://www.bilibili.com/video/$id")
+data=$(yt-dlp  --cookies-from-browser chrome   --no-playlist   -F   "$url")
 tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/yt-dlp.XXXXXX")"
 trap 'rm -rf "$tmpdir"' EXIT
 
@@ -892,10 +898,11 @@ const best = getBestFormats(data);
 // console.log("最佳音频:", best.audio);
 // console.log("视频 ID:", best.video?.id);
 // console.log("音频 ID:", best.audio?.id);
-console.log('yt-dlp \\\\\n  --cookies-from-browser chrome \\\\\n --no-playlist  \\\\\n  -f "'+best.video?.id+'+'+best.audio?.id+'" \\\\\n  --merge-output-format mkv \\\\\n  -o "$HOME/Downloads/%(title)s.%(ext)s" \\\\\n  "https://www.bilibili.com/video/$id"');
+console.log('yt-dlp \\\\\n  --cookies-from-browser chrome \\\\\n --no-playlist  \\\\\n  -f "'+best.video?.id+'+'+best.audio?.id+'" \\\\\n  --merge-output-format mkv \\\\\n  -o "$HOME/Downloads/%(title)s.%(ext)s" \\\\\n  "$url"');
 EOF
 
 eval "$(tsx "$tmpfile")"
+
 ```
 
 ## bilibili 视频下载
