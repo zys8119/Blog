@@ -2,6 +2,91 @@
 
 个人爱好，知识积累，点滴成石
 
+## 控制一个浏览器
+
+```ts
+import { spawn } from "node:child_process";
+import { connect, type Browser } from "puppeteer-core";
+
+const DEBUGGING_PORT = process.env.DEBUGGING_PORT || 9444;
+const DEBUGGING_URL = `http://127.0.0.1:${DEBUGGING_PORT}`;
+const EXECUTABLE_PATH =
+  process.env.EXECUTABLE_PATH ||
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+const USER_DATA_DIR =
+  process.env.USER_DATA_DIR ||
+  `${process.env.HOME}/.llama-chat-api/chrome-profile`;
+const HEADLESS = process.env.HEADLESS === "true";
+// 先探测端口上是否已有可用的调试实例，避免重复启动浏览器。
+async function hasRunningBrowser(): Promise<boolean> {
+  try {
+    const response = await fetch(`${DEBUGGING_URL}/json/version`, {
+      signal: AbortSignal.timeout(800),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+// 以独立进程启动 Chrome：detached + stdio:ignore + unref，
+// 主进程退出后浏览器继续存活，下次可直接 connect 复用。
+function spawnChrome(): void {
+  const child = spawn(
+    EXECUTABLE_PATH,
+    [
+      ...(HEADLESS ? ["--headless=new"] : []),
+      `--remote-debugging-port=${DEBUGGING_PORT}`,
+      `--user-data-dir=${USER_DATA_DIR}`,
+      "--disable-background-timer-throttling",
+      "--disable-renderer-backgrounding",
+      "--disable-backgrounding-occluded-windows",
+      "--disable-features=CalculateNativeWinOcclusion",
+      "about:blank",
+    ],
+    {
+      detached: true,
+      stdio: "ignore",
+    },
+  );
+  // 解除与父进程的事件循环绑定，父进程退出不会带走浏览器。
+  child.unref();
+}
+
+// 轮询等待调试端口就绪，避免 spawn 后立刻 connect 失败。
+async function waitForBrowser(timeoutMs = 15000): Promise<void> {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    if (await hasRunningBrowser()) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+  throw new Error(
+    `Chrome 调试端口 ${DEBUGGING_PORT} 在 ${timeoutMs}ms 内未就绪`,
+  );
+}
+
+async function connectOrLaunch(): Promise<Browser> {
+  if (!(await hasRunningBrowser())) {
+    spawnChrome();
+    await waitForBrowser();
+  }
+  return connect({ browserURL: DEBUGGING_URL });
+}
+
+const browser = await connectOrLaunch();
+console.log("已连接浏览器:", browser.wsEndpoint());
+
+// 仅断开连接，不调用 close，保证浏览器作为独立进程继续运行。
+process.on("exit", () => browser.disconnect());
+process.on("SIGINT", () => process.exit(0));
+process.on("SIGTERM", () => process.exit(0));
+
+export default browser;
+
+```
+
 ## 终端搜索Github Stars 收藏星星
 
 ```sh
