@@ -12,9 +12,8 @@ brew install sshpass
 
 设置全局密码.env或~/.zshrc
 
-export lcPASS=‘你的ssh密码'
-
 ```
+export lcPASS=‘你的ssh密码'
 ```
 
 命令
