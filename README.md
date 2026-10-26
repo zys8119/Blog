@@ -2,6 +2,35 @@
 
 个人爱好，知识积累，点滴成石
 
+## langchao 浪潮ssh快捷登录
+
+安装 sshpass（macOS）
+
+```sh
+brew install sshpass
+```
+
+设置全局密码.env或~/.zshrc
+
+export lcPASS=‘你的ssh密码'
+
+```
+```
+
+命令
+
+```sh
+lcPROT=63683
+
+ssh-keygen -R "[127.0.0.1]:$lcPROT"
+
+sshpass -p "$lcPASS" ssh \
+  -o StrictHostKeyChecking=accept-new \
+  -p "$lcPROT" \
+  -L 8888:127.0.0.1:80 \
+  inspur@127.0.0.1
+```
+
 ## 控制一个浏览器
 
 ```ts
