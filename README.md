@@ -2,6 +2,17 @@
 
 个人爱好，知识积累，点滴成石
 
+## macos 网络别名，可实现虚拟ip映射
+
+```sh
+# 添加
+sudo ifconfig lo0 alias 10.136.4.3
+# 删除
+sudo ifconfig lo0 -alias 10.136.4.3
+# 检验
+ifconfig lo0 | grep '10\.136\.4\.3'
+```
+
 ## langchao 浪潮ssh快捷登录
 
 安装 sshpass（macOS）
