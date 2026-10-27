@@ -12,6 +12,17 @@
 
 ## macos 网络别名，可实现虚拟ip映射
 
+目标电脑虚拟路由
+
+```
+# 添加
+sudo route -n add -host 10.136.63.3 192.168.2.95
+# 删除
+sudo route -n delete -host 10.136.63.3
+```
+
+本地电脑虚拟ip
+
 ```sh
 # 添加
 sudo ifconfig lo0 alias 10.136.4.3
