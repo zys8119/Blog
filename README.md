@@ -2,6 +2,21 @@
 
 个人爱好，知识积累，点滴成石
 
+## docker 部署前端
+
+```Dockerfile
+FROM node:26-alpine
+COPY . /app
+WORKDIR /app
+RUN npm i pnpm -g
+# 允许所有依赖执行构建脚本
+RUN printf "dangerouslyAllowAllBuilds: true\n" > pnpm-workspace.yaml
+# RUN pnpm approve-builds
+RUN pnpm i
+EXPOSE 5173
+CMD ["pnpm", "dev"]
+```
+
 ## 	覆盖或更新已有ssh端口转发
 
 ```sh
