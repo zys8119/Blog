@@ -2,6 +2,21 @@
 
 个人爱好，知识积累，点滴成石
 
+## macos 导出软件为 DMG 安装包
+
+```sh
+APP="/Applications/Google Chrome.app"
+NAME=$(/usr/libexec/PlistBuddy -c "Print :CFBundleName" "$APP/Contents/Info.plist")
+
+hdiutil create \
+  -volname "$NAME" \
+  -srcfolder "$APP" \
+  -ov \
+  -format UDZO \
+  "$HOME/Desktop/${NAME}.dmg"
+```
+
+
 ## docker 部署前端
 
 ```Dockerfile
