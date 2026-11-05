@@ -2,6 +2,54 @@
 
 个人爱好，知识积累，点滴成石
 
+## windows 部署项目
+
+server.ps1
+
+```ps1
+$nssm = "C:\nssm\win64\nssm.exe"
+$service = "SmartFab"
+$app = "C:\smartFab\backend\app.exe"
+$workDir = "C:\smartFab\backend"
+
+$params = '-c "C:\smartFab\config\app.yaml" -p 8080 --mode production'
+
+# 1. 停止旧服务
+$old = Get-Service -Name $service -ErrorAction SilentlyContinue
+
+if ($old) {
+    if ($old.Status -ne "Stopped") {
+        Stop-Service -Name $service -Force
+        $old.WaitForStatus("Stopped", [TimeSpan]::FromSeconds(30))
+    }
+
+    # 2. 删除旧服务
+    & $nssm remove $service confirm
+    Start-Sleep -Seconds 2
+}
+
+# 3. 重新安装服务
+& $nssm install $service $app
+
+if ($LASTEXITCODE -ne 0) {
+    throw "NSSM 服务安装失败"
+}
+
+# 4. 设置服务配置
+& $nssm set $service AppDirectory $workDir
+& $nssm set $service AppParameters $params
+& $nssm set $service AppStdout "C:\smartFab\logs\app.log"
+& $nssm set $service AppStderr "C:\smartFab\logs\error.log"
+& $nssm set $service AppRotateFiles 1
+& $nssm set $service AppExit Default Restart
+& $nssm set $service Start SERVICE_AUTO_START
+
+# 5. 启动服务
+Start-Service $service
+
+Write-Host "SmartFab 服务重新安装成功" -ForegroundColor Green
+```
+
 ## macos 导出软件为 DMG 安装包
 
 ```sh
