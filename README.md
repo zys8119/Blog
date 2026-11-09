@@ -2,6 +2,12 @@
 
 个人爱好，知识积累，点滴成石
 
+## macos 查找应用启动命令
+
+```
+pgrep -ifl 'misterdownloadmanager'
+```
+
 ## macos 查找应用包名数据目录
 
 ```
