@@ -2,6 +2,12 @@
 
 个人爱好，知识积累，点滴成石
 
+## macos 查找应用包名
+
+```sh
+mdls -name kMDItemCFBundleIdentifier /Applications/Mister\ Download\ Manager.app 
+```
+
 ## windows 部署项目
 
 server.ps1
