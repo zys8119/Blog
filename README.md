@@ -2,6 +2,12 @@
 
 个人爱好，知识积累，点滴成石
 
+## macos 查找应用包名数据目录
+
+```
+find ~/Library -iname '*io.github.anefzaoui.misterdownloadmanager*' 2>/dev/null
+```
+
 ## macos 查找应用包名
 
 ```sh
