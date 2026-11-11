@@ -2,6 +2,14 @@
 
 个人爱好，知识积累，点滴成石
 
+## pnpm approve-builds
+
+危险地允许所有构建,pnpm-workspace.yaml
+
+```yaml
+dangerouslyAllowAllBuilds: true
+```
+
 ## macos 查找应用启动命令
 
 ```
