@@ -5,7 +5,7 @@
 ## vite 库模式自动导入包
 
 ```sh 
-ls vite.config.ts | entr -r zsh -c 'vite build -w' & tsx watch --include vite.config.ts --clear-screen=false dist/cc.js
+ls vite.config.ts | entr -r zsh -c 'vite build -w' & tsx watch --include vite.config.ts --clear-screen=false index.js
 ```
 
 ## pnpm approve-builds
