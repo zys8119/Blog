@@ -2,6 +2,12 @@
 
 个人爱好，知识积累，点滴成石
 
+## vite 库模式自动导入包
+
+```sh 
+ls vite.config.ts | entr -r zsh -c 'vite build -w' & tsx watch --include vite.config.ts --clear-screen=false dist/cc.js
+```
+
 ## pnpm approve-builds
 
 危险地允许所有构建,pnpm-workspace.yaml
