@@ -12,6 +12,177 @@
 4.找到「Mac 音量与媒体控制」。
 5.点击 Enable 启用。
 
+
+Caps Lock 映射成独立键
+
+```json
+
+{
+  "description": "Caps Lock 声音控制（独立功能层，不影响 Ctrl）",
+  "manipulators": [
+    {
+      "type": "basic",
+      "from": {
+        "key_code": "caps_lock",
+        "modifiers": {
+          "optional": ["any"]
+        }
+      },
+      "to": [
+        {
+          "set_variable": {
+            "name": "caps_sound_mode",
+            "value": 1
+          }
+        }
+      ],
+      "to_after_key_up": [
+        {
+          "set_variable": {
+            "name": "caps_sound_mode",
+            "value": 0
+          }
+        }
+      ],
+      "to_if_alone": [
+        {
+          "key_code": "caps_lock"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "from": {
+        "key_code": "up_arrow",
+        "modifiers": {
+          "optional": ["any"]
+        }
+      },
+      "conditions": [
+        {
+          "type": "variable_if",
+          "name": "caps_sound_mode",
+          "value": 1
+        }
+      ],
+      "to": [
+        {
+          "consumer_key_code": "volume_increment"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "from": {
+        "key_code": "down_arrow",
+        "modifiers": {
+          "optional": ["any"]
+        }
+      },
+      "conditions": [
+        {
+          "type": "variable_if",
+          "name": "caps_sound_mode",
+          "value": 1
+        }
+      ],
+      "to": [
+        {
+          "consumer_key_code": "volume_decrement"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "from": {
+        "key_code": "m",
+        "modifiers": {
+          "optional": ["any"]
+        }
+      },
+      "conditions": [
+        {
+          "type": "variable_if",
+          "name": "caps_sound_mode",
+          "value": 1
+        }
+      ],
+      "to": [
+        {
+          "consumer_key_code": "mute"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "from": {
+        "key_code": "right_arrow",
+        "modifiers": {
+          "optional": ["any"]
+        }
+      },
+      "conditions": [
+        {
+          "type": "variable_if",
+          "name": "caps_sound_mode",
+          "value": 1
+        }
+      ],
+      "to": [
+        {
+          "consumer_key_code": "scan_next_track"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "from": {
+        "key_code": "left_arrow",
+        "modifiers": {
+          "optional": ["any"]
+        }
+      },
+      "conditions": [
+        {
+          "type": "variable_if",
+          "name": "caps_sound_mode",
+          "value": 1
+        }
+      ],
+      "to": [
+        {
+          "consumer_key_code": "scan_previous_track"
+        }
+      ]
+    },
+    {
+      "type": "basic",
+      "from": {
+        "key_code": "spacebar",
+        "modifiers": {
+          "optional": ["any"]
+        }
+      },
+      "conditions": [
+        {
+          "type": "variable_if",
+          "name": "caps_sound_mode",
+          "value": 1
+        }
+      ],
+      "to": [
+        {
+          "consumer_key_code": "play_or_pause"
+        }
+      ]
+    }
+  ]
+}
+
+```
+
+
+Caps Lock 映射 left_control
 ```json
 {
     "description": "Caps Lock 声音控制",
