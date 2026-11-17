@@ -2,6 +2,86 @@
 
 个人爱好，知识积累，点滴成石
 
+## Karabiner-Elements 设置macos声音快捷键
+
+[Karabiner-Elements 下载地址](https://karabiner-elements.pqrs.org/?utm_source=chatgpt.com)
+
+1.打开 Karabiner-Elements。
+2.进入「复杂修改（Complex Modifications）」。
+3.点击「添加预定义规则（Add predefined rule）」。
+4.找到「Mac 音量与媒体控制」。
+5.点击 Enable 启用。
+
+```json
+{
+    "description": "Caps Lock 声音控制",
+    "manipulators": [
+        {
+            "from": {
+                "key_code": "caps_lock",
+                "modifiers": { "optional": ["any"] }
+            },
+            "to": [
+                {
+                    "key_code": "left_control",
+                    "lazy": true
+                }
+            ],
+            "to_if_alone": [{ "key_code": "caps_lock" }],
+            "type": "basic"
+        },
+        {
+            "from": {
+                "key_code": "up_arrow",
+                "modifiers": { "mandatory": ["left_control"] }
+            },
+            "to": [{ "consumer_key_code": "volume_increment" }],
+            "type": "basic"
+        },
+        {
+            "from": {
+                "key_code": "down_arrow",
+                "modifiers": { "mandatory": ["left_control"] }
+            },
+            "to": [{ "consumer_key_code": "volume_decrement" }],
+            "type": "basic"
+        },
+        {
+            "from": {
+                "key_code": "m",
+                "modifiers": { "mandatory": ["left_control"] }
+            },
+            "to": [{ "consumer_key_code": "mute" }],
+            "type": "basic"
+        },
+        {
+            "from": {
+                "key_code": "right_arrow",
+                "modifiers": { "mandatory": ["left_control"] }
+            },
+            "to": [{ "consumer_key_code": "scan_next_track" }],
+            "type": "basic"
+        },
+        {
+            "from": {
+                "key_code": "left_arrow",
+                "modifiers": { "mandatory": ["left_control"] }
+            },
+            "to": [{ "consumer_key_code": "scan_previous_track" }],
+            "type": "basic"
+        },
+        {
+            "from": {
+                "key_code": "spacebar",
+                "modifiers": { "mandatory": ["left_control"] }
+            },
+            "to": [{ "consumer_key_code": "play_or_pause" }],
+            "type": "basic"
+        }
+    ]
+}
+```
+
 ## vite 库模式自动导入包
 
 ```sh 
