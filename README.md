@@ -8,7 +8,11 @@
 brew install gitwatch
 
 gitwatch -s 3 -r origin -b main ~/Documents/Sync
+
 ```
+-s 3：变化后等待 3 秒再提交。
+-r origin：提交后推送到 origin。
+-b main：推送 main 分支。
 
 ## Karabiner-Elements 设置macos声音快捷键
 
