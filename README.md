@@ -202,6 +202,28 @@ Caps Lock 映射成独立键 ～/.config/karabiner/karabiner.json
                     "value": 1
                   }
                 ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "t",
+                  "modifiers": {
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "v",
+                    "modifiers": ["left_control", "left_command"]
+                  }
+                ],
+                "conditions": [
+                  {
+                    "type": "variable_if",
+                    "name": "caps_sound_mode",
+                    "value": 1
+                  }
+                ]
               }
             ]
           }
@@ -227,7 +249,6 @@ Caps Lock 映射成独立键 ～/.config/karabiner/karabiner.json
     }
   ]
 }
-
 
 ```
 
