@@ -224,6 +224,50 @@ Caps Lock 映射成独立键 ～/.config/karabiner/karabiner.json
                     "value": 1
                   }
                 ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "d",
+                  "modifiers": {
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "d",
+                    "modifiers": ["left_control", "left_command", "left_option"]
+                  }
+                ],
+                "conditions": [
+                  {
+                    "type": "variable_if",
+                    "name": "caps_sound_mode",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "n",
+                  "modifiers": {
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "n",
+                    "modifiers": ["left_control", "left_command", "left_option"]
+                  }
+                ],
+                "conditions": [
+                  {
+                    "type": "variable_if",
+                    "name": "caps_sound_mode",
+                    "value": 1
+                  }
+                ]
               }
             ]
           }
