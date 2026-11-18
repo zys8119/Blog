@@ -2,6 +2,14 @@
 
 个人爱好，知识积累，点滴成石
 
+## macos git 自动同步
+
+```sh
+brew install gitwatch
+
+gitwatch -s 3 -r origin -b main ~/Documents/Sync
+```
+
 ## Karabiner-Elements 设置macos声音快捷键
 
 [Karabiner-Elements 下载地址](https://karabiner-elements.pqrs.org/?utm_source=chatgpt.com)
