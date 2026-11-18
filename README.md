@@ -13,244 +13,222 @@
 5.点击 Enable 启用。
 
 
-Caps Lock 映射成独立键
+Caps Lock 映射成独立键 ～/.config/karabiner/karabiner.json
 
 ```json
-
 {
-  "description": "Caps Lock 声音控制（独立功能层，不影响 Ctrl）",
-  "manipulators": [
+  "machine_specific": {
+    "krbn-0bbcfbde-656a-436c-9f24-32382afea694": {
+      "external_editor_path": "/Applications/Trae.app"
+    }
+  },
+  "profiles": [
     {
-      "type": "basic",
-      "from": {
-        "key_code": "caps_lock",
-        "modifiers": {
-          "optional": ["any"]
-        }
-      },
-      "to": [
-        {
-          "set_variable": {
-            "name": "caps_sound_mode",
-            "value": 1
+      "complex_modifications": {
+        "rules": [
+          {
+            "description": "Caps Lock 声音控制（独立功能层，不影响 Ctrl）",
+            "manipulators": [
+              {
+                "from": {
+                  "key_code": "caps_lock",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [
+                  {
+                    "set_variable": {
+                      "name": "caps_sound_mode",
+                      "value": 1
+                    }
+                  }
+                ],
+                "to_after_key_up": [
+                  {
+                    "set_variable": {
+                      "name": "caps_sound_mode",
+                      "value": 0
+                    }
+                  }
+                ],
+                "to_if_alone": [{ "key_code": "caps_lock" }],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "name": "caps_sound_mode",
+                    "type": "variable_if",
+                    "value": 1
+                  }
+                ],
+                "from": {
+                  "key_code": "up_arrow",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [{ "consumer_key_code": "volume_increment" }],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "name": "caps_sound_mode",
+                    "type": "variable_if",
+                    "value": 1
+                  }
+                ],
+                "from": {
+                  "key_code": "down_arrow",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [{ "consumer_key_code": "volume_decrement" }],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "name": "caps_sound_mode",
+                    "type": "variable_if",
+                    "value": 1
+                  }
+                ],
+                "from": {
+                  "key_code": "m",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [{ "consumer_key_code": "mute" }],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "name": "caps_sound_mode",
+                    "type": "variable_if",
+                    "value": 1
+                  }
+                ],
+                "from": {
+                  "key_code": "right_arrow",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [{ "consumer_key_code": "scan_next_track" }],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "name": "caps_sound_mode",
+                    "type": "variable_if",
+                    "value": 1
+                  }
+                ],
+                "from": {
+                  "key_code": "left_arrow",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [{ "consumer_key_code": "scan_previous_track" }],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "name": "caps_sound_mode",
+                    "type": "variable_if",
+                    "value": 1
+                  }
+                ],
+                "from": {
+                  "key_code": "spacebar",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [
+                  {
+                    "consumer_key_code": "play_or_pause"
+                  }
+                ],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "name": "caps_sound_mode",
+                    "type": "variable_if",
+                    "value": 1
+                  }
+                ],
+                "from": {
+                  "key_code": "hyphen",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [{ "key_code": "display_brightness_decrement" }],
+                "type": "basic"
+              },
+              {
+                "conditions": [
+                  {
+                    "name": "caps_sound_mode",
+                    "type": "variable_if",
+                    "value": 1
+                  }
+                ],
+                "from": {
+                  "key_code": "equal_sign",
+                  "modifiers": { "optional": ["any"] }
+                },
+                "to": [{ "key_code": "display_brightness_increment" }],
+                "type": "basic"
+              },
+              {
+                "type": "basic",
+                "from": {
+                  "key_code": "v",
+                  "modifiers": {
+                    "optional": ["any"]
+                  }
+                },
+                "to": [
+                  {
+                    "key_code": "left_control",
+                    "modifiers": ["left_command", "left_option"]
+                  },
+                  {
+                    "key_code": "v",
+                    "modifiers": ["left_control", "left_command", "left_option"]
+                  }
+                ],
+                "conditions": [
+                  {
+                    "type": "variable_if",
+                    "name": "caps_sound_mode",
+                    "value": 1
+                  }
+                ]
+              }
+            ]
           }
-        }
-      ],
-      "to_after_key_up": [
-        {
-          "set_variable": {
-            "name": "caps_sound_mode",
-            "value": 0
-          }
-        }
-      ],
-      "to_if_alone": [
-        {
-          "key_code": "caps_lock"
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "from": {
-        "key_code": "up_arrow",
-        "modifiers": {
-          "optional": ["any"]
-        }
+        ]
       },
-      "conditions": [
+      "devices": [
         {
-          "type": "variable_if",
-          "name": "caps_sound_mode",
-          "value": 1
+          "identifiers": {
+            "is_pointing_device": true,
+            "product_id": 12314,
+            "vendor_id": 16700
+          },
+          "ignore": true
+        },
+        {
+          "identifiers": { "is_consumer": true },
+          "ignore": true
         }
       ],
-      "to": [
-        {
-          "consumer_key_code": "volume_increment"
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "from": {
-        "key_code": "down_arrow",
-        "modifiers": {
-          "optional": ["any"]
-        }
-      },
-      "conditions": [
-        {
-          "type": "variable_if",
-          "name": "caps_sound_mode",
-          "value": 1
-        }
-      ],
-      "to": [
-        {
-          "consumer_key_code": "volume_decrement"
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "from": {
-        "key_code": "m",
-        "modifiers": {
-          "optional": ["any"]
-        }
-      },
-      "conditions": [
-        {
-          "type": "variable_if",
-          "name": "caps_sound_mode",
-          "value": 1
-        }
-      ],
-      "to": [
-        {
-          "consumer_key_code": "mute"
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "from": {
-        "key_code": "right_arrow",
-        "modifiers": {
-          "optional": ["any"]
-        }
-      },
-      "conditions": [
-        {
-          "type": "variable_if",
-          "name": "caps_sound_mode",
-          "value": 1
-        }
-      ],
-      "to": [
-        {
-          "consumer_key_code": "scan_next_track"
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "from": {
-        "key_code": "left_arrow",
-        "modifiers": {
-          "optional": ["any"]
-        }
-      },
-      "conditions": [
-        {
-          "type": "variable_if",
-          "name": "caps_sound_mode",
-          "value": 1
-        }
-      ],
-      "to": [
-        {
-          "consumer_key_code": "scan_previous_track"
-        }
-      ]
-    },
-    {
-      "type": "basic",
-      "from": {
-        "key_code": "spacebar",
-        "modifiers": {
-          "optional": ["any"]
-        }
-      },
-      "conditions": [
-        {
-          "type": "variable_if",
-          "name": "caps_sound_mode",
-          "value": 1
-        }
-      ],
-      "to": [
-        {
-          "consumer_key_code": "play_or_pause"
-        }
-      ]
+      "name": "Default profile",
+      "selected": true,
+      "virtual_hid_keyboard": { "keyboard_type_v2": "ansi" }
     }
   ]
 }
 
-```
 
-
-Caps Lock 映射 left_control
-```json
-{
-    "description": "Caps Lock 声音控制",
-    "manipulators": [
-        {
-            "from": {
-                "key_code": "caps_lock",
-                "modifiers": { "optional": ["any"] }
-            },
-            "to": [
-                {
-                    "key_code": "left_control",
-                    "lazy": true
-                }
-            ],
-            "to_if_alone": [{ "key_code": "caps_lock" }],
-            "type": "basic"
-        },
-        {
-            "from": {
-                "key_code": "up_arrow",
-                "modifiers": { "mandatory": ["left_control"] }
-            },
-            "to": [{ "consumer_key_code": "volume_increment" }],
-            "type": "basic"
-        },
-        {
-            "from": {
-                "key_code": "down_arrow",
-                "modifiers": { "mandatory": ["left_control"] }
-            },
-            "to": [{ "consumer_key_code": "volume_decrement" }],
-            "type": "basic"
-        },
-        {
-            "from": {
-                "key_code": "m",
-                "modifiers": { "mandatory": ["left_control"] }
-            },
-            "to": [{ "consumer_key_code": "mute" }],
-            "type": "basic"
-        },
-        {
-            "from": {
-                "key_code": "right_arrow",
-                "modifiers": { "mandatory": ["left_control"] }
-            },
-            "to": [{ "consumer_key_code": "scan_next_track" }],
-            "type": "basic"
-        },
-        {
-            "from": {
-                "key_code": "left_arrow",
-                "modifiers": { "mandatory": ["left_control"] }
-            },
-            "to": [{ "consumer_key_code": "scan_previous_track" }],
-            "type": "basic"
-        },
-        {
-            "from": {
-                "key_code": "spacebar",
-                "modifiers": { "mandatory": ["left_control"] }
-            },
-            "to": [{ "consumer_key_code": "play_or_pause" }],
-            "type": "basic"
-        }
-    ]
-}
 ```
 
 ## vite 库模式自动导入包
