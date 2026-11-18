@@ -2,6 +2,14 @@
 
 个人爱好，知识积累，点滴成石
 
+## macos 自启服务管理工具
+
+可视化维护系统自启服务 [mac-dash](https://github.com/talhaorak/mac-dash)
+
+```
+sudo npm install -g @talhaorak/mac-dash
+```
+
 ## macos git 自动同步
 
 ```sh
