@@ -2,6 +2,105 @@
 
 个人爱好，知识积累，点滴成石
 
+## ollama 对话
+
+```ts
+import { spawn, spawnSync } from "node:child_process";
+import { createInterface } from "node:readline/promises";
+import { Ollama, type Message } from "ollama";
+
+// 连接本地 Ollama 服务，可通过 OLLAMA_HOST 覆盖地址
+const client = new Ollama({
+  // host: process.env.OLLAMA_HOST ?? "http://183.251.104.191:11434/",
+  host: process.env.OLLAMA_HOST ?? "https://15.134.185.213:444/",
+});
+
+// 用 fzf 搜索并选择模型；非交互环境（管道/CI）下默认使用第一个
+async function chooseModel(models: string[]): Promise<string | null> {
+  if (!process.stdin.isTTY) return models[0];
+
+  if (spawnSync("fzf", ["--version"], { stdio: "ignore" }).status !== 0) {
+    throw new Error("未找到 fzf，请先安装：brew install fzf");
+  }
+
+  const child = spawn("fzf", ["--prompt=选择模型> ", "--reverse"], {
+    stdio: ["pipe", "pipe", "inherit"],
+  });
+  child.on("error", (err) => {
+    console.error(`启动 fzf 失败：${err.message}`);
+  });
+
+  // 把候选模型写入 fzf 的标准输入
+  child.stdin.end(models.join("\n") + "\n");
+
+  let selected = "";
+  child.stdout.setEncoding("utf8");
+  child.stdout.on("data", (chunk: string) => {
+    selected += chunk;
+  });
+
+  const code = await new Promise<number | null>((resolve) =>
+    child.on("close", resolve),
+  );
+  if (code !== 0 || !selected.trim()) return null; // 用户取消选择
+  return selected.trim();
+}
+
+async function main() {
+  try {
+    // 确认服务可用，并列出已安装模型
+    const { models } = await client.list();
+    if (models.length === 0) {
+      throw new Error("Ollama 中没有可用模型，请先执行：ollama pull qwen3:8b");
+    }
+
+    const names = models.map((m) => m.name);
+    const model = process.env.OLLAMA_MODEL ?? (await chooseModel(names));
+    if (!model) return;
+    console.log(`[model] ${model}\n`);
+
+    const interactive = Boolean(process.stdin.isTTY);
+    const rl = interactive
+      ? createInterface({ input: process.stdin, output: process.stdout })
+      : null;
+    const messages: Message[] = [];
+
+    // 命令行首个问题；交互模式下回答后可继续追问，输入 exit/quit 或空行退出
+    let next = process.argv.slice(2).join(" ").trim();
+
+    while (true) {
+      let content = next;
+      next = "";
+      if (!content && rl) {
+        content = (await rl.question("你：")).trim();
+      }
+      if (!content || content === "exit" || content === "quit") break;
+
+      messages.push({ role: "user", content });
+
+      const stream = await client.chat({ model, messages, stream: true });
+      let reply = "";
+      for await (const part of stream) {
+        process.stdout.write(part.message.content);
+        reply += part.message.content;
+      }
+      process.stdout.write("\n\n");
+      messages.push({ role: "assistant", content: reply });
+    }
+
+    rl?.close();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`Ollama 对接失败：${message}`);
+    console.error("请确认已安装并启动 Ollama：ollama serve");
+    process.exitCode = 1;
+  }
+}
+
+main();
+
+```
+
 ## macos 自启服务管理工具
 
 可视化维护系统自启服务 [mac-dash](https://github.com/talhaorak/mac-dash)
