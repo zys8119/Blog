@@ -2,6 +2,11 @@
 
 个人爱好，知识积累，点滴成石
 
+## 推荐skills管理，使用
+
+```sh
+pnpm i skills -g
+```
 
 ## 搜索github Stars
 
