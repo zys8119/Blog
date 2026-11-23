@@ -2,6 +2,76 @@
 
 个人爱好，知识积累，点滴成石
 
+
+## 搜索github Stars
+
+```ts
+import { Anthropic } from "@anthropic-ai/sdk";
+import chalk from "chalk";
+import { readFileSync } from "fs";
+import inquirer from "inquirer";
+const stars = readFileSync("./stars.json", "utf-8");
+const starJSON = JSON.parse(stars);
+const starList = starJSON.map(
+  (item: any) => `${item.name} ${item.url} ${item.description || "无描述"}`,
+);
+const client = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  baseURL: process.env.ANTHROPIC_BASE_URL,
+});
+// const models = await client.models.list();
+// console.log(models.data.map((model) => model.id));
+(async function run() {
+  const { question } = await inquirer.prompt([
+    { type: "input", name: "question", message: "_" },
+  ]);
+
+  const response = await client.messages.create({
+    max_tokens: 16384,
+    model: process.env.ANTHROPIC_MODEL as string,
+    messages: [
+      {
+        role: "user",
+        content: `
+        你是一个专业的代码仓库助手，你的任务是根据用户的问题，从代码仓库中提取相关的信息。
+        代码仓库的代码列表如下：
+${starList.join("\n")}
+        问题：${question}
+        请根据用户的问题，从代码仓库中提取相关的信息。
+        信息提取规则：
+        1. 从代码仓库中提取与用户相关的问题。
+        2. 从代码仓库中提取与用户相关的问题的代码。
+        3. 从代码仓库中提取与用户相关的问题的代码的注释。
+        4. 从代码仓库中提取与用户相关的问题的代码的元数据。
+        5. 从代码仓库中提取与用户相关的问题的代码的元数据的注释。
+        6. 从代码仓库中提取与用户相关的问题的代码的元数据的元数据。
+        7. 从代码仓库中提取与用户相关的问题的代码的元数据的元数据的注释。
+        `,
+      },
+    ],
+    stream: true,
+  });
+  let thinkingIndex = -1;
+  for await (const chunk of response) {
+    if (chunk.type === "content_block_delta") {
+      if (chunk.delta.type === "thinking_delta") {
+        thinkingIndex = chunk.index;
+        process.stdout.write(chalk.dim(chunk.delta?.thinking));
+      }
+      if (chunk.delta.type === "text_delta") {
+        process.stdout.write(chunk.delta?.text);
+      }
+    }
+    if (chunk.type === "content_block_stop" && thinkingIndex === chunk.index) {
+      process.stdout.write("\n---\n");
+    }
+  }
+  process.stdout.write("\n\n");
+  await run();
+})().catch(console.error);
+
+```
+
 ## ollama 对话
 
 ```ts
