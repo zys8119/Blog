@@ -2,6 +2,26 @@
 
 个人爱好，知识积累，点滴成石
 
+## shell、sh中使用nodejs
+
+```sh
+clear;
+data=$(cat)
+escaped=$(printf '%s' "$data" | node -e 'let s="";process.stdin.setEncoding("utf8");process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>process.stdout.write(JSON.stringify(s)))')
+tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/yt-dlp.XXXXXX")"
+trap 'rm -rf "$tmpdir"' EXIT
+tmpfile="$tmpdir/main.ts"
+
+cat > "$tmpfile" <<EOF
+
+console.log($escaped);
+
+EOF
+
+tsx "$tmpfile"
+
+```
+
 ## 推荐skills管理，使用
 
 ```sh
