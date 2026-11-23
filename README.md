@@ -2,6 +2,33 @@
 
 个人爱好，知识积累，点滴成石
 
+##  MTranServer 管道本地翻译脚本
+
+```sh
+clear
+data=$(cat)
+
+json=$(printf '%s' "$data" | node -e '
+let s = "";
+process.stdin.setEncoding("utf8");
+process.stdin.on("data", d => s += d);
+process.stdin.on("end", () => {
+  process.stdout.write(JSON.stringify({
+    from: "auto",
+    to: "zh-Hans",
+    text: s,
+    html: false
+  }));
+});
+')
+json=$(curl --url 'http://127.0.0.1:32768/translate' \
+  -H 'Content-Type: application/json' \
+  --data-raw "$json" | jq .result)
+clear
+echo $json
+
+```
+
 ## 管道百度翻译
 
 ```sh
