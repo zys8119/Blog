@@ -2,6 +2,27 @@
 
 个人爱好，知识积累，点滴成石
 
+## 管道百度翻译
+
+```sh
+clear;
+data=$(cat)
+escaped=$(printf '%s' "$data" | node -e 'let s="";process.stdin.setEncoding("utf8");process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>process.stdout.write(JSON.stringify(s)))')
+tmpdir="$(mktemp -d "${TMPDIR:-/tmp}/yt-dlp.XXXXXX")"
+trap 'rm -rf "$tmpdir"' EXIT
+tmpfile="$tmpdir/main.ts"
+
+cat > "$tmpfile" <<EOF
+
+console.log($escaped.replace(/\\n/g, '__n__'));
+
+EOF
+
+echo "$(tsx "$tmpfile" | trans text | sed -e 's/__n__/\\n/g')"
+
+```
+
+
 ## shell、sh中使用nodejs
 
 ```sh
