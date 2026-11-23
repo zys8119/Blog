@@ -2,6 +2,67 @@
 
 个人爱好，知识积累，点滴成石
 
+## oha 批量压测脚本
+
+```sh
+
+#!/usr/bin/env bash
+set -euo pipefail
+
+# 全局压测配置
+N=1000
+C=100
+OUT="./oha-results"
+
+mkdir -p "$OUT"
+
+run() {
+  local name="$1"
+  local method="$2"
+  local url="$3"
+  local body="${4:-}"
+
+  echo "========== $name ($method) =========="
+
+  args=(
+    -n "$N"
+    -c "$C"
+    --no-tui
+    -j
+    -m "$method"
+  )
+
+  if [[ -n "$body" ]]; then
+    args+=(-T "application/json" -d "$body")
+  fi
+
+  oha "${args[@]}" "$url" > "$OUT/$name.json"
+
+  echo "结果保存: $OUT/$name.json"
+}
+
+# GET
+run "get-users" GET \
+  "http://127.0.0.1:8080/api/users"
+
+# POST
+run "post-users" POST \
+  "http://127.0.0.1:8080/api/users" \
+  '{"name":"test","age":18}'
+
+# PUT
+run "put-users" PUT \
+  "http://127.0.0.1:8080/api/users/1" \
+  '{"name":"update"}'
+
+# DELETE
+run "delete-users" DELETE \
+  "http://127.0.0.1:8080/api/users/1"
+
+echo "全部压测完成！"
+
+```
+
 ##  MTranServer 管道本地翻译脚本
 
 ```sh
