@@ -631,10 +631,44 @@ Caps Lock 映射成独立键 ～/.config/karabiner/karabiner.json
                 }
             ],
             "type": "basic"
+        },
+        {
+            "conditions": [
+                {
+                    "name": "caps_sound_mode",
+                    "type": "variable_if",
+                    "value": 1
+                }
+            ],
+            "from": {
+                "key_code": "w",
+                "modifiers": { "optional": ["any"] }
+            },
+            "to": [
+                {
+                    "key_code": "w",
+                    "modifiers": ["left_control", "left_command", "left_option"]
+                }
+            ],
+            "type": "basic"
+        },
+        {
+            "conditions": [
+                {
+                    "name": "caps_sound_mode",
+                    "type": "variable_if",
+                    "value": 1
+                }
+            ],
+            "from": {
+                "key_code": "e",
+                "modifiers": { "optional": ["any"] }
+            },
+            "to": [{ "shell_command": "osascript -e 'tell application \"Finder\" to make new Finder window'" }],
+            "type": "basic"
         }
     ]
 }
-
 ```
 
 ## vite 库模式自动导入包
