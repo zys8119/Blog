@@ -2,6 +2,68 @@
 
 个人爱好，知识积累，点滴成石
 
+## 读取google chrome 书签
+
+```ts
+import { readFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+
+export interface BookmarkItem {
+  title: string;
+  url: string;
+  /** 所在文件夹路径，如 "书签栏/AI工具" */
+  folder: string;
+}
+
+interface RawNode {
+  type: "url" | "folder";
+  name?: string;
+  url?: string;
+  children?: RawNode[];
+}
+
+interface BookmarksFile {
+  version: number;
+  roots: Record<string, RawNode>;
+}
+
+/** 可通过 BOOKMARKS_FILE 环境变量或参数指定其他配置（如 user-data-dir 下的 Default/Bookmarks） */
+const DEFAULT_FILE = join(
+  homedir(),
+  "Library/Application Support/Google/Chrome/Default/Bookmarks",
+);
+
+export function loadBookmarks(file: string): BookmarkItem[] {
+  const data = JSON.parse(readFileSync(file, "utf8")) as BookmarksFile;
+  const items: BookmarkItem[] = [];
+
+  const walk = (node: RawNode, path: string[]) => {
+    if (node.type === "url" && node.url) {
+      items.push({
+        title: node.name ?? "",
+        url: node.url,
+        folder: path.join("/"),
+      });
+      return;
+    }
+    const next = node.name ? [...path, node.name] : path;
+    for (const child of node.children ?? []) walk(child, next);
+  };
+
+  for (const root of Object.values(data.roots)) {
+    if (root) walk(root, []);
+  }
+
+  return items;
+}
+
+const file = process.argv[2] ?? process.env.BOOKMARKS_FILE ?? DEFAULT_FILE;
+const bookmarks = loadBookmarks(file);
+console.log(bookmarks);
+
+```
+
 ## oha 批量压测脚本
 
 ```sh
